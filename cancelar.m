@@ -12,6 +12,8 @@ if exist('fidBG','var') && ~isempty(fidBG)&&  fidBG > 0,
     end
 end
 
-delete(hObject)
+if exist('hObject','var') && ishandle(hObject)
+    delete(hObject)
+end
 close all    
 clear

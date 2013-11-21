@@ -152,11 +152,14 @@ close(handles.cbtrackGUI_ROI)
 
 
 % --- Executes on button press in pushbutton_accept.
-function pushbutton_accept_Callback(hObject, eventdata, handles)
+function pushbutton_accept_Callback(hObject, eventdata, handles) %#ok<*INUSL>
 % hObject    handle to pushbutton_accept (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
+cbparams=getappdata(0,'cbparams');
+expdirs=getappdata(0,'expdirs');
+finalfile = fullfile(expdirs.test{1},cbparams.dataloc.trx.filestr);
+CourtshipBowlTrack_GUI_save(finalfile)
 delete(handles.cbtrackGUI_ROI)
 CourtshipBowlTrack_GUI2
 
@@ -378,9 +381,11 @@ elseif ISPAUSE
     ilastf=lastf-cbparams.track.firstframetrack+1;
     set(handles.text_info,'String',['Displaying frame ',num2str(icurrf),'. ',num2str(ilastf),' of ',num2str(cbparams.track.nframetrack),' (',num2str(ilastf*100/cbparams.track.nframetrack,'%.1f'),'%) tracked.'])  
     if ~ISPAUSE
-       CourtshipBowlTrack_GUI_save
-       delete(handles.cbtrackGUI_ROI)
-       CourtshipBowlTrack_GUI2
+        expdirs=getappdata(0,'expdirs');
+        finalfile = fullfile(expdirs.test{1},cbparams.dataloc.trx.filestr);
+        CourtshipBowlTrack_GUI_save(finalfile)
+        delete(handles.cbtrackGUI_ROI)
+        CourtshipBowlTrack_GUI2
     end
 end
 
@@ -497,4 +502,6 @@ function pushbutton_save_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_save (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-       CourtshipBowlTrack_GUI_save
+[tempfile,tempdir]=uiputfile('.mat');
+tempfile = fullfile(tempdir,tempfile);
+CourtshipBowlTrack_GUI_save(tempfile)

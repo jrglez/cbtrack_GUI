@@ -89,7 +89,7 @@ if isfield(handles.previous_values,'filename'),
     handles.filename = '';
   end
 else
-    movifile=getappdata(0,'moviefile');
+    moviefile=getappdata(0,'moviefile');
   handles.filename = moviefile;
 end
 

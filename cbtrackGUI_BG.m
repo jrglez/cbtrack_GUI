@@ -224,7 +224,7 @@ bg_nframes=str2double(get(handles.edit_Nframes,'String'));
 bg_lastframe=str2double(get(handles.edit_Nframes,'String'));
 if isnan(bg_nframes) || bg_nframes<1
 	mymsgbox(50,190,14,'Helvetica','Please, input a valid value for the number of frames','Error','error')
-elseif isnan(bg_lastframes) || bg_lastframe<1
+elseif isnan(bg_lastframe) || bg_lastframe<1
     mymsgbox(50,190,14,'Helvetica','Please, input a valid value for the last frame','Error','error')    
 else
     BG=get(handles.cbtrackGUI_BG,'UserData');
@@ -253,21 +253,23 @@ function pushbutton_fix_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 % rect=getrect(handles.axes_BG);
 % rectangle('position',rect);
+cbparams=getappdata(0,'cbparams');
 BG=get(handles.cbtrackGUI_BG,'UserData');
 bgmed=BG.data.bgmed;
 moviefile=getappdata(0,'moviefile');
 tracking_params=cbparams.track;
 [bgmed,bgfixdata] = FixBgModelGUI(bgmed,moviefile,tracking_params,handles);
-BG.data.bgmend=bgmed;
+BG.data.bgmed=bgmed;
 BG.data.fixdata=bgfixdata;
-setappdata(0,'BG',BG)
+set(handles.cbtrackGUI_BG,'UserData',BG);
+
 
 
 
 
 
 % --- Executes on button press in pushbutton_accept.
-function pushbutton_accept_Callback(hObject, eventdata, handles)
+function pushbutton_accept_Callback(hObject, eventdata, handles) %#ok<*INUSL>
 % hObject    handle to pushbutton_accept (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)

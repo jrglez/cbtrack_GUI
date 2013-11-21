@@ -1,4 +1,4 @@
-function CourtshipBowlTrack_GUI_save
+function CourtshipBowlTrack_GUI_save(savefile)
 trackdata=getappdata(0,'trackdata');
 trxx=trackdata.trxx; %#ok<*NASGU>
 trxy=trackdata.trxy;
@@ -24,6 +24,8 @@ roidata=getappdata(0,'roidata');
 
 stage=trackdata.stage;
 
-[tempfile,tempdir]=uiputfile('.mat');
-tempfile = fullfile(tempdir,tempfile);
-save(tempfile,'trxx','trxy','trxa','trxb','trxtheta','trxarea','istouching','gmm_isbadprior','pred','trxcurr','t','params','moviefile','bgmed','roidata','stage');
+if exist(savefile,'file'),
+  delete(savefile);
+end
+
+save(savefile,'trxx','trxy','trxa','trxb','trxtheta','trxarea','istouching','gmm_isbadprior','pred','trxcurr','t','params','moviefile','bgmed','roidata','stage');
