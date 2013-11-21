@@ -256,7 +256,7 @@ function pushbutton_fix_Callback(hObject, eventdata, handles)
 BG=get(handles.cbtrackGUI_BG,'UserData');
 bgmed=BG.data.bgmed;
 moviefile=getappdata(0,'moviefile');
-tracking_params=BG.data.params.track;
+tracking_params=cbparams.track;
 [bgmed,bgfixdata] = FixBgModelGUI(bgmed,moviefile,tracking_params,handles);
 BG.data.bgmend=bgmed;
 BG.data.fixdata=bgfixdata;
