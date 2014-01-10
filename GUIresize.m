@@ -32,7 +32,7 @@ if rescalex~=1 || rescaley~=1
                     new_pos(:,2)=old_pos(:,2)*rescaley+(old_pos(:,4)*(rescaley-rescale)/2);
                     new_pos(:,[3,4])=old_pos(:,[3,4])*rescale;
                     for j=1:size(new_pos,1)
-                        set(obj_handle,'position',new_pos)        
+                        set(obj_handle(j),'position',new_pos(j,:))        
                     end
                 end
             end
