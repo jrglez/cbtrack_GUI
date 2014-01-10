@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_ROI(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_ROI_temp
 
-% Last Modified by GUIDE v2.5 29-Oct-2013 09:14:14
+% Last Modified by GUIDE v2.5 08-Dec-2013 10:13:29
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -54,6 +54,9 @@ function cbtrackGUI_ROI_OpeningFcn(hObject, eventdata, handles, varargin)
 
 % Choose default command line output for cbtrackGUI_ROI_temp
 handles.output = hObject;
+
+GUIsize(handles,hObject)
+
 BG=getappdata(0,'BG');
 bgmed=BG.bgmed;
 aspect_ratio=size(bgmed,2)/size(bgmed,1);
@@ -87,19 +90,44 @@ list.text=cell(0); %list of selected points to display at listbox_manual
 list.ind=cell(0);
 list.ind_mat=[]; %(ROI,point) index matrix
 GUI.bgmed=bgmed;
-GUI.old_pos=get(hObject,'position');
 
+% Load and plot roidata if exists
+if isappdata(0,'roidata')
+    roidata=getappdata(0,'roidata');
+    params=roidata.params.detect_rois;
+    colors = jet(roidata.nrois)*.7;
+    axes(handles.axes_ROI)
+    hold on
+    if isfield(handles,'hrois')
+        delete(handles.hrois(ishandle(handles.hrois)))
+    end
+    handle.hrois=nan(roidata.nrois,2);
+    for i = 1:roidata.nrois,
+      handles.hrois(i,1)=drawellipse(roidata.centerx(i),roidata.centery(i),0,roidata.radii(i),roidata.radii(i),'Color',colors(i,:));
+        handles.hrois(i,2)=text(roidata.centerx(i),roidata.centery(i),['ROI: ',num2str(i)],...
+          'Color',colors(i,:),'HorizontalAlignment','center','VerticalAlignment','middle');
+    end
+    set(handles.pushbutton_detect,'UserData',roidata)
+    set(handles.pushbutton_tracker_setup,'Enable','on')
+    if isfield(roidata,'nflies_per_roi')
+        set(handles.pushbutton_debuger,'Enable','on')
+    end
+else
+    cbparams=getappdata(0,'cbparams');
+    params=cbparams.detect_rois;
+end
 % set parameter in the GUI
-cbparams=getappdata(0,'cbparams');
-set(handles.edit_set_rot,'String', num2str(cbparams.detect_rois.baserotateby))
-set(handles.edit_set_thres1,'String', num2str(cbparams.detect_rois.cannythresh(1)))
-set(handles.edit_set_thres2,'String', num2str(cbparams.detect_rois.cannythresh(2)))
-set(handles.edit_set_std,'String', num2str(cbparams.detect_rois.cannysigma))
+set(handles.edit_set_ROId,'String', num2str(params.roidiameter_mm))
+set(handles.edit_set_rot,'String', num2str(params.baserotateby))
+set(handles.edit_set_thres1,'String', num2str(params.cannythresh(1)))
+set(handles.edit_set_thres2,'String', num2str(params.cannythresh(2)))
+set(handles.edit_set_std,'String', num2str(params.cannysigma))
 
 % Update handles structure
 set(handles.radiobutton_manual,'UserData',manual);
 set(handles.listbox_manual,'UserData',list);
 set(handles.cbtrackGUI_ROI,'UserData',GUI);
+set(handles.uipanel_settings,'Userdata',params)
 guidata(hObject, handles);
 
 % UIWAIT makes cbtrackGUI_ROI_temp wait for user response (see UIRESUME)
@@ -142,114 +170,78 @@ function pushbutton_accept_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_accept (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+%Save size
+GUIscale=getappdata(0,'GUIscale');
+new_pos=get(handles.cbtrackGUI_ROI,'position'); 
+old_pos=GUIscale.original_position;
+GUIscale.rescalex=new_pos(3)/old_pos(3);
+GUIscale.rescaley=new_pos(4)/old_pos(4);
+GUIscale.position=new_pos;
+setappdata(0,'GUIscale',GUIscale)
+
 roidata=get(handles.pushbutton_detect,'UserData');
-setappdata(0,'roidata',roidata)
-expdirs=getappdata(0,'expdirs');
-expdir=expdirs.test{1};
 cbparams=getappdata(0,'cbparams');
+params=get(handles.uipanel_settings,'UserData');
 
-savefile = fullfile(expdir,cbparams.dataloc.roidatamat.filestr); % (expdirs)
-if exist(savefile,'file'),
-  delete(savefile);
+if isempty(roidata)
+    BG=getappdata(0,'BG');    
+    roidata=AllROI(BG.bgmed);
 end
-save(savefile,'-struct','roidata');
-imsavename = fullfile(expdir,cbparams.dataloc.roiimage.filestr);
-if exist(imsavename,'file'),
-  delete(imsavename);
+
+if roidata.isnew
+    if isfield(roidata,'nflies_per_roi')
+        roidata=rmfield(roidata,'nflies_per_roi');
+    end
+    if isappdata(0,'visdata')
+        rmappdata(0,'visdata')
+    end
+
+    if isappdata(0,'t')
+        rmappdata(0,'t')
+    end
+    if isappdata(0,'trackdata')
+        rmappdata(0,'trackdata')
+    end
+    roidata.isnew=false;
+    cbparams.detect_rois=params;
+    setappdata(0,'roidata',roidata)
+    setappdata(0,'cbparams',cbparams)
+    
+    out=getappdata(0,'out');
+    logfid=open_log('roi_log',cbparams,out.folder);
+    savefile = fullfile(out.folder,cbparams.dataloc.roidatamat.filestr);
+    fprintf(logfid,'Saving ROI data to file %s...\n',savefile);
+    if exist(savefile,'file'),
+      delete(savefile);
+    end
+    save(savefile,'-struct','roidata');
+    imsavename = fullfile(out.folder,cbparams.dataloc.roiimage.filestr);
+    fprintf(logfid,'Outputting visualization of results to %s...\n\n***\n',imsavename);
+    if exist(imsavename,'file'),
+      delete(imsavename);
+    end
+    hfig=figure;
+    set(hfig,'Visible','off')
+    copyobj(handles.axes_ROI,hfig)
+    save2png(imsavename,hfig);
+    close(hfig)
+    savetemp
 end
-hfig=figure;
-set(hfig,'Visible','off')
-copyobj(handles.axes_ROI,hfig)
-save2png(imsavename,hfig);
-close(hfig)
-delete(handles.cbtrackGUI_ROI)
-
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
 cbtrackGUI_tracker
-
-
-
-% --- Executes on button press in pushbutton_files.
-function pushbutton_files_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_files (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-close all
-cbtrackGUI_files
-
-
-% --- Executes on button press in pushbutton_BG.
-function pushbutton_BG_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_BG (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-close all
-cbtrackGUI_BG
-
-
-% --- Executes on button press in pushbutton_ROIs.
-function pushbutton_ROIs_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_ROIs (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --- Executes on button press in pushbutton_tracker.
-function pushbutton_tracker_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_tracker (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-close all
-cbtrackGUI_tracker
-
-
-% --- Executes on button press in pushbutton_video.
-function pushbutton_video_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_video (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 
 % --- Executes when cbtrackGUI_ROI is resized.
 function cbtrackGUI_ROI_ResizeFcn(hObject, eventdata, handles)
 % hObject    handle to cbtrackGUI_ROI (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-GUI=get(hObject,'UserData');
-GUI.new_pos=get(hObject,'position');
-rescalex=GUI.new_pos(3)/GUI.old_pos(3);
-rescaley=GUI.new_pos(4)/GUI.old_pos(4) ;
-h=fieldnames(handles);
-    
-for i=2:length(h)
-    obj_handle=handles.(h{i});
-    if ~strcmp(h{i},'output')
-        if isprop(obj_handle,'position')        
-            old_pos=get(obj_handle,'position');
-            if ~isprop(obj_handle,'xTick') %not a figure
-                new_pos([1,3])=old_pos([1,3])*rescalex;
-                new_pos([2,4])=old_pos([2,4])*rescaley;
-                set(obj_handle,'position',new_pos)
-            elseif isprop(obj_handle,'xTick') %figure
-                rescale=min(rescalex,rescaley);
-                new_pos(1)=old_pos(1)*rescalex+(old_pos(3)*(rescalex-rescale)/2);
-                new_pos(2)=old_pos(2)*rescaley+(old_pos(4)*(rescaley-rescale)/2);
-                new_pos([3,4])=old_pos([3,4])*rescale;
-                set(obj_handle,'position',new_pos)        
-            end
-        end
-        if isprop(obj_handle,'FontSize')
-            old_fontsize=get(obj_handle,'FontSize');
-            new_fontsize=max(12,old_fontsize*min(rescalex,rescaley));
-            set(obj_handle,'FontSize',new_fontsize)
-        end
-    end
-end
-GUI.old_pos=GUI.new_pos;
-set(hObject,'UserData',GUI)
+GUIresize(handles,hObject);
 
 
-
-function edit_load_Callback(hObject, eventdata, handles)
+function text_load_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_load (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -276,7 +268,31 @@ function pushbutton_load_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_load (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-[file_ROI, folder_ROI]=open_files2('txt'); %#ok<NASGU,ASGLU>
+[file_ROI, folder_ROI]=open_files2('mat');
+if ~file_ROI{1}==0
+    set(handles.edit_load,'String',fullfile(folder_ROI,file_ROI),'HorizontalAlignment','right')
+    roidata=load(fullfile(folder_ROI,file_ROI{1}));
+    colors = jet(roidata.nrois)*.7;
+    axes(handles.axes_ROI)
+    hold on
+    if isfield(handles,'hrois')
+        delete(handles.hrois(ishandle(handles.hrois)))
+    end
+    handle.hrois=nan(roidata.nrois,2);
+    for i = 1:roidata.nrois,
+      handles.hrois(i,1)=drawellipse(roidata.centerx(i),roidata.centery(i),0,roidata.radii(i),roidata.radii(i),'Color',colors(i,:));
+        handles.hrois(i,2)=text(roidata.centerx(i),roidata.centery(i),['ROI: ',num2str(i)],...
+          'Color',colors(i,:),'HorizontalAlignment','center','VerticalAlignment','middle');
+    end
+    roidata.isnew=true;
+    if isfield(roidata,'nflies_per_roi')
+        roidata=rmfield(roidata,'nflies_per_roi');
+    end
+    set(handles.pushbutton_detect,'UserData',roidata)
+end
+guidata(handles.cbtrackGUI_ROI, handles);
+
+
 
 
 % --- Executes on selection change in listbox_manual.
@@ -294,7 +310,9 @@ if manual.add==3 %use when the button "add" has been pushed; no point is removed
     manual.oldproi=manual.proi(manual.roi);
     manual.roi=rem_roi;
     manual.add=2;
-    delete(manual.texth)
+    if isfield(manual,'texth') && ishandle(manual.texth)
+        delete(manual.texth)
+    end
     manual.texth=text(350,-20,['Selecting ROI ', num2str(manual.roi),' point ', num2str(manual.proi(manual.roi)+1)],'FontSize',20,'Color',[1 0 0]);    
     set(handles.radiobutton_manual,'UserData',manual);
     return
@@ -324,8 +342,10 @@ if strcmp('Yes',msg_manual_lb) %remove selected point from the list and plot
             list.ind{rem_roi}=[];
             manual.pos{rem_roi}=[];
             axes(handles.axes_ROI);
-            delete(manual.pos_h{rem_roi})
-            manual.pos_h{rem_roi}=[];
+            if isfield(manual,'pos_h') 
+                delete(manual.pos_h{rem_roi}(ishandle(manual.pos_h{rem_roi})))
+                manual.pos_h{rem_roi}=[];
+            end
             manual.add=2;
             manual.oldroi=manual.roi+1;
             manual.oldproi=0;
@@ -336,16 +356,18 @@ if strcmp('Yes',msg_manual_lb) %remove selected point from the list and plot
             list.ind(rem_roi)=[];
             for i=rem_roi:length(list.text)
                 list.text{i}{1}(end-1)=num2str(str2double(list.text{i}{1}(end-1))-1);
+                list.ind{i}(:,1)=list.ind{i}(:,1)-1;
             end
             manual.pos(rem_roi)=[];
             axes(handles.axes_ROI);
-            delete(manual.pos_h{rem_roi})
-            manual.pos_h(rem_roi)=[];
-            manual.proi(manual.roi)=[];
-            if manual.roi~=rem_roi
-                manual.roi=manual.roi;
-                manual.proi(manual.roi)=0;
+            if isfield(manual,'pos_h') 
+                delete(manual.pos_h{rem_roi}(ishandle(manual.pos_h{rem_roi})))
+                manual.pos_h{rem_roi}=[];
             end
+             manual.proi(manual.roi)=[];
+            ind=cat(1,list.ind{:});
+            manual.roi=max(ind(:,1))+1;
+            manual.proi(manual.roi)=0;
         end
     else
         list.text{rem_roi}(rem_proi+1)=[];
@@ -353,8 +375,10 @@ if strcmp('Yes',msg_manual_lb) %remove selected point from the list and plot
         list.ind_mat=vertcat(list.ind{:}); list.ind_mat=sortrows(list.ind_mat);
         manual.pos{rem_roi}(rem_proi,:)=[];
         axes(handles.axes_ROI);
-        delete(manual.pos_h{rem_roi}(rem_proi))
-        manual.pos_h{rem_roi}(rem_proi)=[];
+        if isfield(manual,'pos_h') && ishandle(manual.pos_h{rem_roi}(rem_proi))
+            delete(manual.pos_h{rem_roi}(rem_proi))
+            manual.pos_h{rem_roi}(rem_proi)=[];
+        end
         manual.proi(rem_roi)=max(list.ind{rem_roi}(:,2));
         %Add new points to the ROI if there are less than 3 poitns
         if manual.proi(rem_roi)<3 && manual.roi~=rem_roi
@@ -372,7 +396,8 @@ if strcmp('Yes',msg_manual_lb) %remove selected point from the list and plot
             manual.roi=rem_roi;
         end
         if manual.roi~=rem_roi
-            manual.roi=manual.roi+1;
+            ind=cat(1,list.ind{:});
+            manual.roi=max(ind(:,1))+1;
             manual.proi(manual.roi)=0;
         end        
     end
@@ -409,13 +434,20 @@ function pushbutton_detect_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 cbparams=getappdata(0,'cbparams');
-cbparams.detect_rois.nROI=str2double(get(handles.edit_set_nROI,'String'));
-cbparams.detect_rois.roidiameter_mm=str2double(get(handles.edit_set_ROId,'String'));
-cbparams.detect_rois.baserotateby=str2double(get(handles.edit_set_rot,'String'));
-cbparams.detect_rois.cannythresh=[str2double(get(handles.edit_set_thres1,'String')),str2double(get(handles.edit_set_thres2,'String'))];
-cbparams.detect_rois.cannysigma=str2double(get(handles.edit_set_std,'String'));
+params=get(handles.uipanel_settings,'UserData');
+params.nROI=str2double(get(handles.edit_set_nROI,'String'));
+params.roidiameter_mm=str2double(get(handles.edit_set_ROId,'String'));
+if isnan(params.roidiameter_mm)
+    params.roidiameter_mm=1;
+end
+params.baserotateby=str2double(get(handles.edit_set_rot,'String'));
+params.cannythresh=[str2double(get(handles.edit_set_thres1,'String')),str2double(get(handles.edit_set_thres2,'String'))];
+params.cannysigma=str2double(get(handles.edit_set_std,'String'));
 
-if isnan(cbparams.detect_rois.baserotateby) || any(isnan(cbparams.detect_rois.cannythresh)) || isnan (cbparams.detect_rois.cannysigma)
+if isfield(handles,'hrois') 
+    delete(handles.hrois(ishandle(handles.hrois)))
+end
+if isnan(params.baserotateby) || any(isnan(params.cannythresh)) || isnan (params.cannysigma)
     mymsgbox(50,190,14,'Helvetica',{'Please, input numeric values for the setting parametes'},'Error','error','modal')
 else
     if get(handles.radiobutton_load,'Value')
@@ -424,7 +456,7 @@ else
         mymsgbox(50,190,14,'Helvetica',{'Coming soon'},'Error','error','modal')
     elseif get(handles.radiobutton_manual,'Value')
         manual=get(handles.radiobutton_manual,'UserData');
-        if manual.proi(manual.roi)<3
+        if manual.proi(manual.roi)<3 && manual.proi(manual.roi)~=0
             msg_manual=mymsgbox(50,190,14,'Helvetica',{'Please, select at least THREE points in the current ROI'},'Error','error','modal'); %#ok<NASGU>
         else
             axes(handles.axes_ROI)
@@ -440,8 +472,8 @@ else
 %                  Yfit = radius(i)*sin(theta) + yc(i);
 %                  hcirc(i,2)=plot(Xfit, Yfit,'b-','LineWidth',2);
             end
-            cbparams.detect_rois.roimus.x=xc;
-            cbparams.detect_rois.roimus.y=yc;
+            params.roimus.x=xc;
+            params.roimus.y=yc;
             [yc_s,yc_s_in]=sort(yc);
             n_row=[find(diff(yc_s)>100);length(yc_s)];
             rowname='a':'z';
@@ -457,17 +489,18 @@ else
             end
 %             hold off
         end  
-        cbparams.detect_rois.roimus=[xc,yc];
-        cbparams.detect_rois.roirows=roirows;
+        params.roimus=[xc,yc];
+        params.roirows=roirows;
         BG=getappdata(0,'BG');
         bgmed=BG.bgmed;
-        roidata = DetectROIsGUI(bgmed,cbparams,handles);
+        roidata = DetectROIsGUI(bgmed,cbparams,params,handles);
     end
     roidata.ignore=[];
+    roidata.isnew=true;
 end
-if ~isnan(cbparams.detect_rois.nROI) && roidata.nrois~=cbparams.detect_rois.nROI
+if ~isnan(params.nROI) && roidata.nrois~=params.nROI
     mymsgbox(50,190,14,'Helvetica',{'The number of ROIs detected does not match the value set manualy'},'Warning','warn','modal')
-    cbparams.detect_rois.nROI=roidata.nrois;
+    params.nROI=roidata.nrois;
 end 
 set(hObject,'UserData',roidata)
 
@@ -530,14 +563,23 @@ elseif eventdata.NewValue==handles.radiobutton_manual %The user clicks points of
     set(handles.pushbutton_nextROI,'Enable','on')
     set(handles.pushbutton_add,'Enable','on')
     set(handles.pushbutton_clear,'Enable','on')
+
     if ~isempty(manual.pos)
         msg_manual_exist=myquestdlg(14,'Helvetica',{'You have alread y selected some points to detect your ROIs.';'Would you like to delete them?'}','Existing data','Yes','No','No'); 
         if isempty(msg_manual_exist)
             msg_manual_exist='No';
         end
         if strcmp('Yes',msg_manual_exist)
-            delete(manual.pos_h{:});
-            delete(manual.texth)
+            if isfield(manual,'pos_h') 
+                pos_h=cat(2,manual.pos_h{:});
+                delete(pos_h(ishandle(cat(2,manual.pos_h{:}))));
+            end
+            if isfield(manual,'texth') && ishandle(manual.texth)
+                delete(manual.texth);
+            end
+            if isfield(handles,'hrois')
+                delete(handles.hrois(ishandle(handles.hrois)))
+            end
             manual.texth=text(350,-20,'Selecting ROI 1, point 1','FontSize',20,'Color',[1 0 0]);  
             manual.pos=cell(0);
             manual.roi=1; %number of ROIS detected
@@ -573,7 +615,7 @@ function pushbutton_add_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 manual=get(handles.radiobutton_manual,'UserData');
-if manual.proi(manual.roi)<3 
+if manual.proi(manual.roi)<3 && manual.proi(manual.roi)~=0
     msg_manual=mymsgbox(50,190,14,'Helvetica',{'Please, select at least THREE points in the current ROI'},'Error','error','modal'); %#ok<NASGU>
     return
 end
@@ -650,8 +692,13 @@ if isempty(msg_clear)
 end
 if strcmp('Yes',msg_clear)
     manual=get(handles.radiobutton_manual,'UserData');
-    delete(cat(2,manual.pos_h{:}))
-    delete(manual.texth)
+    if isfield(manual,'pos_h')
+        pos_h=cat(2,manual.pos_h{:}); 
+        delete(pos_h(ishandle(pos_h)))
+    end
+    if isfield(manual,'texth') && ishandle(manual.texth)
+        delete(manual.texth)
+    end
     manual.texth=text(350,-20,'Selecting ROI 1, point 1','FontSize',20,'Color',[1 0 0]);     
     manual.pos=cell(0);
     manual.roi=1; %number of ROIS detected
@@ -854,3 +901,68 @@ end
 if strcmp('Yes',msg_cancel)
     cancelar
 end
+
+
+% --- Executes on button press in pushbutton_BG.
+function pushbutton_BG_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_BG (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+%Save size
+GUIscale=getappdata(0,'GUIscale');
+new_pos=get(handles.cbtrackGUI_ROI,'position'); 
+old_pos=GUIscale.original_position;
+GUIscale.rescalex=new_pos(3)/old_pos(3);
+GUIscale.rescaley=new_pos(4)/old_pos(4);
+GUIscale.position=new_pos;
+setappdata(0,'GUIscale',GUIscale)
+
+delete(handles.cbtrackGUI_ROI)
+cbtrackGUI_BG
+
+
+
+% --- Executes on button press in pushbutton_ROIs.
+function pushbutton_ROIs_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_ROIs (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+
+% --- Executes on button press in pushbutton_tracker_setup.
+function pushbutton_tracker_setup_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_tracker_setup (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+%Save size
+GUIscale=getappdata(0,'GUIscale');
+new_pos=get(handles.cbtrackGUI_ROI,'position'); 
+old_pos=GUIscale.original_position;
+GUIscale.rescalex=new_pos(3)/old_pos(3);
+GUIscale.rescaley=new_pos(4)/old_pos(4);
+GUIscale.position=new_pos;
+setappdata(0,'GUIscale',GUIscale)
+
+delete(handles.cbtrackGUI_ROI)
+cbtrackGUI_tracker
+
+% --- Executes on button press in pushbutton_debuger.
+function pushbutton_debuger_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_debuger (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+%Save size
+GUIscale=getappdata(0,'GUIscale');
+new_pos=get(handles.cbtrackGUI_ROI,'position'); 
+old_pos=GUIscale.original_position;
+GUIscale.rescalex=new_pos(3)/old_pos(3);
+GUIscale.rescaley=new_pos(4)/old_pos(4);
+GUIscale.position=new_pos;
+setappdata(0,'GUIscale',GUIscale)
+
+delete(handles.cbtrackGUI_ROI)
+cbtrackGUI_tracker_video

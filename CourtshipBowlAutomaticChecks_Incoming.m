@@ -1,8 +1,9 @@
 function [success,msgs,iserror] = CourtshipBowlAutomaticChecks_Incoming(expdir,varargin)
 
-version = '0.11';
+version = '0.1.1';
 timestamp = datestr(now,TimestampFormat);
 ParseCourtshipBowlParams_GUI;
+out=getappdata(0,'out');
 
 success = true;
 msgs = {};
@@ -15,16 +16,7 @@ check_params = cbparams.auto_checks_incoming;
 
 %% open log file
 
-if isfield(cbparams.dataloc,'automaticchecks_incoming_log') && ~DEBUG,
-  logfile = fullfile(expdir,cbparams.dataloc.automaticchecks_incoming_log.filestr);
-  logfid = fopen(logfile,'a');
-  if logfid < 1,
-    warning('Could not open log file %s\n',logfile);
-    logfid = 1;
-  end
-else
-  logfid = 1;
-end
+logfid=open_log('automaticchecks_incoming_log',cbparams,out.folder);
 
 fprintf(logfid,'\n\n***\nRunning CourtshipBowlAutomaticChecks_Incoming version %s analysis_protocol %s at %s\n',version,analysis_protocol,timestamp);
 
@@ -36,7 +28,7 @@ try
 metadatafile = fullfile(expdir,cbparams.dataloc.metadata.filestr);
 moviefile = fullfile(expdir,cbparams.dataloc.movie.filestr);
 temperaturefile = fullfile(expdir,cbparams.dataloc.temperature.filestr); %#ok<NASGU>
-outfile = fullfile(expdir,cbparams.dataloc.automaticchecksincomingresults.filestr);
+outfile = fullfile(out.folder,cbparams.dataloc.automaticchecksincomingresults.filestr);
 
 % order matters here: higher up categories have higher priority
 categories = {'flag_aborted_set_to_1',...
@@ -233,7 +225,7 @@ end
 % version info
 fprintf(fid,'cbautochecksincoming_version,%s\n',version);
 fprintf(fid,'cbautochecksincoming_timestamp,%s\n',timestamp);
-fprintf(fid,'analysis_protocol,%s\n',real_analysis_protocol);
+fprintf(fid,'analysis_protocol,%s\n',analysis_protocol);
 
 
 if ~DEBUG && fid > 1,
@@ -255,6 +247,7 @@ else
   fprintf(logfid,'Warning/error messages:\n');
   fprintf(logfid,'%s\n',msgs{:});
 end
+fprintf(logfid,'\n***\n');
 
 if logfid > 1,
   fclose(logfid);

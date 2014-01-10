@@ -1,6 +1,6 @@
-function [isfore_in,cc_ind,flies_ind,trx] = ChangeParams_GUI(im,bgmed,dbkgd,roidata,roiparams,tracking_params)
+function [isfore_in,cc_ind,flies_ind,trx] = ChangeParams_GUI(im,bgmed,dbkgd,roidata,nflies_per_roi,roiparams,tracking_params)
 % do background subtraction to count flies in each roi
-nrois = numel(roidata.centerx);
+nrois = roidata.nrois;
 areassample = cell(nrois,1);
 cc_ind=cell(nrois,1);
 flies_ind=cell(nrois,1);
@@ -36,7 +36,7 @@ for j = 1:nrois,
     dbkgdbb(~roidata.inrois{j}) = 0;
     isforebb(~roidata.inrois{j}) = false;
     pred.isfirstframe=1;
-    [trx{j},~] = TrackTwoFliesOneFrameOneROI(isforebb,dbkgdbb,pred,trxcurr(j),roidata.nflies_per_roi(j),tracking_params);
+    [trx{j},~] = TrackTwoFliesOneFrameOneROI(isforebb,dbkgdbb,pred,trxcurr(j),nflies_per_roi(j),tracking_params);
     trx{j}.x=trx{j}.x+roibb(1)-1;
     trx{j}.y=trx{j}.y+roibb(3)-1;
 end

@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_tracker_params(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_tracker_params
 
-% Last Modified by GUIDE v2.5 15-Nov-2013 11:03:13
+% Last Modified by GUIDE v2.5 08-Dec-2013 11:21:01
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -54,6 +54,7 @@ function cbtrackGUI_tracker_params_OpeningFcn(hObject, eventdata, handles, varar
 
 % Set parameters in the gui
 cbparams=getappdata(0,'cbparams');
+set(handles.checkbox_debug,'Value',cbparams.track.DEBUG)
 set(handles.edit_duration_initial,'String',num2str(cbparams.track.firstframetrack))
 set(handles.edit_duration_final,'String',num2str(cbparams.track.lastframetrack))
 set(handles.checkbox_wings,'Value',cbparams.track.dotrackwings)
@@ -152,10 +153,8 @@ function checkbox_wings_Callback(hObject, eventdata, handles)
 % hObject    handle to checkbox_wings (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-cbparams=getappdata(0,'cbparams');
-cbparams.track.dotrackwings=get(hObject,'Value');
-setappdata(0,'cbparams',cbparams)
-if cbparams.track.dotrackwings
+dotrackwings=get(hObject,'Value');
+if dotrackwings
     set(handles.radiobutton_ID_wings,'Enable','on')
 else
     set(handles.radiobutton_ID_wings,'Enable','off')
@@ -171,7 +170,7 @@ function pushbutton_cancel_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_cancel (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-close(handles.cbtrackGUI_BG)
+delete(handles.figure1)
 
 
 % --- Executes on button press in pushbutton_accept.
@@ -180,6 +179,7 @@ function pushbutton_accept_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 cbparams=getappdata(0,'cbparams');
+cbparams.track.DEBUG=get(handles.checkbox_debug, 'Value');
 ID=get(handles.uipanel_ID,'SelectedObject');
 if ID==handles.radiobutton_ID_body
     cbparams.track.assignidsby='size';
@@ -210,17 +210,14 @@ else
     cbparams.track.firstframetrack=ini;
     cbparams.track.lastframetrack=fin;
 end
+cbparams.track.dotrackwings=logical(get(handles.checkbox_wings,'Value'));
 setappdata(0,'cbparams',cbparams)
-delete(handles.figure1)
-setappdata(0,'cbparams',cbparams)
-if cbparams.track.DEBUG==1
-    cbtrackGUI_tracker_video
-else
-    trackdata=CourtshipBowlTrack_GUI;
-    setappdata(0,'trackdata',trackdata)
-    pffdata = CourtshipBowlComputePerFrameFeatures_GUI(1);
-    setappdata(0,'pffdata',pffdata)
+
+if isfield(handles,'figure1') && ishandle(handles.figure1)
+    delete(handles.figure1)
 end
+
+
 
 
 
@@ -248,3 +245,12 @@ end
 if strcmp('Yes',msg_cancel)
     cancelar
 end
+
+
+% --- Executes on button press in checkbox_debug.
+function checkbox_debug_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_debug (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_debug

@@ -15,3 +15,6 @@ cbparams = getappdata(0,'cbparams');
 if isempty(cbparams)
     cbparams= ReadXMLParams(fullfile(analysis_protocol_dir,paramsfilestr));
 end
+if ~isfield(cbparams.track,'DEBUG')
+    cbparams.track.DEBUG=false;
+end

@@ -19,6 +19,3 @@ if iscell(file_)~=1
 else
     file=file_;
 end
-
-
-% save([folder,'Data\angulo vs t\alfa_time.dat'],'alfa_depth_time','-ASCII')

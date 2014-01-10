@@ -2,31 +2,29 @@ function trackdata = TrackTwoFlies_GUI_debug(handles,moviefile,bgmed,roidata,par
 global ISPAUSE
 trackdata=getappdata(0,'trackdata');
 
-
 version = '0.1.1';
 timestamp = datestr(now,TimestampFormat);
 
-tmpfilename = sprintf('TmpResultsTrackTwoFlies_%s.mat',datestr(now,TimestampFormat));
-[restart,tmpfilename] = myparse(varargin,'restart','','tmpfilename',tmpfilename); %[restart,tmpfilename,logfid] = myparse(varargin,'restart','','tmpfilename',tmpfilename,'logfid',1);
+out=getappdata(0,'out');
+[restart] = myparse(varargin,'restart',''); 
 
 dorestart = false;
 if ~isempty(restart),
-  fprintf('Loading temporary results from file %s...\n',restart);
-  load(restart);
-  restartstage = stage; %#ok<NODEF>
+  restartstage = trackdata.stage; 
   dorestart = true;
 else
     restartstage = '';
 end
-% fprintf(logfid,'TrackTwoFlies temporary results saved to file %s\n',tmpfilename);
+
+logfid=open_log('track_log',getappdata(0,'cbparams'),out.folder);
 
 SetBackgroundTypes;
 flycolors = {'r','b'};
-stages = {'maintracking','chooseorientations','trackwings1','assignids','chooseorientations2','trackwings2'};
+stages = {'maintracking','reformat','chooseorientations','trackwings1','assignids','chooseorientations2','trackwings2'};
 
 %% open movie
 
-% fprintf(logfid,'Opening movie...\n');
+fprintf(logfid,'Opening movie...\n');
 [readframe,nframes,fid,headerinfo] = get_readframe_fcn(moviefile);
 
 %% initialize
@@ -35,7 +33,7 @@ nrois = roidata.nrois;
 nframes_track = min(params.lastframetrack,nframes)-params.firstframetrack+1;
 
 if ~dorestart && any([~ISPAUSE,~isfield(trackdata,'trxx')]),
-%   fprhsvntf(logfid,'Allocating...\n');
+  fprintf(logfid,'Allocating...\n');
   trackdata = struct;
   trxx = nan(2,nrois,nframes_track);
   trxy = nan(2,nrois,nframes_track);
@@ -70,7 +68,7 @@ if ~dorestart && any([~ISPAUSE,~isfield(trackdata,'trxx')]),
   handles.hell = nan(2,nrois);
   handles.htrx = nan(2,nrois);
   handles.him = nan;
-elseif ISPAUSE
+elseif ISPAUSE || dorestart
     trxx = trackdata.trxx;
     trxy = trackdata.trxy;
     trxa = trackdata.trxa;
@@ -85,9 +83,6 @@ end
 trackdata.tracktwoflies_version = version;
 trackdata.tracktwoflies_timestamp = timestamp;
 
-
-
-
 %% loop over frames
 
 stage = 'maintracking'; 
@@ -101,16 +96,19 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
     end
     ISPAUSE=false;
 
-    % fprintf(logfid,'Main tracking...\n');
-    % hwait=waitbar(0,['Tracking frame 0 of ', num2str(min(params.lastframetrack,nframes))]);
+    fprintf(logfid,'Starting main tracking from frame %i at %s...\n',startframe,datestr(now,'yyyymmddTHHMMSS'));
+    if ~params.DEBUG
+      hwait=waitbar(0,['Tracking frame 0 of ', num2str(nframes_track)],'CreateCancelBtn','setappdata(0,''cancel_hwait'',1)');
+    end
     for t = startframe:min(params.lastframetrack,nframes),
       if ISPAUSE
-          break; %#ok<UNRCH>
+          fprintf(logfid,'Main tracking paused at frame %i at %s...\n',t,datestr(now,'yyyymmddTHHMMSS')); %#ok<UNRCH>
+          break; 
       end
       iframe = t - params.firstframetrack + 1;
 
       if mod(iframe,1000) == 0,
-    %     fprintf(logfid,'Frame %d / %d\n',iframe,nframes_track);
+        fprintf(logfid,'Frame %d / %d\n',iframe,nframes_track);
       end
 
       % read in frame
@@ -144,9 +142,8 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
       gmm_isbadprior(:,iframe) = cat(1,trxcurr.gmm_isbadprior);
       trxpriors(:,:,iframe)=cat(1,trxcurr.priors)';
       % plot
-      params.DEBUG=1;
-      if params.DEBUG,
 
+      if params.DEBUG,
         set(handles.video_img,'CData',im);
         isnewplot = false;
         title(num2str(t));
@@ -172,23 +169,39 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
           end
         end
       set(handles.text_info,'String',['Tracking: frame ',num2str(iframe),' of ',num2str(min(params.lastframetrack,nframes)),' (',num2str(iframe*100/min(params.lastframetrack,nframes),'%.1f'),'%).'])  
-      end
+      else
+        waitbar(iframe/nframes_track,hwait,['Tracking frame ', num2str(iframe),' of ', num2str(nframes_track)]);  
+      end    
 
       if params.DEBUG || mod(t,1) == 0,
         drawnow;
       end
-
+      
       if mod(iframe,5000) == 0,
-        save(tmpfilename,'trxx','trxy','trxa','trxb','trxtheta','trxarea','istouching','gmm_isbadprior','pred','trxcurr','t','params','moviefile','bgmed','roidata','stage');
+            trackdata.t=t;
+            trackdata.trxx=trxx; 
+            trackdata.trxy=trxy;
+            trackdata.trxa=trxa;
+            trackdata.trxb=trxb;
+            trackdata.trxtheta=trxtheta;
+            trackdata.trxarea=trxarea;
+            trackdata.istouching=istouching;
+            trackdata.gmm_isbadprior=gmm_isbadprior;
+            trackdata.pred=pred;
+            trackdata.trxcurr=trxcurr; 
+            trackdata.trxpriors=trxpriors;
+            trackdata.headerinfo=headerinfo;
+            trackdata.stage=stage;
+            save(out.temp_full,'trackdata','-append')
+            fprintf(logfid,'Saving temporary file after %i frames at %s...\n',iframe,datestr(now,'yyyymmddTHHMMSS'));
       end
-      track=get(handles.pushbutton_start,'UserData');
-      track.t=t;
-      set(handles.pushbutton_start,'Userdata',track);
+      setappdata(0,'t',t);
     end
-    trackdata.t=t-1;
-    %close(hwait)
+    if exist('hwait','var') && ishandle(hwait)
+        delete(hwait)
+    end
+    trackdata.t=t-(t~=min(params.lastframetrack,nframes));
 
-    save(tmpfilename,'trxx','trxy','trxa','trxb','trxtheta','trxarea','istouching','gmm_isbadprior','pred','trxcurr','t','params','moviefile','bgmed','roidata','stage');
     trackdata.trxx=trxx; 
     trackdata.trxy=trxy;
     trackdata.trxa=trxa;
@@ -202,25 +215,24 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
     trackdata.trxpriors=trxpriors;
     trackdata.headerinfo=headerinfo;
     trackdata.stage=stage;
+    save(out.temp_full,'trackdata','-append')
 end
 
-    %% clean up
+%% clean up
 
-    % fprintf(logfid,'Clean up...\n');
+% fprintf(logfid,'Clean up...\n');
+if params.DEBUG
     guidata(handles.cbtrackGUI_ROI,handles)
+end
 
-    if fid > 1,
-      try
-        fclose(fid);
-      catch ME,
-        warning('Could not close movie: %s',getReport(ME));
-      end
-    end
+if fid > 1,
+  try
+    fclose(fid);
+  catch ME,
+    warning('Could not close movie: %s',getReport(ME));
+  end
+end
+if logfid > 1,
+  fclose(logfid);
+end
 
-    if exist(tmpfilename,'file'),
-      try
-        delete(tmpfilename);
-      catch ME,
-        warning('Could not delete tmp file: %s',getReport(ME));
-      end
-    end

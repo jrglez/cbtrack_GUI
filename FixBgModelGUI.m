@@ -9,7 +9,7 @@ set(hplayfmf,'Visible','off')
 
 [nr,nc,ncolors] = size(bgmed);
 if ncolors > 1,
-  error('Not implemented for color images yet');
+	mymsgbox(50,190,14,'Helvetica','Not implemented for color images yet','Error','error')
 end
 [XGRID,YGRID] = meshgrid(1:nc,1:nr);
 

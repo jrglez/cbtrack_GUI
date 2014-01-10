@@ -2,6 +2,7 @@ function bgdata = cbtrackGUI_EstimateBG(expdir,moviefile,tracking_params,varargi
 
 version = '0.1.0';
 timestamp = datestr(now,TimestampFormat);
+out=getappdata(0,'out');
 
 bgdata = struct;
 bgdata.cbestimatebg_version = version;
@@ -12,7 +13,6 @@ ParseCourtshipBowlParams_GUI;
 experiment_name = splitdir(expdir,'last');
 experiment_name(experiment_name=='_')=' ';
 
-cbparams=getappdata(0,'cbparams');
 
 % read parameters
 for i = 1:2:numel(leftovers)-1,  %#ok<USENS>
@@ -21,25 +21,16 @@ for i = 1:2:numel(leftovers)-1,  %#ok<USENS>
   end
 end
 
-% %% open log file
-% 
-% if isfield(cbparams.dataloc,'BG_log'),
-%   logfile = fullfile(expdir,cbparams.dataloc.BG_log.filestr);
-%   logfid = fopen(logfile,'a');
-%   if logfid < 1,
-%     warning('Could not open log file %s\n',logfile);
-%     logfid = 1;
-%   end
-% else
-%   logfid = 1;
-% end
-% 
-% fprintf(logfid,'\n\n***\nRunning CourtshipBowlEstimateBG version %s analysis_protocol %s at %s\n',version,real_analysis_protocol,timestamp);
-% bgdata.analysis_protocol = real_analysis_protocol;
-% 
+%% open log file
+
+logfid=open_log('bg_log',cbparams,out.folder);
+
+fprintf(logfid,'\n\n***\nEstimating background for analysis_protocol %s at %s\n',analysis_protocol,timestamp);
+bgdata.analysis_protocol = real_analysis_protocol;
+
 %% open movie
 
-% fprintf(logfid,'Opening movie file %s...\n',moviefile);
+fprintf(logfid,'Opening movie file %s...\n',moviefile);
 [readframe,nframes,fid,headerinfo] = get_readframe_fcn(moviefile); %#ok<*NASGU>
 im = readframe(1);
 setappdata(0,'fidBG',fid)
@@ -47,7 +38,7 @@ setappdata(0,'fidBG',fid)
 %% estimate the background model
 
 % compute background model
-%fprintf(logfid,'Computing background model for %s...\n',experiment_name);
+fprintf(logfid,'Computing background model for %s...\n',experiment_name);
 buffer = readframe(1);
 buffer = repmat(buffer,[1,1,tracking_params.bg_nframes]);
 frames = round(linspace(1,min(nframes,tracking_params.bg_lastframe),tracking_params.bg_nframes));
@@ -71,15 +62,9 @@ bgmed = uint8(median(single(buffer),3));
 waitbar(1,hwait);
 bgdata.bgmed=bgmed;
 delete(hwait)
+bgdata.isnew=true;
 
-%savefile = fullfile(expdir,cbparams.dataloc.bgmat.filestr);
-% fprintf(logfid,'Saving background model to file %s...\n',savefile);
-% if exist(savefile,'file'),
-%   delete(savefile);
-% end
-% save(savefile,'bgmed','version','timestamp','tracking_params');
-
-% bgimagefile = fullfile(expdir,cbparams.dataloc.bgimage.filestr);
-% fprintf(logfid,'Saving image of background model to file %s...\n',bgimagefile);
-% imwrite(bgmed,bgimagefile,'png');
-setappdata(0,'cbparams',cbparams)
+fprintf(logfid,'Finished computting the Background at %s.\n***\n',datestr(now,'yyyymmddTHHMMSS'));
+if logfid > 1,
+  fclose(logfid);
+end

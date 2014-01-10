@@ -1,6 +1,10 @@
-function [nflies_per_roi,im,dbkgd_in,isfore_in,cc_ind,flies_ind,trx] = CountFliesPerROI_GUI(readframe,bgmed,nframes,roidata,rigbowl,roiparams,tracking_params)
+function [nflies_per_roi,im,dbkgd_in,isfore_in,cc_ind,flies_ind,trx] = CountFliesPerROI_GUI(readframe,bgmed,nframes,roidata,roiparams,tracking_params)
 
-nrois = numel(roidata.centerx);
+nrois = roidata.nrois;
+
+out=getappdata(0,'out');
+logfid=open_log('roi_log',getappdata(0,'cbparams'),out.folder);
+fprintf(logfid,'Counting flies per ROI at %s\n',datestr(now,'yyyymmddTHHMMSS'));
 
 % do background subtraction to count flies in each roi
 framessample = round(linspace(1,nframes,roiparams.nframessample));
@@ -67,6 +71,20 @@ for j = 1:nrois,
     nflies_per_roi(j) = round(prctile(nccs,99));
   end
 end
+
+fprintf(logfid,'nflies\tnrois\n');
+for i = 0:2,
+  fprintf(logfid,'%d\t%d\n',i,nnz(nflies_per_roi==i));
+end
+fprintf(logfid,'>2\t%d\n',nnz(nflies_per_roi>2));
+fprintf(logfid,'ignored\t%d\n',nnz(isnan(nflies_per_roi)));
+fprintf(logfid,'\n');
+fprintf(logfid,'Finished counting flies per ROI at %s.\n',datestr(now,'yyyymmddTHHMMSS'));
+if logfid > 1,
+  fclose(logfid);
+end
+
+
 
 
 

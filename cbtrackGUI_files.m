@@ -55,6 +55,22 @@ function cbtrackGUI_files_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for cbtrackGUI_files
 handles.output = hObject;
 addpath(genpath(fileparts(which('cbtrackGUI_files'))))
+
+fullfilein=get(handles.edit_infile,'String');
+[in.folder.test{1},in.file{1},ext]=fileparts(fullfilein);
+in.file{1}=[in.file{1} ext];
+try
+    in.analysis_protocol = splitdir(in.folder.test{1},'last');
+catch ME
+    in.analysis_protocol='';
+    mymsgbox(50,190,14,'Helvetica','The file path is not valid','Error','error')        
+end
+set(handles.pushbutton_infile,'UserData',in)
+if isempty(get(handles.pushbutton_outfile,'UserData'))
+    out.folder=fullfile(in.folder.test{1},'ouput');
+    set(handles.edit_outfile,'String',out.folder)
+    set(handles.pushbutton_outfile,'UserData',out)
+end
 % Update handles structure
 guidata(hObject, handles);
 
@@ -80,7 +96,12 @@ function edit_infile_Callback(hObject, eventdata, handles) %#ok<*DEFNU,*INUSD>
 fullfilein=get(hObject,'String');
 [in.folder.test{1},in.file{1},ext]=fileparts(fullfilein);
 in.file{1}=[in.file{1} ext];
-in.analysis_protocol = splitdir(in.folder.test{1},'last');
+try
+    in.analysis_protocol = splitdir(in.folder.test{1},'last');
+catch ME
+    in.analysis_protocol='';
+    mymsgbox(50,190,14,'Helvetica','The file path is not valid','Error','error')        
+end
 set(handles.pushbutton_infile,'UserData',in)
 if isempty(get(handles.pushbutton_outfile,'UserData'))
     out.folder=fullfile(in.folder.test{1},'ouput');
@@ -120,8 +141,13 @@ filetypes={  '*.ufmf','MicroFlyMovieFormat (*.ufmf)'; ...
   '*.*','*.*'};
 [in.file,in.folder.test{1}]=open_files2(filetypes); %in.folder is a structure as is required by the main code. 
 if in.file{1}~=0
+    try
+        in.analysis_protocol = splitdir(in.folder.test{1},'last');
+    catch ME
+        mymsgbox(50,190,14,'Helvetica','The file path is not valid','Error','error')
+        
+    end
     set(handles.edit_infile,'String',[in.folder.test{1},in.file{1}])
-    in.analysis_protocol = splitdir(in.folder.test{1},'last');
     set(handles.pushbutton_infile,'UserData',in)
     if isempty(get(handles.pushbutton_outfile,'UserData'))
         out.folder=fullfile(in.folder.test{1},'ouput');
@@ -182,9 +208,6 @@ function edit_restart_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit_restart as text
-%        str2double(get(hObject,'String')) returns contents of edit_restart as a double
-
 
 % --- Executes during object creation, after setting all properties.
 function edit_restart_CreateFcn(hObject, eventdata, handles)
@@ -204,6 +227,11 @@ function pushbutton_restart_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_restart (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+[restart_file,restart_folder]=open_files2('mat');  
+if restart_file{1}~=0
+    restart=fullfile(restart_folder,restart_file{1});
+    set(handles.edit_restart,'String',restart)
+end
 
 
 % --- Executes on button press in checkbox_restart.
@@ -215,10 +243,24 @@ if get(hObject,'Value')
     set(handles.text_restart,'enable','on')
     set(handles.edit_restart,'enable','on')
     set(handles.pushbutton_restart,'enable','on')
+    set(handles.text_infile,'enable','off')
+    set(handles.edit_infile,'enable','off')
+    set(handles.pushbutton_outfile,'enable','off')
+    set(handles.text_outfile,'enable','off')
+    set(handles.edit_outfile,'enable','off')
+    set(handles.pushbutton_outfile,'enable','off')
+    set(handles.checkbox_log,'Enable','off')
 elseif ~get(hObject,'Value')
     set(handles.text_restart,'enable','off')
     set(handles.edit_restart,'enable','off')
     set(handles.pushbutton_restart,'enable','off')
+    set(handles.text_infile,'enable','on')
+    set(handles.edit_infile,'enable','on')
+    set(handles.pushbutton_outfile,'enable','on')
+    set(handles.text_outfile,'enable','on')
+    set(handles.edit_outfile,'enable','on')
+    set(handles.pushbutton_outfile,'enable','on')
+    set(handles.checkbox_log,'Enable','on')
 end
 % Hint: get(hObject,'Value') returns toggle state of checkbox_restart
 
@@ -247,59 +289,120 @@ function pushbutton_accept_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-restart.ison=get(handles.checkbox_restart,'Value');
-if restart.ison
-    restart.dir=get(handles.edit_restart,'String');
-else
-    restart.dir=[];
-end
-
-in=get(handles.pushbutton_infile,'UserData');
-expdirs=in.folder;
-out=get(handles.pushbutton_outfile,'UserData');
-
-% auto checks
-
-paramsfilestr='params.xml';
-cbparams = ReadXMLParams(fullfile(expdirs.test{1},paramsfilestr)); % (expdirs)
-cbparams.track.DEBUG=get(handles.checkbox_debug, 'Value');
-
-
-fns = fieldnames(expdirs);
-issuccess = struct;
-k=0;
-nexp=0;
-for i=1:numel(fns)
-    nexp=nexp+numel(expdirs.(fns{i}));
-end
-prog=k/nexp;
-hwait=waitbar(prog,['Checking files. experiment ', num2str(k),' of ',num2str(nexp),'.']);
-for i = 1:numel(fns),    
-    fn = fns{i};
-    issuccess.(fn) = false(1,numel(expdirs.(fn)));
-    for j = 1:numel(expdirs.(fn)),
-        k=k+1; prog=k/nexp;
-        waitbar(prog,hwait,['Checking files. experiment ', num2str(k),' of ',num2str(nexp),'.'])
-        expdir = expdirs.(fn){j};
-        [success,msgs,iserror] = CourtshipBowlAutomaticChecks_Incoming(expdir,'analysis_protocol',in.analysis_protocol); %#ok<*NASGU>
-        issuccess.(fn)(j) = success;
-        if ~success,
-            fprintf('\nAuto checks incoming failed for %s\n',expdir);
-            fprintf('%s\n',msgs{:});
+if get(handles.checkbox_restart,'Value');
+    restart=get(handles.edit_restart,'String');
+    if exist(restart,'file')
+        load(restart);
+        logfid=open_log('track_log',cbparams,out.folder); %#ok<NODEF>
+        fprintf(logfid,'\n\n***\nRestarting analysis_protocol %s from %s at %s\n',real_analysis_protocol,restart,datestr(now,'yyyymmddTHHMMSS'));
+        appdatalist={'cancel_hwait','expdirs','moviefile','out','analysis_protocol','cbparams','restart','startframe','endframe','BG','fidBG','roidata','visdata','pff_all','t','trackdata'};
+        for i=1:length(appdatalist)
+            if exist(appdatalist{i},'var')
+                setappdata(0,appdatalist{i},eval(appdatalist{i}))
+            end
         end
+        if ishandle(handles.figure1)
+            delete(handles.figure1)
+        end
+        if exist('trackdata','var') && trackdata.t-cbparams.track.firstframetrack+1==cbparams.track.lastframetrack 
+                CourtshipBowlTrack_GUI2
+                CourtshipBowlMakeResultsMovie_GUI
+                pffdata = CourtshipBowlComputePerFrameFeatures_GUI(1);
+                setappdata(0,'pffdata',pffdata)
+                cancelar
+        elseif exist('roidata','var')
+            if isfield(roidata,'nflies_per_roi')
+                if cbparams.track.DEBUG 
+                    cbtrackGUI_tracker_video
+                elseif ~cbparams.track.DEBUG
+                    cbtrackGUI_tracker_NOvideo
+                end
+            else
+                cbtrackGUI_tracker
+            end
+        elseif exist('BG','var')
+            cbtrackGUI_ROI
+        else
+            cbtrackGUI_BG
+        end    
+    else
+        msg_error=mymsgbox(50,190,14,'Helvetica',{'File does not exist'},'Error','error','modal');
+    end
+else
+    restart=[];
+    in=get(handles.pushbutton_infile,'UserData');
+    expdirs=in.folder;
+    out=get(handles.pushbutton_outfile,'UserData');
+    out.temp=['Temp_',datestr(now,TimestampFormat),'_',in.analysis_protocol];
+    out.temp_full=fullfile(out.folder,out.temp);
+    moviefile=fullfile(expdirs.test{1},in.file{1});
+    analysis_protocol=in.analysis_protocol;
+    if exist(moviefile, 'file')
+        % auto checks
+        paramsfilestr='params.xml';
+        cbparams = ReadXMLParams(fullfile(expdirs.test{1},paramsfilestr)); % (expdirs)
+        if ~isfield(cbparams.track,'DEBUG')
+            cbparams.track.DEBUG=false;
+        end
+
+        if ~get(handles.checkbox_log,'Value')
+            cbparams.dataloc.ufmf_log.filestr=[];
+            cbparams.dataloc.fbdc_log.filestr=[];
+            cbparams.dataloc.automaticchecks_incoming_log.filestr=[];
+            cbparams.dataloc.bg_log.filestr=[];
+            cbparams.dataloc.roi_log.filestr=[];
+            cbparams.dataloc.track_log.filestr=[];
+            cbparams.dataloc.perframefeature_log.filestr=[];
+            cbparams.dataloc.resultsmovie_log.filestr=[];
+            cbparams.dataloc.automaticchecks_complete_log.filestr=[];
+        end
+        setappdata(0,'cbparams',cbparams)
+
+
+        fns = fieldnames(expdirs);
+        issuccess = struct;
+        k=0;
+        nexp=0;
+        for i=1:numel(fns)
+            nexp=nexp+numel(expdirs.(fns{i}));
+        end
+        prog=k/nexp;
+        hwait=waitbar(prog,['Checking files. experiment ', num2str(k),' of ',num2str(nexp),'.']);
+        setappdata(0,'out',out);
+        for i = 1:numel(fns),    
+            fn = fns{i};
+            issuccess.(fn) = false(1,numel(expdirs.(fn)));
+            for j = 1:numel(expdirs.(fn)),
+                k=k+1; prog=k/nexp;
+                waitbar(prog,hwait,['Checking files. experiment ', num2str(k),' of ',num2str(nexp),'.'])
+                expdir = expdirs.(fn){j};
+                [success,msgs,iserror] = CourtshipBowlAutomaticChecks_Incoming(expdir,'analysis_protocol',in.analysis_protocol); %#ok<*NASGU>
+                issuccess.(fn)(j) = success;
+                if ~success,
+                    fprintf('\nAuto checks incoming failed for %s\n',expdir);
+                    fprintf('%s\n',msgs{:});
+                end
+            end
+        end
+        if ishandle(hwait)
+            delete(hwait)
+        end
+        if ~exist(out.folder,'dir')
+            mkdir(out.folder)
+        end
+        setappdata(0,'expdirs',expdirs)
+        setappdata(0,'moviefile',moviefile)%(expdirs)
+        setappdata(0,'analysis_protocol',analysis_protocol)
+        setappdata(0,'restart',restart)
+        savetemp
+        if ishandle(handles.figure1)
+            delete(handles.figure1)
+        end
+        cbtrackGUI_BG
+    else
+        msg_error=mymsgbox(50,190,14,'Helvetica',{'File does not exist'},'Error','error','modal');
     end
 end
-close all
-if ~exist(out.folder,'dir')
-    mkdir(out.folder)
-end
-setappdata(0,'expdirs',expdirs)
-setappdata(0,'moviefile',fullfile(expdirs.test{1},in.file{1}))%(expdirs)
-setappdata(0,'outdir',out.folder);
-setappdata(0,'analysis_protocol',in.analysis_protocol)
-setappdata(0,'cbparams',cbparams)
-setappdata(0,'restart',restart)
-cbtrackGUI_BG
 
 
 

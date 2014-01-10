@@ -10,6 +10,9 @@ if isunix
 else
     slash='\';
 end
+if ~strcmp(dirname(end),slash)
+    dirname(end+1)=slash;
+end
 i=find(dirname==slash);
 n_f=length(i)-1;
 split=cell(n_f,1);

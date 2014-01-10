@@ -1,0 +1,7 @@
+function cbtrackGUI_tracker_NOvideo
+CourtshipBowlTrack_GUI_debug(struct);
+CourtshipBowlTrack_GUI2
+CourtshipBowlMakeResultsMovie_GUI
+pffdata = CourtshipBowlComputePerFrameFeatures_GUI(1);
+setappdata(0,'pffdata',pffdata)
+cancelar

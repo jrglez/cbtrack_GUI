@@ -365,7 +365,9 @@ end
 
 savefns = {'filename','CompressionSettings'};
 save(handles.rcfilename,'-struct','handles',savefns{:});
-delete(hObject);
+if ishandle(hObject)
+    delete(hObject);
+end
 
 % --- Executes when figure1 is resized.
 function figure1_ResizeFcn(hObject, eventdata, handles)

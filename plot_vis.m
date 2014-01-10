@@ -1,46 +1,68 @@
 function plot_vis(handles,visdata,f)
 switch visdata.plot
     case 1
-        delete(visdata.hcc)
+        if isfield(visdata,'hcc') 
+            delete(visdata.hcc(ishandle(visdata.hcc)))
+        end
         visdata.hcc=[];
-        delete(visdata.hflies)
+        if isfield(visdata,'hflies') 
+            delete(visdata.hflies(ishandle(visdata.hflies)))
+        end
         visdata.hflies=[];
-        delete(visdata.hell)
+        if isfield(visdata,'hell') 
+            delete(visdata.hell(ishandle(visdata.hell)))
+        end
         visdata.hell=[];
         set(handles.BG_img,'CData',visdata.frames{f});
         colormap('gray')
-        delete(visdata.hcc)
     case 2
-        delete(visdata.hcc)
+        if isfield(visdata,'hcc') 
+            delete(visdata.hcc(ishandle(visdata.hcc)))
+        end
         visdata.hcc=[];
-        delete(visdata.hflies)
+        if isfield(visdata,'hflies') 
+            delete(visdata.hflies(ishandle(visdata.hflies)))
+        end
         visdata.hflies=[];
-        delete(visdata.hell)
+        if isfield(visdata,'hell') 
+            delete(visdata.hell(ishandle(visdata.hell)))
+        end
         visdata.hell=[];
         set(handles.BG_img,'CData',visdata.dbkgd{f});
         colormap('gray')
-        delete(visdata.hcc)
     case 3
-        delete(visdata.hcc)
+        if isfield(visdata,'hcc') 
+            delete(visdata.hcc(ishandle(visdata.hcc)))
+        end
         visdata.hcc=[];
-        delete(visdata.hflies)
+        if isfield(visdata,'hflies') 
+            delete(visdata.hflies(ishandle(visdata.hflies)))
+        end
         visdata.hflies=[];
-        delete(visdata.hell)
+        if isfield(visdata,'hell') 
+            delete(visdata.hell(ishandle(visdata.hell)))
+        end
         visdata.hell=[];
         set(handles.BG_img,'CData',visdata.isfore{f});
         colormap('gray')
-        delete(visdata.hcc)
     case 4
-        delete(visdata.hcc)
+        if isfield(visdata,'hcc') 
+            delete(visdata.hcc(ishandle(visdata.hcc)))
+        end
         visdata.hcc=[];
-        delete(visdata.hflies)
+        if isfield(visdata,'hflies') 
+            delete(visdata.hflies(ishandle(visdata.hflies)))
+        end
         visdata.hflies=[];
-        delete(visdata.hell)
+        if isfield(visdata,'hell') 
+            delete(visdata.hell(ishandle(visdata.hell)))
+        end
         visdata.hell=[];
         set(handles.BG_img,'CData',visdata.rois);
         colormap('light_gray')
         nROI=size(visdata.cc_ind,1);
         l=0;
+        hold on
         for i=1:nROI
             cc_ind=visdata.cc_ind{i,f};
             if ~isempty(cc_ind)
@@ -52,17 +74,25 @@ switch visdata.plot
                 end
             end
         end
+        hold off
     case 5
-        delete(visdata.hcc)
+        if isfield(visdata,'hcc') 
+            delete(visdata.hcc(ishandle(visdata.hcc)))
+        end
         visdata.hcc=[];
-        delete(visdata.hflies)
+        if isfield(visdata,'hflies') 
+            delete(visdata.hflies(ishandle(visdata.hflies)))
+        end
         visdata.hflies=[];
-        delete(visdata.hell)
+        if isfield(visdata,'hell') 
+            delete(visdata.hell(ishandle(visdata.hell)))
+        end
         visdata.hell=[];
         set(handles.BG_img,'CData',visdata.rois);
         colormap('light_gray')
         nROI=size(visdata.flies_ind,1);
         l=0;
+        hold on
         for i=1:nROI
              flies_ind=visdata.flies_ind{i,f};
            if ~isempty(flies_ind)
@@ -74,17 +104,25 @@ switch visdata.plot
                 end
             end
         end
+        hold off
     case 6
-        delete(visdata.hcc)
+        if isfield(visdata,'hcc') 
+            delete(visdata.hcc(ishandle(visdata.hcc)))
+        end
         visdata.hcc=[];
-        delete(visdata.hflies)
+        if isfield(visdata,'hflies') 
+            delete(visdata.hflies(ishandle(visdata.hflies)))
+        end
         visdata.hflies=[];
-        delete(visdata.hell)
+        if isfield(visdata,'hell') 
+            delete(visdata.hell(ishandle(visdata.hell)))
+        end
         visdata.hell=[];
         set(handles.BG_img,'CData',visdata.frames{f});
         colormap('gray')
         nROI=size(visdata.trx,1);
         l=0;
+        hold on
         for i=1:nROI
             trx=visdata.trx{i,f};
             if ~isempty(trx)
@@ -96,5 +134,6 @@ switch visdata.plot
                 end
             end
         end
+        hold off
 end
 set(handles.popupmenu_vis,'UserData',visdata)

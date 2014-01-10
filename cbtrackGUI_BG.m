@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_BG(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_BG
 
-% Last Modified by GUIDE v2.5 15-Nov-2013 17:28:27
+% Last Modified by GUIDE v2.5 08-Jan-2014 01:09:52
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -55,30 +55,66 @@ function cbtrackGUI_BG_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for cbtrackGUI_BG
 handles.output = hObject;
 
+GUIsize(handles,hObject)
+
 cbparams=getappdata(0,'cbparams');
+tracking_params=cbparams.track;
 expdirs=getappdata(0,'expdirs');%(expdirs)
 BG.expdir=expdirs.test{1}; %(expdirs)
 BG.moviefile=getappdata(0,'moviefile');
 BG.analysis_protocol=getappdata(0,'analysis_protocol');
-loadfile=fullfile(expdirs.test{1},cbparams.dataloc.bgmat.filestr);
+out=getappdata(0,'out');
+loadfile=fullfile(out.folder,cbparams.dataloc.bgmat.filestr);
 
-if exist(loadfile,'file')
-    msg_cancel=myquestdlg(14,'Helvetica','There is a file that contains backgound data. Would you like to load it?','Existing BG data','Yes','No','No');  
-end
 
 fidBG=getappdata(0,'fidBG'); %#ok<NASGU>
 
-set(handles.edit_Nframes,'String',num2str(cbparams.track.bg_nframes))
-set(handles.edit_Lframe,'String',num2str(cbparams.track.bg_lastframe))
 
-if exist('msg_cancel','var') && strcmp(msg_cancel,'Yes')
-    BG.data=load(loadfile);
+if isappdata(0,'BG')
+    BG.data=getappdata(0,'BG');
+    set(handles.pushbutton_ROIs,'Enable','on')
+    if isappdata(0,'roidata')
+        set(handles.pushbutton_tracker_setup,'Enable','on')
+        roidata=getappdata(0,'roidata');
+        if isfield(roidata,'nflies_per_roi')
+            set(handles.pushbutton_debuger,'Enable','on')
+        end
+    end
 else
-    BG.data=cbtrackGUI_EstimateBG(BG.expdir,BG.moviefile,cbparams.track,'analysis_protocol',BG.analysis_protocol);
+    if exist(loadfile,'file')
+        msg_load=myquestdlg(14,'Helvetica','There is a file that contains backgound data. Would you like to load it?','Existing BG data','Yes','No','No');  
+    end
+
+    if exist('msg_load','var') && strcmp(msg_load,'Yes')
+        BG.data=load(loadfile);
+        BG.data.isnew=true;
+        tracking_params=BG.data.params;
+        
+        logfid=open_log('bg_log',cbparams,out.folder);
+        fprintf(logfid,'Loading background data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
+        if logfid > 1,
+          fclose(logfid);
+        end
+    else
+        BG.data=cbtrackGUI_EstimateBG(BG.expdir,BG.moviefile,tracking_params,'analysis_protocol',BG.analysis_protocol);
+    end
 end
 
+% Set parameters in the GUI
+set(handles.edit_Nframes,'String',num2str(tracking_params.bg_nframes))
+set(handles.edit_Lframe,'String',num2str(tracking_params.bg_lastframe))
+bgmodes={'LIGHTBKGD';'DARKBKGD';'OTHERBKGD'};
+bgmode=find(strcmp(tracking_params.bgmode,bgmodes));
+if isempty(bgmode)
+    bgmode=1;
+end
+set(handles.popupmenu_BGtype,'Value',bgmode)
+
+
 if getappdata(0,'cancel_hwait')
-    delete(hObject)
+    if exist('hObject','var') && ishandle(hObject)
+        delete(hObject)
+    end
     cbtrackGUI_files
 else
     bgmed=BG.data.bgmed;
@@ -100,12 +136,11 @@ else
     imagesc(bgmed);
     set(handles.axes_BG,'XTick',[],'YTick',[])
     axis equal
-    %GUI original sieze
-    BG.old_pos=get(hObject,'position');
-
+    
     % Update handles structure
     guidata(hObject, handles);
     set(hObject,'UserData',BG);
+    set(handles.pushbutton_recalc,'UserData',tracking_params)
 end
 
 
@@ -139,10 +174,6 @@ function popupmenu_BGtype_Callback(hObject, eventdata, handles)
 % hObject    handle to popupmenu_BGtype (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-bgmodes={'LIGHTBKGD';'DARKBKGD';'OTHERBKGD'};
-cbparams=getappdata(0,'cbparams');
-cbparams.track.bgmode=bgmodes{get(hObject,'Value')};
-setappdata(0,'cbparams',cbparams)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_BGtype contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu_BGtype
 
@@ -219,19 +250,18 @@ function pushbutton_recalc_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_recalc (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-cbparams=getappdata(0,'cbparams');
 bg_nframes=str2double(get(handles.edit_Nframes,'String'));
-bg_lastframe=str2double(get(handles.edit_Nframes,'String'));
+bg_lastframe=str2double(get(handles.edit_Lframe,'String'));
 if isnan(bg_nframes) || bg_nframes<1
 	mymsgbox(50,190,14,'Helvetica','Please, input a valid value for the number of frames','Error','error')
 elseif isnan(bg_lastframe) || bg_lastframe<1
     mymsgbox(50,190,14,'Helvetica','Please, input a valid value for the last frame','Error','error')    
 else
+    tracking_params=get(handles.pushbutton_recalc,'UserData');
     BG=get(handles.cbtrackGUI_BG,'UserData');
-    BG.data=cbtrackGUI_EstimateBG(BG.expdir,BG.moviefile,cbparams.track,'analysis_protocol',BG.analysis_protocol);
-    cbparams.track.bg_nframes=bg_nframes;
-    cbparams.track.bg_lastframes=bg_lastframe;
-    setappdata(0,'cbparams',cbparams)
+    tracking_params.bg_nframes=bg_nframes;
+    tracking_params.bg_lastframes=bg_lastframe;
+    BG.data=cbtrackGUI_EstimateBG(BG.expdir,BG.moviefile,tracking_params,'analysis_protocol',BG.analysis_protocol);
     if ~getappdata(0,'cancel_hwait')
         bgmed=BG.data.bgmed;
         axes(handles.axes_BG);
@@ -240,15 +270,16 @@ else
         set(handles.axes_BG,'XTick',[],'YTick',[])
         set(handles.cbtrackGUI_BG,'UserData',BG)
     end
+    set(handles.pushbutton_recalc,'UserData',tracking_params)
 end
 
 
 
 
 
-% --- Executes on button press in pushbutton_fix.
-function pushbutton_fix_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_fix (see GCBO)
+% --- Executes on button press in pushbutton_manual.
+function pushbutton_manual_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_manual (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % rect=getrect(handles.axes_BG);
@@ -261,10 +292,15 @@ tracking_params=cbparams.track;
 [bgmed,bgfixdata] = FixBgModelGUI(bgmed,moviefile,tracking_params,handles);
 BG.data.bgmed=bgmed;
 BG.data.fixdata=bgfixdata;
+BG.data.isnew=true;
 set(handles.cbtrackGUI_BG,'UserData',BG);
+out=getappdata(0,'out');
 
-
-
+logfid=open_log('bg_log',cbparams,out.folder);
+fprintf(logfid,'Background model fixed manualy at %s\n',datestr(now,'yyyymmddTHHMMSS'));
+if logfid > 1,
+  fclose(logfid);
+end
 
 
 
@@ -273,15 +309,69 @@ function pushbutton_accept_Callback(hObject, eventdata, handles) %#ok<*INUSL>
 % hObject    handle to pushbutton_accept (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+%Save size
+GUIscale=getappdata(0,'GUIscale');
+new_pos=get(handles.cbtrackGUI_BG,'position'); 
+old_pos=GUIscale.original_position;
+GUIscale.rescalex=new_pos(3)/old_pos(3);
+GUIscale.rescaley=new_pos(4)/old_pos(4);
+GUIscale.position=new_pos;
+setappdata(0,'GUIscale',GUIscale)
+
+
 BG=get(handles.cbtrackGUI_BG,'UserData');
-setappdata(0,'BG',BG.data)
-bgmed=BG.data.bgmed;
-expdirs=getappdata(0,'expdirs');
+
+bgmodes={'LIGHTBKGD';'DARKBKGD';'OTHERBKGD'};
+bgmode=bgmodes{get(handles.popupmenu_BGtype,'Value')};
 cbparams=getappdata(0,'cbparams');
-cbestimatebg_version=BG.data.cbestimatebg_version; %#ok<NASGU>
-cbestimatebg_timestamp=BG.data.cbestimatebg_timestamp; %#ok<NASGU>
-params=cbparams.track; %#ok<NASGU>
-delete(handles.cbtrackGUI_BG)
+if ~strcmp(cbparams.track.bgmode,bgmode)
+    BG.data.isnew=true;
+    cbparams.track.bgmode=bgmode;
+end
+
+if BG.data.isnew
+    if isappdata(0,'roidata')
+        rmappdata(0,'roidata')
+    end
+    if isappdata(0,'visdata')
+        rmappdata(0,'visdata')
+    end
+
+    if isappdata(0,'t')
+        rmappdata(0,'t')
+    end
+    if isappdata(0,'trackdata')
+        rmappdata(0,'trackdata')
+    end
+
+    BG.data.isnew=false;
+    setappdata(0,'BG',BG.data)
+    bgmed=BG.data.bgmed;
+    cbparams=getappdata(0,'cbparams');
+    cbparams.track=get(handles.pushbutton_recalc,'UserData');
+    setappdata(0,'cbparams',cbparams)
+    
+    out=getappdata(0,'out');
+    logfid=open_log('bg_log',cbparams,out.folder);
+    cbestimatebg_version=BG.data.cbestimatebg_version; %#ok<NASGU>
+    cbestimatebg_timestamp=BG.data.cbestimatebg_timestamp; %#ok<NASGU>
+    params=cbparams.track; %#ok<NASGU>    
+    savefile = fullfile(out.folder,cbparams.dataloc.bgmat.filestr);
+    fprintf(logfid,'Saving background model to file %s...\n',savefile);
+    if exist(savefile,'file'),
+      delete(savefile);
+    end
+    save(savefile,'bgmed','cbestimatebg_version','cbestimatebg_timestamp','params');
+    savetemp
+
+    bgimagefile = fullfile(out.folder,cbparams.dataloc.bgimage.filestr); 
+    fprintf(logfid,'Saving image of background model to file %s...\n\n***\n',bgimagefile);
+    imwrite(bgmed,bgimagefile,'png');
+end
+if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
+    delete(handles.cbtrackGUI_BG)
+end
 fidBG=getappdata(0,'fidBG');
 if exist('fidBG','var') && ~isempty(fidBG)&&  fidBG > 0,
     try
@@ -290,36 +380,10 @@ if exist('fidBG','var') && ~isempty(fidBG)&&  fidBG > 0,
         mymsgbox(50,190,14,'Helvetica',['Could not close movie file: ',getReport(ME)],'Warning','warn')
     end
 end
-
-savefile = fullfile(expdirs.test{1},cbparams.dataloc.bgmat.filestr);
-% fprintf(logfid,'Saving background model to file %s...\n',savefile);
-if exist(savefile,'file'),
-  delete(savefile);
+if logfid > 1,
+  fclose(logfid);
 end
-save(savefile,'bgmed','cbestimatebg_version','cbestimatebg_timestamp','params');
-
-bgimagefile = fullfile(expdirs.test{1},cbparams.dataloc.bgimage.filestr); %(expdirs)
-% fprintf(logfid,'Saving image of background model to file %s...\n',bgimagefile);
-imwrite(bgmed,bgimagefile,'png');
 cbtrackGUI_ROI
-
-
-
-% --- Executes on button press in pushbutton_files.
-function pushbutton_files_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_files (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-fidBG=getappdata(0,'fidBG');
-if exist('fidBG','var') && ~isempty(fidBG)&&  fidBG > 0,
-    try
-        fclose(fidBG);
-    catch ME,
-        mymsgbox(50,190,14,'Helvetica',['Could not close movie file: ',getReport(ME)],'Warning','warn')
-    end
-end
-close all
-cbtrackGUI_files
 
 
 % --- Executes on button press in pushbutton_BG.
@@ -342,14 +406,24 @@ if exist('fidBG','var') && ~isempty(fidBG)&&  fidBG > 0,
         mymsgbox(50,190,14,'Helvetica',['Could not close movie file: ',getReport(ME)],'Warning','warn')
     end
 end
-close all
+
+%Save size
+GUIscale=getappdata(0,'GUIscale');
+new_pos=get(handles.cbtrackGUI_BG,'position'); 
+old_pos=GUIscale.original_position;
+GUIscale.rescalex=new_pos(3)/old_pos(3);
+GUIscale.rescaley=new_pos(4)/old_pos(4);
+GUIscale.position=new_pos;
+setappdata(0,'GUIscale',GUIscale)
+
+delete(handles.cbtrackGUI_BG)
 cbtrackGUI_ROI
 
 
 
-% --- Executes on button press in pushbutton_tracker.
-function pushbutton_tracker_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_tracker (see GCBO)
+% --- Executes on button press in pushbutton_tracker_setup.
+function pushbutton_tracker_setup_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_tracker_setup (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 fidBG=getappdata(0,'fidBG');
@@ -360,22 +434,51 @@ if exist('fidBG','var') && ~isempty(fidBG)&&  fidBG > 0,
         mymsgbox(50,190,14,'Helvetica',['Could not close movie file: ',getReport(ME)],'Warning','warn')
     end
 end
-close all
+
+%Save size
+GUIscale=getappdata(0,'GUIscale');
+new_pos=get(handles.cbtrackGUI_BG,'position'); 
+old_pos=GUIscale.original_position;
+GUIscale.rescalex=new_pos(3)/old_pos(3);
+GUIscale.rescaley=new_pos(4)/old_pos(4);
+GUIscale.position=new_pos;
+setappdata(0,'GUIscale',GUIscale)
+
+delete(handles.cbtrackGUI_BG)
 cbtrackGUI_tracker
 
-
-
-% --- Executes on button press in pushbutton_video.
-function pushbutton_video_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_video (see GCBO)
+% --- Executes on button press in pushbutton_debuger.
+function pushbutton_debuger_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_debuger (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+fidBG=getappdata(0,'fidBG');
+if exist('fidBG','var') && ~isempty(fidBG)&&  fidBG > 0,
+    try
+        fclose(fidBG);
+    catch ME,
+        mymsgbox(50,190,14,'Helvetica',['Could not close movie file: ',getReport(ME)],'Warning','warn')
+    end
+end
+
+%Save size
+GUIscale=getappdata(0,'GUIscale');
+new_pos=get(handles.cbtrackGUI_BG,'position'); 
+old_pos=GUIscale.original_position;
+GUIscale.rescalex=new_pos(3)/old_pos(3);
+GUIscale.rescaley=new_pos(4)/old_pos(4);
+GUIscale.position=new_pos;
+setappdata(0,'GUIscale',GUIscale)
+
+delete(handles.cbtrackGUI_BG)
+cbtrackGUI_tracker_video
+
 
 
 % --- If Enable == 'on', executes on mouse press in 5 pixel border.
-% --- Otherwise, executes on mouse press in 5 pixel border or over pushbutton_fix.
-function pushbutton_fix_ButtonDownFcn(hObject, eventdata, handles)
-% hObject    handle to pushbutton_fix (see GCBO)
+% --- Otherwise, executes on mouse press in 5 pixel border or over pushbutton_manual.
+function pushbutton_manual_ButtonDownFcn(hObject, eventdata, handles)
+% hObject    handle to pushbutton_manual (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 mymsgbox(50,190,14,'Helvetica','Please, select the regions you wish to correct. Press ''Correct'' when you are done.','Correct','help')
@@ -390,44 +493,12 @@ function cbtrackGUI_BG_ResizeFcn(hObject, eventdata, handles)
 % hObject    handle to cbtrackGUI_BG (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-BG=get(hObject,'UserData');
-BG.new_pos=get(hObject,'position');
-rescalex=BG.new_pos(3)/BG.old_pos(3);
-rescaley=BG.new_pos(4)/BG.old_pos(4) ;
-h=fieldnames(handles);
-    
-for i=2:length(h)
-    obj_handle=handles.(h{i});
-    if ~strcmp(h{i},'output')
-        if isprop(obj_handle,'position')        
-            old_pos=get(obj_handle,'position');
-            if ~isprop(obj_handle,'xTick') %not a figure
-                new_pos([1,3])=old_pos([1,3])*rescalex;
-                new_pos([2,4])=old_pos([2,4])*rescaley;
-                set(obj_handle,'position',new_pos)
-            elseif isprop(obj_handle,'xTick') %figure
-                rescale=min(rescalex,rescaley);
-                new_pos(1)=old_pos(1)*rescalex+(old_pos(3)*(rescalex-rescale)/2);
-                new_pos(2)=old_pos(2)*rescaley+(old_pos(4)*(rescaley-rescale)/2);
-                new_pos([3,4])=old_pos([3,4])*rescale;
-                set(obj_handle,'position',new_pos)        
-            end
-        end
-        if isprop(obj_handle,'FontSize')
-            old_fontsize=get(obj_handle,'FontSize');
-            new_fontsize=max(12,old_fontsize*min(rescalex,rescaley));
-            set(obj_handle,'FontSize',new_fontsize)
-        end
-    end
-end
-BG.old_pos=BG.new_pos;
-set(hObject,'UserData',BG)
+GUIresize(handles,hObject)
 
 
-
-% --- Executes on key press with focus on pushbutton_fix and none of its controls.
-function pushbutton_fix_KeyPressFcn(hObject, eventdata, handles)
-% hObject    handle to pushbutton_fix (see GCBO)
+% --- Executes on key press with focus on pushbutton_manual and none of its controls.
+function pushbutton_manual_KeyPressFcn(hObject, eventdata, handles)
+% hObject    handle to pushbutton_manual (see GCBO)
 % eventdata  structure with the following fields (see UICONTROL)
 %	Key: name of the key that was pressed, in lower case
 %	Character: character interpretation of the key(s) that was pressed
@@ -447,4 +518,70 @@ end
 fidBG=getappdata(0,'fidBG'); %#ok<NASGU>
 if strcmp('Yes',msg_cancel)
     cancelar
+end
+
+
+% --- Executes on button press in pushbutton_auto.
+function pushbutton_auto_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_auto (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+BG=get(handles.cbtrackGUI_BG,'UserData');
+bgmed=BG.data.bgmed;
+[bgmed,bgfixdata] = FixBgModel_auto_GUI(bgmed,handles);
+BG.data.bgmed=bgmed;
+BG.data.fixdata=bgfixdata;
+BG.data.isnew=true;
+set(handles.cbtrackGUI_BG,'UserData',BG);
+out=getappdata(0,'out');
+
+logfid=open_log('bg_log',getappdata(0,'cbparams'),out.folder);
+fprintf(logfid,'Background model fixed automatically at %s\n',datestr(now,'yyyymmddTHHMMSS'));
+if logfid > 1,
+  fclose(logfid);
+end
+
+ 
+
+
+% --- Executes during object deletion, before destroying properties.
+function pushbutton_ROIs_DeleteFcn(hObject, eventdata, handles)
+% hObject    handle to pushbutton_ROIs (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+
+% --- Executes on button press in pushbutton_load.
+function pushbutton_load_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_load (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+[file_BG, folder_BG]=open_files2('mat');
+if ~file_BG{1}==0
+    loadfile=fullfile(folder_BG,file_BG{1});
+    set(handles.text_load,'String',loadfile,'HorizontalAlignment','right')
+    BG.data=load(loadfile);
+    BG.data.isnew=true;
+    tracking_params=BG.data.params;
+    % Set parameters in the GUI
+    set(handles.edit_Nframes,'String',num2str(tracking_params.bg_nframes))
+    set(handles.edit_Lframe,'String',num2str(tracking_params.bg_lastframe))
+    bgmodes={'LIGHTBKGD';'DARKBKGD';'OTHERBKGD'};
+    bgmode=find(strcmp(tracking_params.bgmode,bgmodes));
+    if isempty(bgmode)
+        bgmode=1;
+    end
+    set(handles.popupmenu_BGtype,'Value',bgmode)
+    bgmed=BG.data.bgmed;
+    set(imhandles(handles.axes_BG),'CData',bgmed);
+    set(hObject,'UserData',BG);
+    set(handles.pushbutton_recalc,'UserData',tracking_params)
+    out=getappdata(0,'out');
+    
+    logfid=open_log('bg_log',getappdata(0,'cbparams'),out.folder);
+    fprintf(logfid,'Loading background data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
+    if logfid > 1,
+      fclose(logfid);
+    end
 end

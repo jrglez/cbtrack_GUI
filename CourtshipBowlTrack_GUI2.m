@@ -6,12 +6,15 @@ timestamp = datestr(now,TimestampFormat);
 % ParseCourtshipBowlParams_GUI;
 expdirs=getappdata(0,'expdirs');
 expdir=expdirs.test{1}; %(expdirs)
+out=getappdata(0,'out');
 analysis_protocol=getappdata(0,'analysis_protocol');
 moviefile=getappdata(0,'moviefile');
 cbparams = getappdata(0,'cbparams');
 params=cbparams.track;
 metadatafile = fullfile(expdir,cbparams.dataloc.metadata.filestr);
 metadata = ReadMetadataFile(metadatafile);
+
+logfid=open_log('bg_log',cbparams,out.folder);
 
 SetBackgroundTypes;
 if ischar(params.bgmode) && isfield(bgtypes,params.bgmode),
@@ -33,10 +36,9 @@ bgmed=BG.bgmed;
 
 %% load roi info
 roidata=getappdata(0,'roidata');
-tmpfilename = fullfile(expdir,sprintf('TmpResultsTrackTwoFlies_%s.mat',datestr(now,'yyyymmddTHHMMSSPFFF')));
 
-%% save results
-trackdata=TrackTwoFlies_GUI_debug2(moviefile,bgmed,roidata,params,'restart',restart.dir,'tmpfilename',tmpfilename);
+%% Secondary tracking
+trackdata=TrackTwoFlies_GUI_debug2(moviefile,bgmed,roidata,params,'restart',restart);
 trackdata.courtshipbowltrack_version = version;
 trackdata.courtshipbowltrack_timestamp = timestamp;
 trackdata.analysis_protocol = analysis_protocol;
@@ -45,17 +47,16 @@ trx = trackdata.trx; %#ok<NASGU>
 timestamps = trackdata.timestamps; %#ok<NASGU>
 
 % trx
-cbparams.dataloc.trx.filestr='registered_trx.mat';
-outfilename = fullfile(expdir,cbparams.dataloc.trx.filestr);
-% fprintf(logfid,'Saving trx to file %s...\n',outfilename);
+outfilename = fullfile(out.folder,cbparams.dataloc.trx.filestr);
+fprintf(logfid,'Saving final traking results to file %s...\n',outfilename);
 if exist(outfilename,'file'),
   delete(outfilename);
 end
 save(outfilename,'trx','timestamps');
 
 % perframe data
-perframedir = fullfile(expdir,cbparams.dataloc.perframedir.filestr);
-% fprintf(logfid,'Saving a bit of per-frame data to directory %s...\n',perframedir);
+perframedir = fullfile(out.folder,cbparams.dataloc.perframedir.filestr);
+fprintf(logfid,'Saving a bit of per-frame data to directory %s...\n',perframedir);
 if ~exist(perframedir,'dir'),
   mkdir(perframedir);
 end
@@ -96,16 +97,17 @@ for i = 1:numel(perframefns),
 
 end
 
+setappdata(0,'trackdata',trackdata)
 
 % tracking data without the trx
 trackdata = rmfield(trackdata,{'trx','timestamps','perframedata','perframeunits'});
 cbparams.dataloc.trackingdatamat.filestr='trackingdata.mat';
-outfilename = fullfile(expdir,cbparams.dataloc.trackingdatamat.filestr);
+outfilename = fullfile(out.folder,cbparams.dataloc.trackingdatamat.filestr);
 save(outfilename,'-struct','trackdata');
 setappdata(0,'trackdata',trackdata)
 %% close log file
 
-% fprintf(logfid,'Finished running CourtshipBowlTrack at %s.\n',datestr(now,'yyyymmddTHHMMSS'));
-% if logfid > 1,
-%   fclose(logfid);
-% end
+fprintf(logfid,'Finished secondary tracking at %s.\n',datestr(now,'yyyymmddTHHMMSS'));
+if logfid > 1,
+  fclose(logfid);
+end
