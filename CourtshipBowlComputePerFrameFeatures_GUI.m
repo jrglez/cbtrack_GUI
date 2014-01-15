@@ -17,10 +17,14 @@ perframefns={};
 perframe_params = cbparams.compute_perframe_features;
 pffdata.perframe_params = perframe_params;
 pffdata.forcecompute = forcecompute;
+%% log file
+logfid=open_log('perframefeature_log',cbparams,out.folder);
+fprintf(logfid,'\n\n***\nRunning CourtshipBowlComputePerFrameFeatures version %s analysis_protocol %s at %s\n',version,analysis_protocol,timestamp);
+pffdata.analysis_protocol = analysis_protocol;
 
 %% load the trx
 
-fprintf('Initializing trx...\n');
+fprintf(logfid,'Initializing trx...\n');
 
 % uses the Trx code in JAABA
 trx = Trx('trxfilestr',cbparams.dataloc.trx.filestr,...
@@ -28,15 +32,9 @@ trx = Trx('trxfilestr',cbparams.dataloc.trx.filestr,...
   'moviefilestr',cbparams.dataloc.movie.filestr,...
   'perframe_params',perframe_params);
 
-fprintf('Loading trajectories for %s...\n',expdir);
+fprintf(logfid,'Loading trajectories for %s...\n',expdir);
 
 trx.AddExpDir(expdir,'openmovie',false);
-
-%% log file
-logfid=open_log('perframefeature_log',cbparams,out.folder);
-fprintf(logfid,'\n\n***\nRunning CourtshipBowlComputePerFrameFeatures version %s analysis_protocol %s at %s\n',version,analysis_protocol,timestamp);
-pffdata.analysis_protocol = analysis_protocol;
-
 
 %% compute per-frame features
 

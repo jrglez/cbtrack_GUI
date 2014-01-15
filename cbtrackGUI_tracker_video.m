@@ -202,10 +202,10 @@ setappdata(0,'GUIscale',GUIscale)
 cbparams=getappdata(0,'cbparams');
 out=getappdata(0,'out');
 logfid=open_log('track_log',cbparams,out.folder);
-iframe=get(handles.slider_frame,'Max');
+t=getappdata(0,'t');
 finalfile = fullfile(out.folder,cbparams.dataloc.trx.filestr);
-fprintf(logfid,'Saving tracking results up to frame %i at %s...\n',iframe,datestr(now,'yyyymmddTHHMMSS'));
-CourtshipBowlTrack_GUI_save(finalfile)
+fprintf(logfid,'Saving tracking results up to frame %i at %s...\n',t,datestr(now,'yyyymmddTHHMMSS'));
+CourtshipBowlTrack_GUI_save(finalfile,t)
 if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
@@ -342,7 +342,7 @@ elseif ISPAUSE
         fprintf(logfid,'Main tracking finished at %s...\n',datestr(now,'yyyymmddTHHMMSS'));
         finalfile = fullfile(out.folder,cbparams.dataloc.trx.filestr);
         fprintf(logfid,'Saving results in %s.\n',finalfile);
-        CourtshipBowlTrack_GUI_save(finalfile)
+        CourtshipBowlTrack_GUI_save(finalfile,t)
         if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
             delete(handles.cbtrackGUI_ROI)
         end
@@ -483,10 +483,10 @@ function pushbutton_save_Callback(hObject, eventdata, handles)
 out=getappdata(0,'out');
 cbparams=getappdata(0,'cbparams');
 logfid=open_log('track_log',cbparams,out.folder);
-iframe=get(handles.slider_frame,'Max');
+t=getappdata(0,'t');
 tempfile = fullfile(tempdir,tempfile);
-fprintf(logfid,'Saving temporary file after %i frames at %s...\n',iframe,datestr(now,'yyyymmddTHHMMSS'));
-CourtshipBowlTrack_GUI_save(tempfile)
+fprintf(logfid,'Saving temporary file after %i frames at %s...\n',t,datestr(now,'yyyymmddTHHMMSS'));
+CourtshipBowlTrack_GUI_save(tempfile,'all')
 if logfid > 1,
   fclose(logfid);
 end

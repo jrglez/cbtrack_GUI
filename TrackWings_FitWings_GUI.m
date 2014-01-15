@@ -69,7 +69,7 @@ end
     [nr,nc,~] = size(debugdata.im);
     
     if isnan(debugdata.hims(axcurr)) || ~ishandle(debugdata.hims(axcurr)),
-      fprintf('clearing axis\n');
+      %fprintf('clearing axis\n');
       figure(debugdata.hfig);
       clf;
       debugdata.hax1 = gca;

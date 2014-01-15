@@ -66,11 +66,6 @@ catch ME
     mymsgbox(50,190,14,'Helvetica','The file path is not valid','Error','error')        
 end
 set(handles.pushbutton_infile,'UserData',in)
-if isempty(get(handles.pushbutton_outfile,'UserData'))
-    out.folder=fullfile(in.folder.test{1},'ouput');
-    set(handles.edit_outfile,'String',out.folder)
-    set(handles.pushbutton_outfile,'UserData',out)
-end
 % Update handles structure
 guidata(hObject, handles);
 
@@ -379,8 +374,9 @@ else
                 [success,msgs,iserror] = CourtshipBowlAutomaticChecks_Incoming(expdir,'analysis_protocol',in.analysis_protocol); %#ok<*NASGU>
                 issuccess.(fn)(j) = success;
                 if ~success,
-                    fprintf('\nAuto checks incoming failed for %s\n',expdir);
-                    fprintf('%s\n',msgs{:});
+                    logfid=open_log('automaticchecks_incoming_log',cbparams,out.folder);
+                    fprintf(logfid, '\nAuto checks incoming failed for %s\n',expdir);
+                    fprintf(logfid, '%s\n',msgs{:});
                 end
             end
         end

@@ -1,19 +1,25 @@
-function CourtshipBowlTrack_GUI_save(savefile)
-trackdata=getappdata(0,'trackdata');
-trxx=trackdata.trxx; %#ok<*NASGU>
-trxy=trackdata.trxy;
-trxa=trackdata.trxa;
-trxb=trackdata.trxb;
-trxtheta=trackdata.trxtheta;
-trxarea=trackdata.trxarea;
-istouching=trackdata.istouching;
-gmm_isbadprior=trackdata.gmm_isbadprior;
-pred=trackdata.pred;
-trxcurr=trackdata.trxcurr;
-t=trackdata.t;
-
+function CourtshipBowlTrack_GUI_save(savefile,frame)
 cbparams=getappdata(0,'cbparams');
 params=cbparams.track;
+
+trackdata=getappdata(0,'trackdata');
+if strcmp(frame,'all')
+    iframe=size(trackdata.trxx,3);
+else
+    iframe = trackdata.t - cbparams.track.firstframetrack + 1;
+end
+
+trxx=trackdata.trxx(:,:,1:iframe); %#ok<*NASGU>
+trxy=trackdata.trxy(:,:,1:iframe);
+trxa=trackdata.trxa(:,:,1:iframe);
+trxb=trackdata.trxb(:,:,1:iframe);
+trxtheta=trackdata.trxtheta(:,:,1:iframe);
+trxarea=trackdata.trxarea(:,:,1:iframe);
+istouching=trackdata.istouching(:,1:iframe);
+gmm_isbadprior=trackdata.gmm_isbadprior(:,1:iframe);
+pred=trackdata.pred;
+trxcurr=trackdata.trxcurr;
+t=iframe;
 
 moviefile=getappdata(0,'moviefile');
 
