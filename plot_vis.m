@@ -13,8 +13,8 @@ switch visdata.plot
             delete(visdata.hell(ishandle(visdata.hell)))
         end
         visdata.hell=[];
+        set_cmap(handles.cbtrackGUI_ROI,'gray')
         set(handles.BG_img,'CData',visdata.frames{f});
-        colormap('gray')
     case 2
         if isfield(visdata,'hcc') 
             delete(visdata.hcc(ishandle(visdata.hcc)))
@@ -29,7 +29,7 @@ switch visdata.plot
         end
         visdata.hell=[];
         set(handles.BG_img,'CData',visdata.dbkgd{f});
-        colormap('gray')
+        set_cmap(handles.cbtrackGUI_ROI,'gray')
     case 3
         if isfield(visdata,'hcc') 
             delete(visdata.hcc(ishandle(visdata.hcc)))
@@ -44,7 +44,7 @@ switch visdata.plot
         end
         visdata.hell=[];
         set(handles.BG_img,'CData',visdata.isfore{f});
-        colormap('gray')
+        set_cmap(handles.cbtrackGUI_ROI,'gray')
     case 4
         if isfield(visdata,'hcc') 
             delete(visdata.hcc(ishandle(visdata.hcc)))
@@ -59,10 +59,10 @@ switch visdata.plot
         end
         visdata.hell=[];
         set(handles.BG_img,'CData',visdata.rois);
-        colormap('light_gray')
+        set_cmap(handles.cbtrackGUI_ROI,'light_gray')
         nROI=size(visdata.cc_ind,1);
         l=0;
-        hold on
+        hold(handles.axes_tracker,'on')
         for i=1:nROI
             cc_ind=visdata.cc_ind{i,f};
             if ~isempty(cc_ind)
@@ -70,11 +70,11 @@ switch visdata.plot
                 colors_cc=hsv(ncc)*0.7;
                 for k=1:ncc
                     l=l+1;
-                    visdata.hcc(l)=plot(cc_ind{k}(:,1),cc_ind{k}(:,2),'.','Color',colors_cc(k,:));
+                    visdata.hcc(l)=plot(handles.axes_tracker,cc_ind{k}(:,1),cc_ind{k}(:,2),'.','Color',colors_cc(k,:));
                 end
             end
         end
-        hold off
+        hold(handles.axes_tracker,'off')
     case 5
         if isfield(visdata,'hcc') 
             delete(visdata.hcc(ishandle(visdata.hcc)))
@@ -89,10 +89,10 @@ switch visdata.plot
         end
         visdata.hell=[];
         set(handles.BG_img,'CData',visdata.rois);
-        colormap('light_gray')
+        set_cmap(handles.cbtrackGUI_ROI,'light_gray')
         nROI=size(visdata.flies_ind,1);
         l=0;
-        hold on
+        hold(handles.axes_tracker,'on')
         for i=1:nROI
              flies_ind=visdata.flies_ind{i,f};
            if ~isempty(flies_ind)
@@ -100,11 +100,11 @@ switch visdata.plot
                 colors_flies=hsv(nflies)*0.7;
                 for k=1:nflies
                     l=l+1;
-                    visdata.hflies(l)=plot(flies_ind{k}(:,1),flies_ind{k}(:,2),'.','Color',colors_flies(k,:));
+                    visdata.hflies(l)=plot(handles.axes_tracker,flies_ind{k}(:,1),flies_ind{k}(:,2),'.','Color',colors_flies(k,:));
                 end
             end
         end
-        hold off
+        hold(handles.axes_tracker,'off')
     case 6
         if isfield(visdata,'hcc') 
             delete(visdata.hcc(ishandle(visdata.hcc)))
@@ -114,15 +114,12 @@ switch visdata.plot
             delete(visdata.hflies(ishandle(visdata.hflies)))
         end
         visdata.hflies=[];
-        if isfield(visdata,'hell') 
-            delete(visdata.hell(ishandle(visdata.hell)))
-        end
-        visdata.hell=[];
         set(handles.BG_img,'CData',visdata.frames{f});
-        colormap('gray')
+        set_cmap(handles.cbtrackGUI_ROI,'gray')
         nROI=size(visdata.trx,1);
         l=0;
-        hold on
+        hold(handles.axes_tracker,'on')
+        exists_ell=~isempty(~visdata.hell);
         for i=1:nROI
             trx=visdata.trx{i,f};
             if ~isempty(trx)
@@ -130,10 +127,14 @@ switch visdata.plot
                 colors_ell=hsv(nell)*0.7;
                 for k=1:length(trx.x)
                     l=l+1;
-                    visdata.hell(l) = drawellipse(trx.x(k),trx.y(k),trx.theta(k),trx.a(k),trx.b(k),'Color',colors_ell(k,:),'LineWidth',2);
+                    if ~exists_ell || ~ishandle(visdata.hell(l)),
+                        visdata.hell(l) = drawellipse(trx.x(k),trx.y(k),trx.theta(k),trx.a(k),trx.b(k),'Color',colors_ell(k,:),'LineWidth',2);
+                    else
+                        updateellipse(visdata.hell(l),trx.x(k),trx.y(k),trx.theta(k),trx.a(k),trx.b(k));
+                    end
                 end
             end
         end
-        hold off
+        hold(handles.axes_tracker,'off')
 end
 set(handles.popupmenu_vis,'UserData',visdata)

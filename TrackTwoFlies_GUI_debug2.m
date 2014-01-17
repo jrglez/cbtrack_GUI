@@ -112,10 +112,10 @@ nflies = numel(trackdata.trx);
 
 %% resolve head/tail ambiguity
 
-fprintf(logfid,'Choosing orientations 1...\n');
 stage = 'chooseorientations';  
 trackdata.stage=stage;
 if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
+    fprintf(logfid,'Choosing orientations 1...\n');
     save(out.temp_full,'trackdata','-append')
     setappdata(0,'trackdata',trackdata)
 
@@ -246,11 +246,11 @@ end
 
 %% assign identities based on size of something
 
-fprintf(logfid,'Assigning identities based on %s...\n',params.assignidsby);
 
 stage = 'assignids'; 
 trackdata.stage=stage;
 if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
+    fprintf(logfid,'Assigning identities based on %s...\n',params.assignidsby);
     save(out.temp_full,'trackdata','-append')
     setappdata(0,'trackdata',trackdata)
 

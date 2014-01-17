@@ -289,7 +289,7 @@ if get(handles.checkbox_restart,'Value');
     if exist(restart,'file')
         load(restart);
         logfid=open_log('track_log',cbparams,out.folder); %#ok<NODEF>
-        fprintf(logfid,'\n\n***\nRestarting analysis_protocol %s from %s at %s\n',real_analysis_protocol,restart,datestr(now,'yyyymmddTHHMMSS'));
+        fprintf(logfid,'\n\n***\nRestarting analysis_protocol %s from %s at %s\n',analysis_protocol,restart,datestr(now,'yyyymmddTHHMMSS')); %#ok<NODEF>
         appdatalist={'cancel_hwait','expdirs','moviefile','out','analysis_protocol','cbparams','restart','startframe','endframe','BG','fidBG','roidata','visdata','pff_all','t','trackdata'};
         for i=1:length(appdatalist)
             if exist(appdatalist{i},'var')
@@ -299,7 +299,7 @@ if get(handles.checkbox_restart,'Value');
         if ishandle(handles.figure1)
             delete(handles.figure1)
         end
-        if exist('trackdata','var') && trackdata.t-cbparams.track.firstframetrack+1==cbparams.track.lastframetrack 
+        if exist('trackdata','var') && trackdata.t-cbparams.track.firstframetrack+1==cbparams.track.lastframetrack-cbparams.track.firstframetrack+1 
                 CourtshipBowlTrack_GUI2
                 CourtshipBowlMakeResultsMovie_GUI
                 pffdata = CourtshipBowlComputePerFrameFeatures_GUI(1);

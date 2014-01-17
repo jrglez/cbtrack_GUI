@@ -91,8 +91,13 @@ axis equal
 set(handles.edit_set_nframessample,'String',num2str(roi_params.nframessample));
 set(handles.edit_set_bgthresh,'String',num2str(tracking_params.bgthresh));
 set(handles.slider_set_bgthresh,'Value',tracking_params.bgthresh);
+fcn_slider_bgthresh = get(handles.slider_set_bgthresh,'Callback');
+hlisten_bgthresh=addlistener(handles.slider_set_bgthresh,'ContinuousValueChange',fcn_slider_bgthresh); %#ok<NASGU>
 set(handles.edit_set_minccarea,'String',num2str(tracking_params.minccarea));
 set(handles.slider_set_minccarea,'Value',tracking_params.minccarea);
+fcn_slider_minccarea = get(handles.slider_set_minccarea,'Callback');
+hlisten_minccarea=addlistener(handles.slider_set_minccarea,'ContinuousValueChange',fcn_slider_minccarea); %#ok<NASGU>
+
 
 % Count flies on each ROI if they have not been count before
 if ~isfield(roidata,'nflies_per_roi')
@@ -157,7 +162,8 @@ end
  % Set slider
 nframessample=roi_params.nframessample;
 set(handles.slider_frame,'Value',1,'Min',1,'Max',nframessample,'SliderStep',[1/(nframessample-1),10/(nframessample-1)])
-
+fcn_slider_frame = get(handles.slider_frame,'Callback');
+hlisten_frame=addlistener(handles.slider_frame,'ContinuousValueChange',fcn_slider_frame); %#ok<NASGU>
  
  GUI.old_pos=get(hObject,'position');
 
@@ -227,6 +233,9 @@ cbparams=getappdata(0,'cbparams');
 roi_params=get(handles.edit_set_nframessample,'UserData');
 tracking_params=get(handles.edit_set_bgthresh,'UserData');
 roidata=getappdata(0,'roidata'); 
+
+restart='';
+setappdata(0,'restart',restart)
 
 if roidata.isnew
     count=get(handles.pushbutton_set_count,'UserData');

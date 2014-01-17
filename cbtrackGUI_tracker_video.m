@@ -104,6 +104,9 @@ first=cbparams.track.firstframetrack;
 current=first;
 last=current;
 set(handles.slider_frame,'Value',current+1,'Min',first,'Max',last+1,'SliderStep',[.01,.1],'Enable','off')
+fcn_slider_frame = get(handles.slider_frame,'Callback');
+hlisten_frame=addlistener(handles.slider_frame,'ContinuousValueChange',fcn_slider_frame); %#ok<NASGU>
+
 
 if isappdata(0,'trackdata')
     trackdata=getappdata(0,'trackdata');
@@ -198,6 +201,9 @@ GUIscale.rescalex=new_pos(3)/old_pos(3);
 GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
+
+restart='';
+setappdata(0,'restart',restart)
 
 cbparams=getappdata(0,'cbparams');
 out=getappdata(0,'out');
@@ -349,6 +355,8 @@ elseif ISPAUSE
         if logfid > 1,
             fclose(logfid);
         end
+        restart='';
+        setappdata(0,'restart',restart)
         
         CourtshipBowlTrack_GUI2
         CourtshipBowlMakeResultsMovie_GUI

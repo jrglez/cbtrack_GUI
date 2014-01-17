@@ -78,7 +78,7 @@ else
     trxcurr.istouching = 0;
 
   elseif cc.NumObjects == 0,
-    warning('No flies detected in ROI');
+%     warning('No flies detected in ROI');
     
   else
     

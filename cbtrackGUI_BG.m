@@ -330,6 +330,9 @@ if ~strcmp(cbparams.track.bgmode,bgmode)
     cbparams.track.bgmode=bgmode;
 end
 
+restart='';
+setappdata(0,'restart',restart)
+
 if BG.data.isnew
     if isappdata(0,'roidata')
         rmappdata(0,'roidata')
@@ -352,6 +355,7 @@ if BG.data.isnew
     cbparams.track=get(handles.pushbutton_recalc,'UserData');
     setappdata(0,'cbparams',cbparams)
     
+    % Save BG data
     out=getappdata(0,'out');
     logfid=open_log('bg_log',cbparams,out.folder);
     cbestimatebg_version=BG.data.cbestimatebg_version; %#ok<NASGU>
@@ -369,6 +373,8 @@ if BG.data.isnew
     fprintf(logfid,'Saving image of background model to file %s...\n\n***\n',bgimagefile);
     imwrite(bgmed,bgimagefile,'png');
 end
+
+% Clean up
 if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
     delete(handles.cbtrackGUI_BG)
 end
