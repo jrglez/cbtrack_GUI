@@ -33,17 +33,7 @@ for fly = 1:nflies,
   
   % fit wings
   
-  switch params.wing_fit_method,
-    
-    case 'peaks',
-      
-      wingtrx(fly) = TrackWings_FitWings_Peak(dthetawing,params);
-      
-    case 'gmm',
-      
-      wingtrx(fly) = TrackWings_FitWings_GMM(dthetawing,fore2dbkgd,wingtrxprev,params);
-      
-  end
+  wingtrx(fly) = TrackWings_FitWings_Peak(dthetawing,params);
   
 end
 

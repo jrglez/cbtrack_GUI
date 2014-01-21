@@ -69,7 +69,7 @@ end
 
 %% create masks
 fprintf(logfid,'Creating ROI masks...\n');
-[imwidth,imheight]=size(roidata.idxroi);
+[imheight,imwidth]=size(roidata.idxroi);
 [XGRID,YGRID] = meshgrid(1:imwidth,1:imheight);
 roibbs = [max(1,floor(roidata.centerx(:)-roidata.radii(:))),...
   min(imwidth,ceil(roidata.centerx(:)+roidata.radii(:))),...

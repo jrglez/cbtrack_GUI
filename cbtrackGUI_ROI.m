@@ -566,6 +566,7 @@ else
             mymsgbox(50,190,14,'Helvetica',{'The number of ROIs detected does not match the value set manualy'},'Warning','warn','modal')
             params.nROI=roidata.nrois;
         end
+        manual.on=0;
         set(hObject,'UserData',roidata)
         set(handles.radiobutton_manual,'UserData',manual)
         set(handles.uipanel_settings,'Userdata',params)
