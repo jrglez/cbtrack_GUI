@@ -34,7 +34,7 @@ trx = Trx('trxfilestr',cbparams.dataloc.trx.filestr,...
 
 fprintf(logfid,'Loading trajectories for %s...\n',expdir);
 
-trx.AddExpDir(expdir,'openmovie',false);
+trx.AddExpDir(out.folder,'openmovie',false);
 
 %% compute per-frame features
 
