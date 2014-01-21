@@ -36,15 +36,15 @@ roidata.pxpermm = nanmean(roidata.radii) / (roidata.roidiameter_mm/2);
 fprintf(logfid,'Computed pxpermm = %f\n',roidata.pxpermm);
 
 % find rotations
-[yc_s,yc_s_in]=sort(roidata.centery);
-n_row=[find(diff(yc_s)>100);length(yc_s)];
+[yc_s,yc_s_in]=sort(roidata.centery); yc_s=yc_s'; yc_s_in=yc_s_in';
+n_row=[find(diff(yc_s)>100);length(yc_s)]; 
 rowname='a':'z';
 rowname=rowname(1:length(n_row));
 roirows=struct;
 row_i=1;
 for i=1:length(n_row)
     ind_row=yc_s_in(row_i:n_row(i));
-    [~,xc_s_in]=sort(roidata.centerx(ind_row));
+    [~,xc_s_in]=sort(roidata.centerx(ind_row)); xc_s_in=xc_s_in';
     ind_row=ind_row(xc_s_in);
     roirows=setfield(roirows,rowname(i),ind_row); %#ok<SFLD>
     row_i=n_row(i)+1;  
