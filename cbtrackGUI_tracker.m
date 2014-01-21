@@ -122,7 +122,7 @@ if ~roidata.isall
     for i = 1:nROI,
       drawellipse(roidata.centerx(i),roidata.centery(i),0,roidata.radii(i),roidata.radii(i),'Color',colors_roi(i,:));
         text(roidata.centerx(i),roidata.centery(i),['ROI: ',num2str(i)],...
-          'Color',colors_roi(i,:),'HorizontalAlignment','center','VerticalAlignment','middle');
+          'Color',colors_roi(i,:),'HorizontalAlignment','center','VerticalAlignment','middle','Clipping','on');
     end
 end
 GUIscale=getappdata(0,'GUIscale');

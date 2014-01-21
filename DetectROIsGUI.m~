@@ -51,8 +51,10 @@ for i=1:length(n_row)
 end
 params.roirows=roirows;
 
-if nrois>1 && roidata.nrois>numel(fieldnames(params.roirows))    
-  roirownames = fieldnames(params.roirows);  
+if isfield(params,'roirows') && nrois>1 && roidata.nrois>numel(fieldnames(params.roirows))
+    
+  roirownames = fieldnames(params.roirows);
+  
   thetas = [];
   for i = 1:numel(roirownames),
     roiscurr = params.roirows.(roirownames{i});
@@ -77,7 +79,31 @@ if nrois>1 && roidata.nrois>numel(fieldnames(params.roirows))
     meantheta*180/pi,std(dtheta,1)*180/pi,modrange(thetas(1) + min(dtheta),-pi,pi)*180/pi,...
     modrange(thetas(1) + max(dtheta),-pi,pi)*180/pi);
   
-  if isfield(params,'baserotateby'),
+  didaddrotateby = false;
+  if isfield(params,'baserotatebyperrigbowl'),
+    rigbowl = '';
+    metadatafile = fullfile(expdir,cbparams.dataloc.metadata.filestr);
+    if exist(metadatafile,'file'),
+      metadata = ReadMetadataFile(metadatafile);
+      if isfield(metadata,'rig') && isfield(metadata,'bowl'),
+        rigbowl = sprintf('rig%dbowl%s',metadata.rig,metadata.bowl);
+      end
+    end
+    if isempty(rigbowl),
+      metadata = parseExpDir(expdir,true);
+      if isstruct(metadata) && isfield(metadata,'rig') && isfield(metadata,'bowl'),
+        rigbowl = sprintf('rig%dbowl%s',metadata.rig,metadata.bowl);
+      end
+    end
+    if ~isempty(rigbowl) && isfield(params.baserotatebyperrigbowl,rigbowl),
+      baserotateby = params.baserotatebyperrigbowl.(rigbowl);
+      meantheta = modrange(-meantheta+baserotateby*pi/180,-pi,pi);
+      didaddrotateby = true;
+      fprintf(logfid,'Adding in baserotateby %f selected for %s\n',baserotateby,rigbowl);
+    end
+    roidata.rigbowl=rigbowl;
+  end
+  if ~didaddrotateby && isfield(params,'baserotateby'),
     meantheta = modrange(-meantheta+params.baserotateby*pi/180,-pi,pi);
     fprintf(logfid,'Adding in default baserotateby %f\n',params.baserotateby);
   end
