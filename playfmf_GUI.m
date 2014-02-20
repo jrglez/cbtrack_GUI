@@ -75,7 +75,7 @@ end
     
 
 % load previous values
-handles.rcfilename = '.playfmfrc.mat';
+handles.rcfilename = ''; %.playfmfrc.mat
 handles.previous_values = struct;
 if exist(handles.rcfilename,'file')
   handles.previous_values = load(handles.rcfilename);
@@ -363,8 +363,8 @@ if isfield(handles,'fid') && ~isempty(fopen(handles.fid)) && handles.fid > 1,
   fclose(handles.fid);
 end
 
-savefns = {'filename','CompressionSettings'};
-save(handles.rcfilename,'-struct','handles',savefns{:});
+% savefns = {'filename','CompressionSettings'};
+% save(handles.rcfilename,'-struct','handles',savefns{:});
 if ishandle(hObject)
     delete(hObject);
 end
