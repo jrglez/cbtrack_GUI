@@ -238,6 +238,7 @@ if get(hObject,'Value')
     set(handles.text_restart,'enable','on')
     set(handles.edit_restart,'enable','on')
     set(handles.pushbutton_restart,'enable','on')
+    set(handles.pushbutton_infile,'enable','off')
     set(handles.text_infile,'enable','off')
     set(handles.edit_infile,'enable','off')
     set(handles.pushbutton_outfile,'enable','off')
@@ -249,6 +250,7 @@ elseif ~get(hObject,'Value')
     set(handles.text_restart,'enable','off')
     set(handles.edit_restart,'enable','off')
     set(handles.pushbutton_restart,'enable','off')
+    set(handles.pushbutton_infile,'enable','on')
     set(handles.text_infile,'enable','on')
     set(handles.edit_infile,'enable','on')
     set(handles.pushbutton_outfile,'enable','on')
@@ -301,6 +303,11 @@ if get(handles.checkbox_restart,'Value');
         end
         if exist('trackdata','var') && trackdata.t-cbparams.track.firstframetrack+1==cbparams.track.lastframetrack-cbparams.track.firstframetrack+1 
                 CourtshipBowlTrack_GUI2
+                iscancel=getappdata(0,'iscancel');
+                if iscancel
+                    cancelar
+                    return
+                end
                 CourtshipBowlMakeResultsMovie_GUI
                 pffdata = CourtshipBowlComputePerFrameFeatures_GUI(1);
                 setappdata(0,'pffdata',pffdata)
@@ -328,7 +335,7 @@ else
     in=get(handles.pushbutton_infile,'UserData');
     expdirs=in.folder;
     out=get(handles.pushbutton_outfile,'UserData');
-    out.temp=['Temp_',datestr(now,TimestampFormat),'_',in.analysis_protocol];
+    out.temp=['Temp_',datestr(now,TimestampFormat),'_',in.analysis_protocol,'.mat'];
     out.temp_full=fullfile(out.folder,out.temp);
     moviefile=fullfile(expdirs.test{1},in.file{1});
     analysis_protocol=in.analysis_protocol;
@@ -352,7 +359,6 @@ else
             cbparams.dataloc.automaticchecks_complete_log.filestr=[];
         end
         setappdata(0,'cbparams',cbparams)
-
 
         fns = fieldnames(expdirs);
         issuccess = struct;

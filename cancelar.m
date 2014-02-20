@@ -1,4 +1,4 @@
-appdatalist={'cancel_hwait','expdirs','moviefile','out','analysis_protocol','cbparams','restart','GUIscale','startframe','endframe','BG','fidBG','roidata','visdata','pff_all','t','trackdata'};
+appdatalist={'cancel_hwait','expdirs','moviefile','out','analysis_protocol','cbparams','restart','GUIscale','startframe','endframe','BG','fidBG','roidata','visdata','debugdata','pff_all','t','trackdata','iscancel','twing'};
 out=getappdata(0,'out');
 if ~isempty(out)
     logfid=open_log('bg_log',getappdata(0,'cbparams'),out.folder);
