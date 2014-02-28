@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_ROI(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_ROI_temp
 
-% Last Modified by GUIDE v2.5 15-Jan-2014 21:01:42
+% Last Modified by GUIDE v2.5 21-Feb-2014 12:10:29
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -95,9 +95,14 @@ list.ind_mat=[]; %(ROI,point) index matrix
 GUI.bgmed=bgmed;
 roidata=struct;
 set(handles.cbtrackGUI_ROI,'WindowButtonDownFcn',{@axes_ROI_ButtonDownFcn,handles});
+cbparams=getappdata(0,'cbparams');
+
 
 % Load and plot roidata if exists
-if isappdata(0,'roidata')
+P_stages={'BG','ROIs','params','wing_params','track1','track2'};
+P_curr_stage='ROIs';
+P_stage=getappdata(0,'P_stage');
+if find(strcmp(P_stage,P_stages))>find(strcmp(P_curr_stage,P_stages))
     roidata=getappdata(0,'roidata');
     manual=roidata.manual;
     list=roidata.list;
@@ -121,11 +126,13 @@ if isappdata(0,'roidata')
     set(handles.pushbutton_delete,'Enable','on')
     set(handles.pushbutton_detect,'UserData',roidata)
     set(handles.pushbutton_tracker_setup,'Enable','on')
-    if isfield(roidata,'nflies_per_roi')
+    if find(strcmp(P_stage,P_stages))>=find(strcmp('wing_params',P_stages))
+        set(handles.pushbutton_WT,'Enable','on')
+    end
+    if find(strcmp(P_stage,P_stages))>=find(strcmp('track1',P_stages)) && cbparams.track.DEBUG==1
         set(handles.pushbutton_debuger,'Enable','on')
     end
 else
-    cbparams=getappdata(0,'cbparams');
     params=cbparams.detect_rois;
 end
 % set parameter in the GUI
@@ -201,7 +208,7 @@ list=get(handles.listbox_manual,'UserData');
 cbparams=getappdata(0,'cbparams');
 params=get(handles.uipanel_settings,'UserData');
 
-if isempty(roidata) || isempty(roidata.centerx)
+if isempty(roidata) || size(fieldnames(roidata),1)==0 || isempty(roidata.centerx)
     BG=getappdata(0,'BG');    
     roidata=AllROI(BG.bgmed);
 else
@@ -214,7 +221,7 @@ else
     new_centery=new_position(2,:)+new_position(4,:)./2;
     new_radii=new_position(3,:)./2;
     if new_nrois~=roidata.nrois || any(new_centerx~=roidata.centerx) || any(new_centery~=roidata.centery) || any(new_radii~=roidata.radii)
-        roidata = updateROIs(cbparams,params,roidata,[new_centerx;new_centery;new_roii]);
+        roidata = updateROIs(cbparams,params,roidata,[new_centerx;new_centery;new_radii]);
     end
 end
 
@@ -235,12 +242,19 @@ if roidata.isnew
     if isappdata(0,'trackdata')
         rmappdata(0,'trackdata')
     end
+    if isappdata(0,'debugdata_WT')
+        rmappdata(0,'debugdata_WT')
+    end
+    if isappdata(0,'twing')
+        rmappdata(0,'twing')
+    end
     roidata.isnew=false;
     roidata.manual=manual;
     roidata.list=list;
     cbparams.detect_rois=params;
     setappdata(0,'roidata',roidata)
     setappdata(0,'cbparams',cbparams)
+    setappdata(0,'P_stage','params')
     
     out=getappdata(0,'out');
     logfid=open_log('roi_log',cbparams,out.folder);
@@ -304,7 +318,7 @@ function pushbutton_load_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 [file_ROI, folder_ROI]=open_files2('mat');
 if ~file_ROI{1}==0
-    set(handles.edit_load,'String',fullfile(folder_ROI,file_ROI),'HorizontalAlignment','right')
+    set(handles.edit_load,'String',fullfile(folder_ROI,file_ROI{1}),'HorizontalAlignment','right')
     manual=get(handles.radiobutton_manual,'UserData');
     [handles,~,~,~]=deleterois(handles,manual);
     set(handles.texth,'String','ROIs loaded from file'); 
@@ -331,7 +345,7 @@ if ~file_ROI{1}==0
     if isfield(roidata,'nflies_per_roi')
         roidata=rmfield(roidata,'nflies_per_roi');
     end
-    
+    manual.on=0;
     manual.detected=1;
     manual.delete=0;
     set(handles.pushbutton_delete,'Enable','on')
@@ -557,7 +571,6 @@ else
         params.roimus.y=yc;
         manual.detected=1;
         params.roimus=[xc,yc];
-        params.roirows=roirows;
         BG=getappdata(0,'BG');
         bgmed=BG.bgmed;
         [handles,roidata] = DetectROIsGUI(bgmed,cbparams,params,handles);
@@ -567,6 +580,7 @@ else
             mymsgbox(50,190,14,'Helvetica',{'The number of ROIs detected does not match the value set manualy'},'Warning','warn','modal')
             params.nROI=roidata.nrois;
         end
+        manual.on=0;
         set(hObject,'UserData',roidata)
         set(handles.radiobutton_manual,'UserData',manual)
         set(handles.uipanel_settings,'Userdata',params)
@@ -1097,7 +1111,25 @@ GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
 delete(handles.cbtrackGUI_ROI)
-cbtrackGUI_tracker_video
+
+P_stage=getappdata(0,'P_stage');
+if strcmp(P_stage,'track2')
+    CourtshipBowlTrack_GUI2
+    iscancel=getappdata(0,'iscancel');
+    if iscancel
+        if iscancel==1
+            cancelar
+        end
+        return
+    end
+    CourtshipBowlMakeResultsMovie_GUI
+    pffdata = CourtshipBowlComputePerFrameFeatures_GUI(1);
+    setappdata(0,'pffdata',pffdata)
+    cancelar
+elseif strcmp(P_stage,'track1')
+    cbtrackGUI_tracker_video
+end
+
 
 
 % --- Executes on button press in pushbutton_delete.
@@ -1121,3 +1153,21 @@ else
     set(hObject,'String','Delete')
 end
 set(handles.radiobutton_manual,'UserData',manual)
+
+
+% --- Executes on button press in pushbutton_WT.
+function pushbutton_WT_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_WT (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+%Save size
+GUIscale=getappdata(0,'GUIscale');
+new_pos=get(handles.cbtrackGUI_ROI,'position'); 
+old_pos=GUIscale.original_position;
+GUIscale.rescalex=new_pos(3)/old_pos(3);
+GUIscale.rescaley=new_pos(4)/old_pos(4);
+GUIscale.position=new_pos;
+setappdata(0,'GUIscale',GUIscale)
+
+delete(handles.cbtrackGUI_ROI)
+cbtrackGUI_WingTracker

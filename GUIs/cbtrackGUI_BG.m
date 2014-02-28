@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_BG(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_BG
 
-% Last Modified by GUIDE v2.5 08-Jan-2014 01:09:52
+% Last Modified by GUIDE v2.5 21-Feb-2014 11:23:16
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -69,16 +69,20 @@ loadfile=fullfile(out.folder,cbparams.dataloc.bgmat.filestr);
 
 fidBG=getappdata(0,'fidBG'); %#ok<NASGU>
 
-
-if isappdata(0,'BG')
+P_stages={'BG','ROIs','params','wing_params','track1','track2'};
+P_curr_stage='BG';
+P_stage=getappdata(0,'P_stage');
+if find(strcmp(P_stage,P_stages))>find(strcmp(P_curr_stage,P_stages))
     BG.data=getappdata(0,'BG');
     set(handles.pushbutton_ROIs,'Enable','on')
-    if isappdata(0,'roidata')
+    if find(strcmp(P_stage,P_stages))>=find(strcmp('params',P_stages))
         set(handles.pushbutton_tracker_setup,'Enable','on')
-        roidata=getappdata(0,'roidata');
-        if isfield(roidata,'nflies_per_roi')
-            set(handles.pushbutton_debuger,'Enable','on')
-        end
+    end
+    if find(strcmp(P_stage,P_stages))>=find(strcmp('wing_params',P_stages))
+        set(handles.pushbutton_WT,'Enable','on')
+    end
+    if find(strcmp(P_stage,P_stages))>=find(strcmp('track1',P_stages)) && cbparams.track.DEBUG==1
+        set(handles.pushbutton_debuger,'Enable','on')
     end
 else
     if exist(loadfile,'file')
@@ -340,20 +344,25 @@ if BG.data.isnew
     if isappdata(0,'visdata')
         rmappdata(0,'visdata')
     end
-
     if isappdata(0,'t')
         rmappdata(0,'t')
     end
     if isappdata(0,'trackdata')
         rmappdata(0,'trackdata')
     end
-
+    if isappdata(0,'debugdata_WT')
+        rmappdata(0,'debugdata_WT')
+    end
+    if isappdata(0,'twing')
+        rmappdata(0,'twing')
+    end
     BG.data.isnew=false;
     setappdata(0,'BG',BG.data)
     bgmed=BG.data.bgmed;
     cbparams=getappdata(0,'cbparams');
     cbparams.track=get(handles.pushbutton_recalc,'UserData');
     setappdata(0,'cbparams',cbparams)
+    setappdata(0,'P_stage','ROIs');
     
     % Save BG data
     out=getappdata(0,'out');
@@ -389,6 +398,7 @@ end
 if logfid > 1,
   fclose(logfid);
 end
+
 cbtrackGUI_ROI
 
 
@@ -477,7 +487,24 @@ GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
 delete(handles.cbtrackGUI_BG)
-cbtrackGUI_tracker_video
+
+P_stage=getappdata(0,'P_stage');
+if strcmp(P_stage,'track2')
+    CourtshipBowlTrack_GUI2
+    iscancel=getappdata(0,'iscancel');
+    if iscancel
+        if iscancel==1
+            cancelar
+        end
+        return
+    end
+    CourtshipBowlMakeResultsMovie_GUI
+    pffdata = CourtshipBowlComputePerFrameFeatures_GUI(1);
+    setappdata(0,'pffdata',pffdata)
+    cancelar
+elseif strcmp(P_stage,'track1')
+    cbtrackGUI_tracker_video
+end
 
 
 
@@ -591,3 +618,30 @@ if ~file_BG{1}==0
       fclose(logfid);
     end
 end
+
+
+% --- Executes on button press in pushbutton_WT.
+function pushbutton_WT_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_WT (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+fidBG=getappdata(0,'fidBG');
+if exist('fidBG','var') && ~isempty(fidBG)&&  fidBG > 0,
+    try
+        fclose(fidBG);
+    catch ME,
+        mymsgbox(50,190,14,'Helvetica',['Could not close movie file: ',getReport(ME)],'Warning','warn')
+    end
+end
+
+%Save size
+GUIscale=getappdata(0,'GUIscale');
+new_pos=get(handles.cbtrackGUI_BG,'position'); 
+old_pos=GUIscale.original_position;
+GUIscale.rescalex=new_pos(3)/old_pos(3);
+GUIscale.rescaley=new_pos(4)/old_pos(4);
+GUIscale.position=new_pos;
+setappdata(0,'GUIscale',GUIscale)
+
+delete(handles.cbtrackGUI_BG)
+cbtrackGUI_WingTracker

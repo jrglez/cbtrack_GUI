@@ -61,6 +61,11 @@ end_frame = max([trx.endframe]);
 start_frame = min([trx.firstframe]);
 nframes = end_frame-start_frame + 1;
 nflies = numel(trx);
+if sum(resultsmovie_params.nframes)>nframes
+    Dt=sum(resultsmovie_params.nframes)-nframes;
+    D=ceil(resultsmovie_params.nframes*Dt/sum(resultsmovie_params.nframes));
+    resultsmovie_params.nframes=resultsmovie_params.nframes-D;
+end
 firstframes_off = min(max(0,round(resultsmovie_params.firstframes*nframes)),nframes-1);
 firstframes_off(resultsmovie_params.firstframes < 0) = nan;
 middleframes_off = round(resultsmovie_params.middleframes*nframes);
@@ -173,7 +178,7 @@ if ~DEBUG && exist(avifile,'file'),
 end
 
 [succeeded,~,~,height,width]= ...
-  make_ctrax_result_movie('moviename',moviefile,'trxname',trxfile,'aviname',avifile,...
+  make_ctrax_result_movie_GUI('moviename',moviefile,'trxname',trxfile,'aviname',avifile,...
   'nzoomr',resultsmovie_params.nzoomr,'nzoomc',resultsmovie_params.nzoomc,...
   'boxradius',resultsmovie_params.boxradius,'taillength',resultsmovie_params.taillength,...
   'fps',resultsmovie_params.fps,...

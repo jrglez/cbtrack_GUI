@@ -53,25 +53,28 @@ function cbtrackGUI_tracker_params_OpeningFcn(hObject, eventdata, handles, varar
 % varargin   command line arguments to cbtrackGUI_tracker_params (see VARARGIN)
 
 % Set parameters in the gui
-cbparams=getappdata(0,'cbparams');
-set(handles.checkbox_debug,'Value',cbparams.track.DEBUG)
-set(handles.edit_duration_initial,'String',num2str(cbparams.track.firstframetrack))
-set(handles.edit_duration_final,'String',num2str(cbparams.track.lastframetrack))
-set(handles.checkbox_wings,'Value',cbparams.track.dotrackwings)
-if cbparams.track.dotrackwings
+temp_Tparams=varargin{1};
+set(handles.checkbox_debug,'Value',temp_Tparams.DEBUG)
+set(handles.edit_duration_initial,'String',num2str(temp_Tparams.firstframetrack))
+set(handles.edit_duration_final,'String',num2str(temp_Tparams.lastframetrack))
+set(handles.checkbox_wings,'Value',temp_Tparams.dotrackwings)
+if temp_Tparams.dotrackwings
    set(handles.radiobutton_ID_wings,'Enable','on')
 end
-if strcmp(cbparams.track.assignidsby,'size')
+if strcmp(temp_Tparams.assignidsby,'size')
     set(handles.uipanel_ID,'selectedobject',handles.radiobutton_ID_body)
-elseif strcmp(cbtrack.track.assignidsby,'wingsize')
-    set(handles.uipanel_ID,'selectedobject',handles.radiobutton_ID_wing)
+elseif strcmp(temp_Tparams.assignidsby,'wingsize')
+    set(handles.uipanel_ID,'selectedobject',handles.radiobutton_ID_wings)
 end
+
+set(handles.figure1,'UserData',temp_Tparams)
 
 % Choose default command line output for cbtrackGUI_tracker_params
 handles.output = hObject;
 
 % Update handles structure
 guidata(hObject, handles);
+uiwait(handles.figure1);
 
 % UIWAIT makes cbtrackGUI_tracker_params wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
@@ -85,7 +88,12 @@ function varargout = cbtrackGUI_tracker_params_OutputFcn(hObject, eventdata, han
 % handles    structure with handles and user data (see GUIDATA)
 
 % Get default command line output from handles structure
-varargout{1} = handles.output;
+varargout{1} = get(handles.figure1,'UserData');
+if isfield(handles,'figure1') && ishandle(handles.figure1)
+    delete(handles.figure1)
+end
+
+
 
 
 
@@ -170,7 +178,7 @@ function pushbutton_cancel_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_cancel (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-delete(handles.figure1)
+close(handles.figure1)
 
 
 % --- Executes on button press in pushbutton_accept.
@@ -178,27 +186,27 @@ function pushbutton_accept_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_accept (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-cbparams=getappdata(0,'cbparams');
-cbparams.track.DEBUG=get(handles.checkbox_debug, 'Value');
+temp_Tparams=get(handles.figure1,'UserData');
+temp_Tparams.DEBUG=get(handles.checkbox_debug, 'Value');
 ID=get(handles.uipanel_ID,'SelectedObject');
 if ID==handles.radiobutton_ID_body
-    cbparams.track.assignidsby='size';
-    cbparams.track.typefield='sex';
-    cbparams.track.typesmallval='M';
-    cbparams.track.typebigval='F';
+    temp_Tparams.assignidsby='size';
+    temp_Tparams.typefield='sex';
+    temp_Tparams.typesmallval='M';
+    temp_Tparams.typebigval='F';
 elseif ID==handles.radiobutton_ID_wings
-    cbparams.track.assignidsby='wingsize';
-    cbparams.track.typefield='wingtype';
-    cbparams.track.typesmallval='clipped';
-    cbparams.track.typebigval='full';
+    temp_Tparams.assignidsby='wingsize';
+    temp_Tparams.typefield='wingtype';
+    temp_Tparams.typesmallval='clipped';
+    temp_Tparams.typebigval='full';
 end
 ini=get(handles.edit_duration_initial,'String');
 fin=get(handles.edit_duration_final,'String');
 if strcmp(ini,'Initial')
-    ini=num2str(cbparams.track.firstframetrack);
+    ini=num2str(temp_Tparams.firstframetrack);
 end
 if strcmp(fin,'Final')
-    fin=num2str(cbparams.track.lastframetrack);
+    fin=num2str(temp_Tparams.lastframetrack);
 end
     ini=str2double(ini);
     fin=str2double(fin);
@@ -207,19 +215,12 @@ if isnan(ini) || isnan(fin)
 elseif ini>fin
     mymsgbox(50,190,14,'Helvetica','The final frame  must be smaller than the last one','Error','error')
 else
-    cbparams.track.firstframetrack=ini;
-    cbparams.track.lastframetrack=fin;
+    temp_Tparams.firstframetrack=ini;
+    temp_Tparams.lastframetrack=fin;
 end
-cbparams.track.dotrackwings=logical(get(handles.checkbox_wings,'Value'));
-setappdata(0,'cbparams',cbparams)
-
-if isfield(handles,'figure1') && ishandle(handles.figure1)
-    delete(handles.figure1)
-end
-
-
-
-
+temp_Tparams.dotrackwings=logical(get(handles.checkbox_wings,'Value'));
+set(handles.figure1,'UserData',temp_Tparams);
+uiresume(handles.figure1)
 
 
 % --- Executes when selected object is changed in uipanel_ID.
@@ -238,14 +239,7 @@ function figure1_CloseRequestFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: delete(hObject) closes the figure
-msg_cancel=myquestdlg(14,'Helvetica','Cancel current project? All setup options will be lost','Cancel','Yes','No','No'); 
-if isempty(msg_cancel)
-    msg_cancel='No';
-end
-if strcmp('Yes',msg_cancel)
-    cancelar
-end
-
+uiresume(handles.figure1);
 
 % --- Executes on button press in checkbox_debug.
 function checkbox_debug_Callback(hObject, eventdata, handles)

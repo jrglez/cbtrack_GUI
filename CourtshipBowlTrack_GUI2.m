@@ -39,6 +39,10 @@ roidata=getappdata(0,'roidata');
 
 %% Secondary tracking
 trackdata=TrackTwoFlies_GUI_debug2(moviefile,bgmed,roidata,params,'restart',restart);
+iscancel=getappdata(0,'iscancel');
+if iscancel
+    return
+end
 trackdata.courtshipbowltrack_version = version;
 trackdata.courtshipbowltrack_timestamp = timestamp;
 trackdata.analysis_protocol = analysis_protocol;

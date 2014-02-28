@@ -292,7 +292,7 @@ if get(handles.checkbox_restart,'Value');
         load(restart);
         logfid=open_log('track_log',cbparams,out.folder); %#ok<NODEF>
         fprintf(logfid,'\n\n***\nRestarting analysis_protocol %s from %s at %s\n',analysis_protocol,restart,datestr(now,'yyyymmddTHHMMSS')); %#ok<NODEF>
-        appdatalist={'cancel_hwait','expdirs','moviefile','out','analysis_protocol','cbparams','restart','startframe','endframe','BG','fidBG','roidata','visdata','pff_all','t','trackdata'};
+        appdatalist={'cancel_hwait','expdirs','moviefile','out','analysis_protocol','P_stage','cbparams','restart','GUIscale','startframe','endframe','BG','fidBG','roidata','visdata','pff_all','t','trackdata','debugdata_WT'};
         for i=1:length(appdatalist)
             if exist(appdatalist{i},'var')
                 setappdata(0,appdatalist{i},eval(appdatalist{i}))
@@ -301,18 +301,20 @@ if get(handles.checkbox_restart,'Value');
         if ishandle(handles.figure1)
             delete(handles.figure1)
         end
-        if exist('trackdata','var') && trackdata.t-cbparams.track.firstframetrack+1==cbparams.track.lastframetrack-cbparams.track.firstframetrack+1 
+        if strcmp(P_stage,'track2') 
                 CourtshipBowlTrack_GUI2
                 iscancel=getappdata(0,'iscancel');
                 if iscancel
-                    cancelar
+                    if iscancel==1
+                        cancelar
+                    end
                     return
                 end
                 CourtshipBowlMakeResultsMovie_GUI
                 pffdata = CourtshipBowlComputePerFrameFeatures_GUI(1);
                 setappdata(0,'pffdata',pffdata)
                 cancelar
-        elseif exist('roidata','var')
+        elseif strcmp(P_stage,'track1')
             if isfield(roidata,'nflies_per_roi')
                 if cbparams.track.DEBUG 
                     cbtrackGUI_tracker_video
@@ -322,9 +324,13 @@ if get(handles.checkbox_restart,'Value');
             else
                 cbtrackGUI_tracker
             end
-        elseif exist('BG','var')
+        elseif strcmp(P_stage,'wing_params')
+            cbtrackGUI_WingTracker
+        elseif strcmp(P_stage,'params')
+            cbtrackGUI_tracker
+        elseif strcmp(P_stage,'ROIs')
             cbtrackGUI_ROI
-        else
+        elseif strcmp(P_stage,'BG')
             cbtrackGUI_BG
         end    
     else
@@ -396,6 +402,7 @@ else
         setappdata(0,'moviefile',moviefile)%(expdirs)
         setappdata(0,'analysis_protocol',analysis_protocol)
         setappdata(0,'restart',restart)
+        setappdata(0,'P_stage','BG')
         savetemp
         if ishandle(handles.figure1)
             delete(handles.figure1)

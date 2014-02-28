@@ -1,6 +1,5 @@
 function trackdata=TrackTwoFlies_GUI_debug2(moviefile,bgmed,roidata,params,varargin)
 nrois=roidata.nrois;
-dorestart = false;
 version = '0.1.1';
 timestamp = datestr(now,TimestampFormat);
 [restart] = myparse(varargin,'restart',''); %[restart,tmpfilename,logfid] = myparse(varargin,'restart','','tmpfilename',tmpfilename,'logfid',1);
@@ -19,12 +18,9 @@ fprintf(logfid,'Opening movie...\n');
 %% initialize
 trackdata=getappdata(0,'trackdata');
 
+restartstage = trackdata.stage;
 if ~isempty(restart),
-  restartstage = trackdata.stage;
   fprintf(logfid,'Restarting from stage %s...\n',trackdata.stage);
-  dorestart = true;
-else
-    restartstage = '';
 end
 t=trackdata.t;
 nframes_track = t - params.firstframetrack + 1;
@@ -40,7 +36,6 @@ gmm_isbadprior = trackdata.gmm_isbadprior(:,1:nframes_track);
 
 stage = 'reformat'; 
 
-trackdata.stage=stage;
 if isfield(headerinfo,'timestamps'),
   timestamps = headerinfo.timestamps;
 elseif isfield(headerinfo,'FrameRate'),
@@ -51,8 +46,9 @@ else
   warning('No frame rate info found for movie');
   timestamps = nan(1,nframes);
 end
-if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
+if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
     %% correct for bounding box of rois
+    trackdata.stage=stage;
 
     fprintf(logfid,'Correcting for ROI bounding boxes...\n');
     for roii = 1:nrois, 
@@ -106,18 +102,17 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
     end
     trackdata.istouching = istouching;
     trackdata.gmm_isbadprior = gmm_isbadprior;
-
+    trackdata.stage=stages{find(strcmp(stage,stages))+1};
+    save(out.temp_full,'trackdata','-append')
+    setappdata(0,'trackdata',trackdata)
 end
 nflies = numel(trackdata.trx); 
 
 %% resolve head/tail ambiguity
 
 stage = 'chooseorientations';  
-trackdata.stage=stage;
-if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
+if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
     fprintf(logfid,'Choosing orientations 1...\n');
-    save(out.temp_full,'trackdata','-append')
-    setappdata(0,'trackdata',trackdata)
 
     for i = 1:nflies,
       x = trackdata.trx(i).x;
@@ -148,7 +143,9 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
 
       trackdata.trx(i).theta = choose_orientations2(x,y,theta,weight_theta,weight_phi);
     end
-
+    trackdata.stage=stages{find(strcmp(stage,stages))+1};
+    save(out.temp_full,'trackdata','-append')
+    setappdata(0,'trackdata',trackdata)
 end
 
 %% plot updated results
@@ -196,19 +193,15 @@ if params.DEBUG > 1,
     end
     drawnow;
   end
-
 end
 
 %% track wings if using wings
 
 stage = 'trackwings1'; 
-trackdata.stage=stage;
+
 didtrackwings = false;
 
-if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
-    save(out.temp_full,'trackdata','-append')
-    setappdata(0,'trackdata',trackdata)
-
+if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
     if strcmp(params.assignidsby,'wingsize'),
 
       fprintf(logfid,'Tracking wings 1...\n');
@@ -229,30 +222,41 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
               <= roidata.radii(roii)^2 );
           end
       end
-
-      [wingtrx,wingperframedata,wingtrackinfo,wingperframeunits] = TrackWingsHelper_GUI(trackdata.trx,moviefile,double(bgmed),isarena,params.wingtracking_params,...
-        'firstframe',params.firstframetrack,...
-        'debug',params.DEBUG);
-      didtrackwings = true;
-      trackdata.trackwings_timestamp = wingtrackinfo.trackwings_timestamp;
-      trackdata.trackwings_version = wingtrackinfo.trackwings_version;
-      trackdata.trx = wingtrx;
-      trackdata.perframedata = wingperframedata;
-      trackdata.perframeunits = wingperframeunits;
+      
+      if ~params.DEBUG
+          debugdata.track=1;
+          debugdata.vis=0;
+          [wingtrx,wingperframedata,~,wingtrackinfo,wingperframeunits,~] = TrackWingsHelper_GUI([],trackdata.trx,moviefile,double(bgmed),isarena,params.wingtracking_params,debugdata,...
+            'firstframe',params.firstframetrack,...
+            'debug',params.DEBUG);
+          didtrackwings = true;
+          trackdata.trackwings_timestamp = wingtrackinfo.trackwings_timestamp;
+          trackdata.trackwings_version = wingtrackinfo.trackwings_version;
+          trackdata.trx = wingtrx;
+          trackdata.perframedata = wingperframedata;
+          trackdata.perframeunits = wingperframeunits;
+      else
+          cbtrackGUI_WingTracker_video
+          iscancel=getappdata(0,'iscancel');
+          if iscancel
+              return
+          end
+          trackdata=getappdata(0,'trackdata');
+      end
 
     end
-
+    trackdata.stage=stages{find(strcmp(stage,stages))+1};
+    save(out.temp_full,'trackdata','-append')
+    setappdata(0,'trackdata',trackdata)
 end
 
 %% assign identities based on size of something
 
 
 stage = 'assignids'; 
-trackdata.stage=stage;
-if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
+
+if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
     fprintf(logfid,'Assigning identities based on %s...\n',params.assignidsby);
-    save(out.temp_full,'trackdata','-append')
-    setappdata(0,'trackdata',trackdata)
 
     assignids_nflips = nan(1,nrois);
     switch params.assignidsby,
@@ -381,17 +385,15 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
         trackdata.trx(i).(params.typefield) = repmat(typeperroi(i),[1,nframes_track]);
       end
     end
-
+    trackdata.stage=stages{find(strcmp(stage,stages))+1};
+    save(out.temp_full,'trackdata','-append')
+    setappdata(0,'trackdata',trackdata)
 end
 
 %% resolve head/tail ambiguity again, since it is pretty quick
 
 stage = 'chooseorientations2'; 
-trackdata.stage=stage;
-if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
-    save(out.temp_full,'trackdata','-append')
-    setappdata(0,'trackdata',trackdata)
-
+if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
     fprintf(logfid,'Choosing orientations 2...\n');
     isflip = false(nflies,nframes_track);
 
@@ -411,17 +413,15 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
       fprintf(logfid,'N. orientation flips = %d\n',nnz(isflip(i,:)));
 
     end
-
+    trackdata.stage=stages{find(strcmp(stage,stages))+1};
+    save(out.temp_full,'trackdata','-append')
+    setappdata(0,'trackdata',trackdata)
 end
 
 %% track wings
-
 stage = 'trackwings2'; 
-trackdata.stage=stage;
-if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
-    save(out.temp_full,'trackdata','-append')
-    setappdata(0,'trackdata',trackdata)
 
+if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
     if didtrackwings,
       framestrack = cell(1,nrois);
       for roii = 1:nrois,
@@ -456,28 +456,51 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
               <= roidata.radii(roii)^2 );
           end
       end
-
+      
       if didtrackwings,
-        [wingtrx,wingperframedata,wingtrackinfo,wingperframeunits] = TrackWingsHelper_GUI(trackdata.trx,moviefile,double(bgmed),isarena,params.wingtracking_params,...
-          'firstframe',params.firstframetrack,...
-          'debug',params.DEBUG,...
-          'framestrack',unique(cat(2,framestrack{:})),...
-          'perframedata',trackdata.perframedata);
+          debugdata.track=1;
+          debugdata.vis=0;
+          if isfield(debugdata,'framestrack')
+              debugdata=rmfield(debugdata,{'framestrak','nframestrack','framestracked','nframestracked'});
+          end
+          [wingtrx,wingperframedata,~,wingtrackinfo,wingperframeunits,~] = TrackWingsHelper_GUI([],trackdata.trx,moviefile,double(bgmed),isarena,params.wingtracking_params,debugdata,...
+              'firstframe',params.firstframetrack,...
+              'debug',false,...
+              'framestrack',unique(cat(2,framestrack{:})),...
+              'perframedata',trackdata.perframedata);
+          trackdata.trackwings_timestamp = wingtrackinfo.trackwings_timestamp;
+          trackdata.trackwings_version = wingtrackinfo.trackwings_version;
+          trackdata.trx = wingtrx;
+          trackdata.perframedata = wingperframedata;
+          trackdata.perframeunits = wingperframeunits;
       else  
-        [wingtrx,wingperframedata,wingtrackinfo,wingperframeunits] = TrackWingsHelper_GUI(trackdata.trx,moviefile,double(bgmed),isarena,params.wingtracking_params,...
-          'firstframe',params.firstframetrack,...
-          'debug',params.DEBUG);
-      end
-      trackdata.trackwings_timestamp2 = wingtrackinfo.trackwings_timestamp;
-      trackdata.trackwings_version = wingtrackinfo.trackwings_version;
-      trackdata.trx = wingtrx;
-      trackdata.perframedata = wingperframedata;
-      trackdata.perframeunits = wingperframeunits;
+          if ~params.DEBUG
+              debugdata.track=1;
+              debugdata.vis=0;
+              %[wingtrx,wingperframedata,~,wingtrackinfo,wingperframeunits,~] = TrackWingsHelper_GUI_old([],trackdata.trx,moviefile,double(bgmed),isarena,params.wingtracking_params,debugdata,...
+              %    'firstframe',params.firstframetrack,...
+              %    'debug',params.DEBUG);
+              [wingtrx,wingperframedata,~,wingtrackinfo,wingperframeunits,~] = TrackWingsHelper_GUI([],trackdata.trx,moviefile,double(bgmed),isarena,params.wingtracking_params,debugdata,...
+                  'firstframe',params.firstframetrack,...
+                  'debug',params.DEBUG);
 
+              trackdata.trackwings_timestamp = wingtrackinfo.trackwings_timestamp;
+              trackdata.trackwings_version = wingtrackinfo.trackwings_version;
+              trackdata.trx = wingtrx;
+              trackdata.perframedata = wingperframedata;
+              trackdata.perframeunits = wingperframeunits;
+          else
+              cbtrackGUI_WingTracker_video
+              iscancel=getappdata(0,'iscancel');
+              if iscancel
+                  return
+              end
+              trackdata=getappdata(0,'trackdata');             
+          end
+      end       
     end
 
 end
-
 %% convert to real units
 
 if isfield(roidata,'pxpermm'),
@@ -573,13 +596,13 @@ if fid > 1,
   end
 end
 
-if exist(out.temp_full,'file'),
-  try
-    delete(out.temp_full);
-  catch ME,
-    warning('Could not delete tmp file: %s',getReport(ME));
-  end
-end
+% if exist(out.temp_full,'file'),
+%   try
+%     delete(out.temp_full);
+%   catch ME,
+%     warning('Could not delete tmp file: %s',getReport(ME));
+%   end
+% end
 if logfid > 1,
   fclose(logfid);
 end

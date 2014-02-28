@@ -1,4 +1,4 @@
-function varargout = cbtrackGUI_tracker_video(varargin)
+function varargout = cbtrackGUI_WingTracker_video(varargin)
 % CBTRACKGUI_ROI_TEMP MATLAB code for cbtrackGUI_ROI_temp.fig
 %      CBTRACKGUI_ROI_TEMP, by itself, creates a new CBTRACKGUI_ROI_TEMP or raises the existing
 %      singleton*.
@@ -11,9 +11,9 @@ function varargout = cbtrackGUI_tracker_video(varargin)
 %
 %      CBTRACKGUI_ROI_TEMP('Property','Value',...) creates a new CBTRACKGUI_ROI_TEMP or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
-%      applied to the GUI before cbtrackGUI_tracker_video_OpeningFcn gets called.  An
+%      applied to the GUI before cbtrackGUI_WingTracker_video_OpeningFcn gets called.  An
 %      unrecognized property name or invalid value makes property application
-%      stop.  All inputs are passed to cbtrackGUI_tracker_video_OpeningFcn via varargin.
+%      stop.  All inputs are passed to cbtrackGUI_WingTracker_video_OpeningFcn via varargin.
 %
 %      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
 %      instance to run (singleton)".
@@ -22,14 +22,14 @@ function varargout = cbtrackGUI_tracker_video(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_ROI_temp
 
-% Last Modified by GUIDE v2.5 08-Dec-2013 10:55:58
+% Last Modified by GUIDE v2.5 21-Feb-2014 16:33:05
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @cbtrackGUI_tracker_video_OpeningFcn, ...
-                   'gui_OutputFcn',  @cbtrackGUI_tracker_video_OutputFcn, ...
+                   'gui_OpeningFcn', @cbtrackGUI_WingTracker_video_OpeningFcn, ...
+                   'gui_OutputFcn',  @cbtrackGUI_WingTracker_video_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
@@ -45,7 +45,7 @@ end
 
 
 % --- Executes just before cbtrackGUI_ROI_temp is made visible.
-function cbtrackGUI_tracker_video_OpeningFcn(hObject, eventdata, handles, varargin)
+function cbtrackGUI_WingTracker_video_OpeningFcn(hObject, eventdata, handles, varargin)
 % This function has no output args, see OutputFcn.
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -54,7 +54,6 @@ function cbtrackGUI_tracker_video_OpeningFcn(hObject, eventdata, handles, vararg
 
 % Choose default command line output for cbtrackGUI_ROI_temp
 global ISPAUSE
-ISPAUSE=true;
 global ISPLAYING
 ISPLAYING=false;
 
@@ -63,28 +62,28 @@ GUIsize(handles,hObject)
 moviefile=getappdata(0,'moviefile');
 cbparams=getappdata(0,'cbparams');
 roidata=getappdata(0,'roidata');
-[track.readframe,track.nframes,track.fid,track.headerinfo] = get_readframe_fcn(moviefile);
-cbparams.track.lastframetrack=(min(cbparams.track.lastframetrack,track.nframes));
+[wingtrack.readframe,wingtrack.nframes,wingtrack.fid,wingtrack.headerinfo] = get_readframe_fcn(moviefile);
+cbparams.track.lastframetrack=(min(cbparams.track.lastframetrack,wingtrack.nframes));
 cbparams.track.nframetrack=cbparams.track.lastframetrack-cbparams.track.firstframetrack+1;
-frame=track.readframe(1);
+frame=wingtrack.readframe(cbparams.track.firstframetrack);
 aspect_ratio=size(frame,2)/size(frame,1);
-pos1=get(handles.axes_tracker_video,'position'); %axes 1 position
+pos1=get(handles.axes_wingtracker_video,'position'); %axes 1 position
 
 % Plot figure
 if aspect_ratio<=1 
     old_width=pos1(3); new_width=pos1(4)*aspect_ratio; pos1(3)=new_width; %Recalculate the width of the axes to fit the figure aspect ratio
     pos1(1)=pos1(1)-(new_width-old_width)/2; %Recalculate the new horizontal position of the axes
-    set(handles.axes_tracker_video,'position',pos1) %reset axes position and size
+    set(handles.axes_wingtracker_video,'position',pos1) %reset axes position and size
 else
     old_height=pos1(4); new_height=pos1(3)/aspect_ratio; pos1(4)=new_height; %Recalculate the width of the axes to fit the figure aspect ratio
     pos1(2)=pos1(2)-(new_height-old_height)/2; %Recalculate the new horizontal position of the axes
-    set(handles.axes_tracker_video,'position',pos1) %reset axes position and size
+    set(handles.axes_wingtracker_video,'position',pos1) %reset axes position and size
 end
 
-axes(handles.axes_tracker_video);
+axes(handles.axes_wingtracker_video);
 colormap('gray')
 handles.video_img=imagesc(frame);
-set(handles.axes_tracker_video,'XTick',[],'YTick',[])
+set(handles.axes_wingtracker_video,'XTick',[],'YTick',[])
 axis equal
 
 % Plot ROIs
@@ -100,54 +99,65 @@ if ~roidata.isall
 end
     
  % Set slider
-first=cbparams.track.firstframetrack;
-current=first;
-last=current;
-set(handles.slider_frame,'Value',current+1,'Min',first,'Max',last+1,'SliderStep',[.01,.1],'Enable','off')
+set(handles.slider_frame,'Value',1,'Min',1,'Max',2,'SliderStep',[.01,.1],'Enable','off')
 fcn_slider_frame = get(handles.slider_frame,'Callback');
-hlisten_frame=addlistener(handles.slider_frame,'ContinuousValueChange',fcn_slider_frame); %#ok<NASGU>
+hlisten_frame=addlistener(handles.slider_frame,'ContinuousValueChange',fcn_slider_frame); 
 
-
-if isappdata(0,'trackdata')
-    trackdata=getappdata(0,'trackdata');
+trackdata=getappdata(0,'trackdata');
+if isfield(trackdata,'twing')
+    debugdata=getappdata(0,'debugdata_WT');
     set(handles.pushbutton_start,'String','CONTINUE')
-    first=cbparams.track.firstframetrack;
-    current=trackdata.t;
-    last=current;
-    set(handles.slider_frame,'Value',current+1,'Min',first,'Max',last+1,'SliderStep',[.01,.1],'Enable','on')
+    %set slider
+    t=trackdata.twing;
+    set(handles.slider_frame,'Value',debugdata.nframestracked,'Max',debugdata.nframestracked,'SliderStep',[.01,.1],'Enable','on')
+    set(handles.text_info,'String',['Displaying frame ',num2str(t-1),'. ',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),' (',num2str(debugdata.nframestracked*100/debugdata.nframestrack,'%.1f'),'%) tracked.'])  
+    set(handles.pushbutton_clear,'Enable','on');
+    set(handles.pushbutton_save,'Enable','on');
+
     % Plot
-    iframe = trackdata.t - cbparams.track.firstframetrack + 1;
-    frame=track.readframe(iframe);
-    set(handles.video_img,'CData',frame);
-    handles.hell=NaN(2,roidata.nrois);
-    handles.htrx=NaN(2,roidata.nrois);
-    flycolors = {'r','b'};
-    for roii = 1:roidata.nrois,
-        roibb = roidata.roibbs(roii,:);
-        offx = roibb(1)-1;
-        offy = roibb(3)-1;
-        for i = 1:2,
-            handles.hell(i,roii) = drawellipse(trackdata.trxx(i,roii,iframe)+offx,trackdata.trxy(i,roii,iframe)+offy,trackdata.trxtheta(i,roii,iframe),trackdata.trxa(i,roii,iframe),trackdata.trxb(i,roii,iframe),[flycolors{i},'-']);
-            handles.htrx(i,roii) = plot(squeeze(trackdata.trxx(i,roii,max(iframe-30,1):iframe)+offx),squeeze(trackdata.trxy(i,roii,max(iframe-30,1):iframe)+offy),[flycolors{i},'.-']);
-        end
-    end
-    icurrf=iframe;
-    lastf=get(handles.slider_frame,'Max');
-    ilastf=lastf-cbparams.track.firstframetrack+1;
-    set(handles.text_info,'String',['Displaying frame ',num2str(icurrf),'. ',num2str(ilastf),' of ',num2str(cbparams.track.nframetrack),' (',num2str(ilastf*100/cbparams.track.nframetrack,'%.1f'),'%) tracked.'])  
+    debugdata.haxes=handles.axes_wingtracker_video;
+    debugdata.him=handles.video_img;
+    debugdata.vis=8;
+    debugdata.DEBUG=cbparams.track.DEBUG;
+    debugdata.track=false;
+    debugdata.play=false;
+    iframe = debugdata.nframestracked;
+    frame=double(wingtrack.readframe(iframe));
+    debugdata=plot_wings(iframe,debugdata,frame);
+else
+    debugdata.haxes=handles.axes_wingtracker_video;
+    debugdata.him=handles.video_img;
+    debugdata.vis=8;
+    debugdata.DEBUG=cbparams.track.DEBUG;
+    debugdata.track=false;
+    debugdata.play=false;
 end
     
-
+% Initialize debugdata
  
  GUI.old_pos=get(hObject,'position');
 
 
 % Update handles structure
-guidata(hObject, handles);
 set(hObject,'UserData',GUI);
 set(handles.slider_frame,'UserData',1);
-set(handles.pushbutton_start,'UserData',track)
+set(handles.pushbutton_start,'UserData',wingtrack);
+setappdata(0,'debugdata_WT',debugdata)
 setappdata(0,'cbparams',cbparams);
+
+
+if ~ISPAUSE
+    ISPAUSE=true;
+    pushbutton_start_Callback(handles.pushbutton_start,eventdata,handles)
+    if ISPAUSE
+        uiwait(handles.cbtrackGUI_ROI);
+    end
+else
+    ISPAUSE=true;
+    uiwait(handles.cbtrackGUI_ROI);
+end
+guidata(hObject, handles);
+
 
 
 
@@ -156,24 +166,28 @@ setappdata(0,'cbparams',cbparams);
 
 
 % --- Outputs from this function are returned to the command line.
-function varargout = cbtrackGUI_tracker_video_OutputFcn(hObject, eventdata, handles) 
+function varargout = cbtrackGUI_WingTracker_video_OutputFcn(hObject, eventdata, handles) 
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
 % Get default command line output from handles structure
-varargout{1} = handles;
+varargout{1} = handles.output;
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
+
 
 
 % --- Executes during object creation, after setting all properties.
-function axes_tracker_video_CreateFcn(hObject, eventdata, handles) %#ok<*INUSD,*DEFNU>
-% hObject    handle to axes_tracker_video (see GCBO)
+function axes_wingtracker_video_CreateFcn(hObject, eventdata, handles) %#ok<*INUSD,*DEFNU>
+% hObject    handle to axes_wingtracker_video (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
 
-% Hint: place code in OpeningFcn to populate axes_tracker_video
+% Hint: place code in OpeningFcn to populate axes_wingtracker_video
 
 
 
@@ -206,29 +220,26 @@ restart='';
 setappdata(0,'restart',restart)
 
 cbparams=getappdata(0,'cbparams');
+trackdata=getappdata(0,'trackdata');
+debugdata=getappdata(0,'debugdata_WT');
 out=getappdata(0,'out');
 logfid=open_log('track_log',cbparams,out.folder);
-t=getappdata(0,'t');
-finalfile = fullfile(out.folder,cbparams.dataloc.trx.filestr);
-fprintf(logfid,'Saving tracking results up to frame %i at %s...\n',t,datestr(now,'yyyymmddTHHMMSS'));
-CourtshipBowlTrack_GUI_save(finalfile,t)
-if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
-    delete(handles.cbtrackGUI_ROI)
-end
+iframe=debugdata.nframestracked;
+fprintf(logfid,'Saving tracking results up to frame %i at %s...\n',debugdata.framestracked(iframe),datestr(now,'yyyymmddTHHMMSS'));
+[trackdata,debugdata]=delete_partial_wing(iframe,trackdata,debugdata);
+setappdata(0,'trackdata',trackdata)
+setappdata(0,'debugdata_WT',debugdata);
+setappdata(0,'iscancel',false)
 if logfid > 1,
   fclose(logfid);
 end
-
-CourtshipBowlTrack_GUI2
-CourtshipBowlMakeResultsMovie_GUI
-pffdata = CourtshipBowlComputePerFrameFeatures_GUI(1);
-setappdata(0,'pffdata',pffdata)
-cancelar
+uiresume(handles.cbtrackGUI_ROI);
 
 
-% --- Executes when cbtrackGUI_tracker_video is resized.
+
+% --- Executes when cbtrackGUI_WingTracker_video is resized.
 function cbtrackGUI_ROI_ResizeFcn(hObject, eventdata, handles)
-% hObject    handle to cbtrackGUI_tracker_video (see GCBO)
+% hObject    handle to cbtrackGUI_WingTracker_video (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 GUIresize(handles,hObject);
@@ -238,38 +249,17 @@ function slider_frame_Callback(hObject, eventdata, handles)
 % hObject    handle to slider_frame (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-f=round(get(hObject,'Value'));
-set(hObject,'Value',f);
-set(handles.slider_frame,'UserData',f);
+iframe=round(get(hObject,'Value'));
+set(hObject,'Value',iframe);
+set(handles.slider_frame,'UserData',iframe);
 % Plot
-roidata=getappdata(0,'roidata');
-trackdata=getappdata(0,'trackdata');
-cbparams=getappdata(0,'cbparams');
-iframe = f - cbparams.track.firstframetrack + 1;
-track=get(handles.pushbutton_start,'UserData');
-frame=track.readframe(iframe);
-set(handles.video_img,'CData',frame);
-for roii = 1:roidata.nrois,
-  roibb = roidata.roibbs(roii,:);
-  offx = roibb(1)-1;
-  offy = roibb(3)-1;
-  for i = 1:2,
-    updateellipse(handles.hell(i,roii),trackdata.trxx(i,roii,iframe)+offx,trackdata.trxy(i,roii,iframe)+offy,trackdata.trxtheta(i,roii,iframe),trackdata.trxa(i,roii,iframe),trackdata.trxb(i,roii,iframe));
-    set(handles.htrx(i,roii),'XData',squeeze(trackdata.trxx(i,roii,max(iframe-30,1):iframe)+offx),...
-      'YData',squeeze(trackdata.trxy(i,roii,max(iframe-30,1):iframe)+offy));
-  end
-end
-icurrf=iframe;
-lastf=get(handles.slider_frame,'Max');
-ilastf=lastf-cbparams.track.firstframetrack+1;
-set(handles.text_info,'String',['Displaying frame ',num2str(icurrf),'. ',num2str(ilastf),' of ',num2str(cbparams.track.nframetrack),' (',num2str(ilastf*100/cbparams.track.nframetrack,'%.1f'),'%) tracked.'])  
+debugdata=getappdata(0,'debugdata_WT');
+wingtrack=get(handles.pushbutton_start,'UserData');
+frame=double(wingtrack.readframe(debugdata.framestracked(iframe)));
+debugdata=plot_wings(iframe,debugdata,frame);
+set(handles.text_info,'String',['Displaying frame ',num2str(debugdata.framestracked(iframe)),'. ',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),' (',num2str(debugdata.nframestracked*100/debugdata.nframestrack,'%.1f'),'%) tracked.'])  
+setappdata(0,'debugdata_WT',debugdata)
 
-
-
-
-
-% Hints: get(hObject,'Value') returns position of slider
-%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 
 
 % --- Executes during object creation, after setting all properties.
@@ -285,12 +275,10 @@ end
 
 
 % --- Executes on mouse press over axes background.
-function axes_tracker_video_ButtonDownFcn(hObject, eventdata, handles)
-% hObject    handle to axes_tracker_video (see GCBO)
+function axes_wingtracker_video_ButtonDownFcn(hObject, eventdata, handles)
+% hObject    handle to axes_wingtracker_video (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
-
 
 
 
@@ -299,14 +287,15 @@ function cbtrackGUI_ROI_CloseRequestFcn(hObject, eventdata, handles)
 % hObject    handle to cbtrackGUI_ROI (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-track=get(handles.pushbutton_start,'UserData');
 msg_cancel=myquestdlg(14,'Helvetica','Cancel current project? All setup options will be lost','Cancel','Yes','No','No'); 
 if isempty(msg_cancel)
     msg_cancel='No';
 end
-fid_video=track.fid; %#ok<NASGU>
 if strcmp('Yes',msg_cancel)
-    cancelar
+    setappdata(0,'iscancel',true)
+    if ishandle(hObject)
+        delete(hObject)
+    end
 end
 
 
@@ -326,43 +315,47 @@ elseif ISPAUSE
     set(handles.pushbutton_accept,'Enable','off')
     set(handles.pushbutton_play,'Enable','off')
     set(handles.slider_frame,'Enable','off')
-    CourtshipBowlTrack_GUI_debug(handles);
+    
+    trackdata=getappdata(0,'trackdata');
+    moviefile=getappdata(0,'moviefile');
+    BG=getappdata(0,'BG');
+    roidata=getappdata(0,'roidata');
+    cbparams=getappdata(0,'cbparams');
+    debugdata=getappdata(0,'debugdata_WT');
+    debugdata.track=1;
+    [wingtrx,wingperframedata,wingplotdata,wingtrackinfo,wingperframeunits,debugdata] = TrackWingsHelper_GUI(handles,trackdata.trx,moviefile,double(BG.bgmed),roidata.inrois_all,cbparams.wingtrack,debugdata,...
+              'debug',cbparams.track.DEBUG,'firstframe',cbparams.track.firstframetrack);
+    trackdata.trackwings_timestamp = wingtrackinfo.trackwings_timestamp;
+    trackdata.trackwings_version = wingtrackinfo.trackwings_version;
+    trackdata.trx = wingtrx;
+    trackdata.twing=getappdata(0,'twing');
+    trackdata.perframedata = wingperframedata;
+    trackdata.wingplotdata=wingplotdata;
+    trackdata.perframeunits = wingperframeunits;
+    setappdata(0,'trackdata',trackdata);
+    
+    setappdata(0,'debugdata_WT',debugdata)
     set(handles.pushbutton_save,'Enable','on')
     set(handles.pushbutton_clear,'Enable','on')
     set(handles.pushbutton_accept,'Enable','on')
     set(handles.pushbutton_play,'Enable','on')
     %set slider
-    cbparams=getappdata(0,'cbparams');
-    firstf=cbparams.track.firstframetrack;
-    t=getappdata(0,'t');
-    currentf=t+1;
-    %last=min(cbparams.track.lastframetrack,tracknframes);
-    lastf=currentf;
-    set(handles.slider_frame,'Value',currentf,'Min',firstf,'Max',lastf,'SliderStep',[.01,.1],'Enable','on')
-    icurrf=currentf-cbparams.track.firstframetrack+1;
-    ilastf=lastf-cbparams.track.firstframetrack+1;
-    set(handles.text_info,'String',['Displaying frame ',num2str(icurrf),'. ',num2str(ilastf),' of ',num2str(cbparams.track.nframetrack),' (',num2str(ilastf*100/cbparams.track.nframetrack,'%.1f'),'%) tracked.'])  
+    t=getappdata(0,'twing');
+    set(handles.slider_frame,'Value',debugdata.nframestracked,'Max',debugdata.nframestracked,'SliderStep',[.01,.1],'Enable','on')
+    set(handles.text_info,'String',['Displaying frame ',num2str(t-1),'. ',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),' (',num2str(debugdata.nframestracked*100/debugdata.nframestrack,'%.1f'),'%) tracked.'])  
+    
     if ~ISPAUSE
         out=getappdata(0,'out');
         logfid=open_log('track_log',cbparams,out.folder);
-        fprintf(logfid,'Main tracking finished at %s...\n',datestr(now,'yyyymmddTHHMMSS'));
-        finalfile = fullfile(out.folder,cbparams.dataloc.trx.filestr);
-        fprintf(logfid,'Saving results in %s.\n',finalfile);
-        CourtshipBowlTrack_GUI_save(finalfile,t)
-        if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
-            delete(handles.cbtrackGUI_ROI)
-        end
+        fprintf(logfid,'Wing tracking finished at %s...\n',datestr(now,'yyyymmddTHHMMSS'));
+        
         if logfid > 1,
             fclose(logfid);
         end
         restart='';
         setappdata(0,'restart',restart)
-        
-        CourtshipBowlTrack_GUI2
-        CourtshipBowlMakeResultsMovie_GUI
-        pffdata = CourtshipBowlComputePerFrameFeatures_GUI(1);
-        setappdata(0,'pffdata',pffdata)
-        cancelar
+        setappdata(0,'iscancel',false)
+        uiresume(handles.cbtrackGUI_ROI);
     end
 end
 
@@ -384,43 +377,30 @@ elseif ~ISPLAYING
     set(handles.pushbutton_save,'Enable','off');
     set(handles.pushbutton_start,'Enable','off');
     set(handles.pushbutton_accept,'Enable','off');
-    cbparams=getappdata(0,'cbparams');
-    f=get(handles.slider_frame,'Value');
-    track=get(handles.pushbutton_start,'UserData');
-    t=getappdata(0,'t');
-    lastf=t;
-    ilastf=lastf-cbparams.track.firstframetrack+1;
-    cbparams=getappdata(0,'cbparams');
-    roidata=getappdata(0,'roidata');
-    trackdata=getappdata(0,'trackdata');
-    tic;
-    for j=f:lastf
+    iframe=get(handles.slider_frame,'Value');
+    debugdata=getappdata(0,'debugdata_WT');
+    wingtrack=get(handles.pushbutton_start,'UserData');
+    frame=double(wingtrack.readframe(debugdata.framestracked(iframe)));
+    debugdata.play=true;
+    ilastf=debugdata.nframestracked;
+    for j=iframe:ilastf
+        tframe=debugdata.framestracked(j);
         set(handles.slider_frame,'Value',j);    
         if ~ISPLAYING
             break
         end
-        iframe=j-cbparams.track.firstframetrack+1;
-        icurrf=iframe;
-        set(handles.text_info,'String',['Displaying frame ',num2str(icurrf),'. ',num2str(ilastf),' of ',num2str(cbparams.track.nframetrack),' (',num2str(ilastf*100/cbparams.track.nframetrack,'%.1f'),'%) tracked.'])  
-        frame=track.readframe(j);
-        set(handles.video_img,'CData',frame);
-        for roii = 1:roidata.nrois,
-            roibb = roidata.roibbs(roii,:);
-            offx = roibb(1)-1;
-            offy = roibb(3)-1;
-            for i = 1:2,
-              updateellipse(handles.hell(i,roii),trackdata.trxx(i,roii,iframe)+offx,trackdata.trxy(i,roii,iframe)+offy,trackdata.trxtheta(i,roii,iframe),trackdata.trxa(i,roii,iframe),trackdata.trxb(i,roii,iframe));
-              set(handles.htrx(i,roii),'XData',squeeze(trackdata.trxx(i,roii,max(iframe-30,1):iframe)+offx),...
-                'YData',squeeze(trackdata.trxy(i,roii,max(iframe-30,1):iframe)+offy));
-            end
-        end
-        drawnow;
+        set(handles.text_info,'String',['Displaying frame ',num2str(tframe),'. ',num2str(ilastf),' of ',num2str(debugdata.nframestracked),' (',num2str(ilastf*100/debugdata.nframestracked,'%.1f'),'%) tracked.'])  
+        frame=double(wingtrack.readframe(j));
+        debugdata=plot_wings(j,debugdata,frame);        
     end
+    ISPLAYING=false;
+    debugdata.play=false;
     set(handles.pushbutton_play,'String','Play','Backgroundcolor',[0,.5,0])
     set(handles.pushbutton_clear,'Enable','on');
     set(handles.pushbutton_save,'Enable','on');
     set(handles.pushbutton_start,'Enable','on');
     set(handles.pushbutton_accept,'Enable','on');
+    setappdata(0,'debugdata_WT',debugdata)
 end
 
 
@@ -432,54 +412,47 @@ function pushbutton_clear_Callback(hObject, eventdata, handles)
 msg_clear=myquestdlg(14,'Helvetica',{'Which data would you like to delete?';'- All: Delete all the tracked frames';'- Current: Delete from the displayed frame'},'Cancel','All','Current','Cancel','Cancel'); 
 out=getappdata(0,'out');
 logfid=open_log('track_log',getappdata(0,'cbparams'),out.folder);
+debugdata=getappdata(0,'debugdata_WT');
+trackdata=getappdata(0,'trackdata');
 if strcmp(msg_clear,'All')
-    cbparams=getappdata(0,'cbparams');
-
-    track=get(handles.pushbutton_start,'UserData');
-    frame=track.readframe(1);
+    wingtrack=get(handles.pushbutton_start,'UserData');
+    frame=double(wingtrack.readframe(1));
     set(handles.video_img,'CData',frame);
-    if isfield(handles,'hell') 
-        delete(handles.hell(ishandle(handles.hell)))
+    if isfield(debugdata,'htext')
+        delete(debugdata.htext(ishandle(debugdata.htext)));
     end
-    handles.hell=[];
-    if isfield(handles,'htrx') 
-        delete(handles.htrx(ishandle(handles.htrx)))
+    if isfield(debugdata,'hwing'),
+      delete(debugdata.hwing(ishandle(debugdata.hwing)));
     end
-    handles.htrx=[];
-
-    rmappdata(0,'trackdata')
-
+    if isfield(debugdata,'htrough'),
+      delete(debugdata.htrough(ishandle(debugdata.htrough)));
+    end
+    debugdata.htext = [];
+    debugdata.hwing = [];
+    debugdata.htrough = [];
+    trackdata=rmfield(trackdata,{'trackwings_timestamp','trackwings_version','twing','perframedata','wingplotdata','perframeunits'});
+    trackdata.trx=rmfield(trackdata.trx,{'wing_anglel','wing_angler','xwingl','ywingl','xwingr','ywingr'});
+    debugdata=rmfield(debugdata,{'framestracked','nframestracked'});
     set(handles.pushbutton_start,'String','Start Tracking');
     set(handles.pushbutton_save,'Enable','off')
     set(handles.pushbutton_clear,'Enable','off')
     set(handles.pushbutton_accept,'Enable','off')
     set(handles.pushbutton_play,'Enable','off')
-
-     % Set slider
-    first=cbparams.track.firstframetrack;
-    if isfield(cbparams.track,'currframe')
-        current=cbparams.track.currframe;
-    else
-        current=first;
-    end
-    %last=min(cbparams.track.lastframetrack,tracknframes);
-    last=current;
-    set(handles.slider_frame,'Value',current+1,'Min',first,'Max',last+1,'SliderStep',[.01,.1])
-    set(handles.text_info,'String','No frames tracked')
-    fprintf(logfid,'All tracking data cleared at %s.\n',datestr(now,'yyyymmddTHHMMSS')');
+    set(handles.slider_frame,'Value',1,'Min',1,'Max',2,'SliderStep',[.01,.1],'Enable','off')
+    set(handles.text_info,'String','Tracking wings: No frames trackedNo frames tracked')
+    fprintf(logfid,'All wing tracking data cleared at %s.\n',datestr(now,'yyyymmddTHHMMSS')');
 elseif strcmp(msg_clear,'Current')
-    lastf=get(handles.slider_frame,'Value');
-    clear_partial(lastf);  
-    set(handles.slider_frame,'Max',lastf);
-    cbparams=getappdata(0,'cbparams');
-    ilastf=lastf-cbparams.track.firstframetrack+1;
-    icurrf=ilastf;
-    set(handles.text_info,'String',['Displaying frame ',num2str(icurrf),'. ',num2str(ilastf),' of ',num2str(cbparams.track.nframetrack),' (',num2str(ilastf*100/cbparams.track.nframetrack,'%.1f'),'%) tracked.'])  
-    fprintf(logfid,'Tracking data cleared from frame %i at %s.\n',lastf,datestr(now,'yyyymmddTHHMMSS'));
+    iframe=get(handles.slider_frame,'Value');
+    [trackdata,debugdata]=clear_partial_wing(iframe,trackdata,debugdata);
+    set(handles.slider_frame,'Max',iframe);
+    set(handles.text_info,'String',['Displaying frame ',num2str(debugdata.framestracked(iframe)),'. ',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),' (',num2str(debugdata.nframestracked*100/debugdata.nframestrack,'%.1f'),'%) tracked.'])  
+    fprintf(logfid,'Tracking data cleared from frame %i at %s.\n',iframe,datestr(now,'yyyymmddTHHMMSS'));
 end
 if logfid > 1,
     fclose(logfid);
 end
+setappdata(0,'trackdata',trackdata);
+setappdata(0,'debugdata_WT',debugdata)
 
 
 % --- Executes on button press in pushbutton_save.
@@ -492,9 +465,11 @@ out=getappdata(0,'out');
 cbparams=getappdata(0,'cbparams');
 logfid=open_log('track_log',cbparams,out.folder);
 t=getappdata(0,'t');
+trackdata=getappdata(0,'trackdata'); %#ok<*NASGU>
 tempfile = fullfile(tempdir,tempfile);
 fprintf(logfid,'Saving temporary file after %i frames at %s...\n',t,datestr(now,'yyyymmddTHHMMSS'));
-CourtshipBowlTrack_GUI_save(tempfile,'all')
+copyfile(out.temp_full,tempfile);
+save(tempfile,'trackdata','-append')
 if logfid > 1,
   fclose(logfid);
 end
@@ -515,6 +490,7 @@ GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
 delete(handles.cbtrackGUI_ROI)
+setappdata(0,'iscancel',2)
 cbtrackGUI_BG
 
 
@@ -535,6 +511,7 @@ GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
 delete(handles.cbtrackGUI_ROI)
+setappdata(0,'iscancel',2)
 cbtrackGUI_ROI
 
 
@@ -554,6 +531,7 @@ GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
 delete(handles.cbtrackGUI_ROI)
+setappdata(0,'iscancel',2)
 cbtrackGUI_tracker
 
 % --- Executes on button press in pushbutton_debuger.
@@ -568,3 +546,24 @@ function pushbutton_debug_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_debug (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in pushbutton_WT.
+function pushbutton_WT_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_WT (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+GUIscale=getappdata(0,'GUIscale');
+new_pos=get(handles.cbtrackGUI_ROI,'position'); 
+old_pos=GUIscale.original_position;
+GUIscale.rescalex=new_pos(3)/old_pos(3);
+GUIscale.rescaley=new_pos(4)/old_pos(4);
+GUIscale.position=new_pos;
+setappdata(0,'GUIscale',GUIscale)
+
+delete(handles.cbtrackGUI_ROI)
+setappdata(0,'iscancel',2)
+cbtrackGUI_WingTracker
+
+%%%%% Aquí. Ya está terminado. Mirar las listas
+

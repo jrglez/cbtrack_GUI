@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_tracker(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_ROI_temp
 
-% Last Modified by GUIDE v2.5 08-Dec-2013 10:25:00
+% Last Modified by GUIDE v2.5 21-Feb-2014 12:22:52
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -59,9 +59,9 @@ moviefile=getappdata(0,'moviefile');
 cbparams=getappdata(0,'cbparams');
 roi_params=cbparams.detect_rois;
 tracking_params=cbparams.track;
-roidata=getappdata(0,'roidata');
 BG=getappdata(0,'BG');
 bgmed=BG.bgmed;
+roidata=getappdata(0,'roidata');
 count=struct;
 [count.readframe,count.nframes,count.fid,conunt.headerinfo] = get_readframe_fcn(moviefile);
 frame=count.readframe(1);
@@ -87,6 +87,28 @@ set(handles.axes_tracker,'XTick',[],'YTick',[])
 axis equal
 
 
+% Open video frames
+P_stages={'BG','ROIs','params','wing_params','track1','track2'};
+P_curr_stage='params';
+P_stage=getappdata(0,'P_stage');
+if find(strcmp(P_stage,P_stages))>find(strcmp(P_curr_stage,P_stages))
+    visdata=getappdata(0,'visdata');
+    count.nflies_per_roi=roidata.nflies_per_roi;
+    count.trx=visdata.trx;
+    set(handles.pushbutton_WT,'Enable','on')
+    if find(strcmp(P_stage,P_stages))>=find(strcmp('track1',P_stages)) && cbparams.track.DEBUG==1
+        set(handles.pushbutton_debuger,'Enable','on')
+    end
+else
+    count.nflies_per_roi = nan(1,roidata.nrois);
+    [visdata.frames,visdata.dbkgd]=compute_dbkgd(count.readframe,count.nframes,roi_params,tracking_params,bgmed,roidata);
+    visdata.isfore=cell(1,roi_params.nframessample);
+    visdata.cc_ind=cell(roidata.nrois,roi_params.nframessample);
+    visdata.trx=cell(roidata.nrois,roi_params.nframessample);
+    count.trx=visdata.trx;
+    roidata.isnew=3;
+end
+
 % Set parameters on the gui
 set(handles.edit_set_nframessample,'String',num2str(roi_params.nframessample));
 set(handles.edit_set_bgthresh,'String',num2str(tracking_params.bgthresh));
@@ -94,20 +116,9 @@ set(handles.slider_set_bgthresh,'Value',tracking_params.bgthresh);
 fcn_slider_bgthresh = get(handles.slider_set_bgthresh,'Callback');
 hlisten_bgthresh=addlistener(handles.slider_set_bgthresh,'ContinuousValueChange',fcn_slider_bgthresh); %#ok<NASGU>
 set(handles.edit_set_minccarea,'String',num2str(tracking_params.minccarea));
-set(handles.slider_set_minccarea,'Value',tracking_params.minccarea);
+set(handles.slider_set_minccarea,'Value',tracking_params.minccarea,'Max',200);
 fcn_slider_minccarea = get(handles.slider_set_minccarea,'Callback');
 hlisten_minccarea=addlistener(handles.slider_set_minccarea,'ContinuousValueChange',fcn_slider_minccarea); %#ok<NASGU>
-
-
-% Count flies on each ROI if they have not been count before
-if ~isfield(roidata,'nflies_per_roi')
-    [count.nflies_per_roi,visdata.frames,visdata.dbkgd,visdata.isfore,visdata.cc_ind,visdata.flies_ind,visdata.trx] = CountFliesPerROI_GUI(count.readframe,bgmed,count.nframes,roidata,roi_params,tracking_params);
-    roidata.isnew=3;
-else
-    visdata=getappdata(0,'visdata');
-    count.nflies_per_roi=roidata.nflies_per_roi;
-    set(handles.pushbutton_debuger,'Enable','on')
-end
 
 visdata.rois=~roidata.inrois_all;
 visdata.hcc=[];
@@ -176,6 +187,7 @@ set(handles.edit_set_bgthresh,'UserData',tracking_params)
 set(handles.pushbutton_set_count,'UserData',count);
 set(handles.popupmenu_vis,'UserData',visdata);
 set(handles.slider_frame,'UserData',1);
+set(handles.pushbutton_trset,'UserData',cbparams.track)
 setappdata(0,'roidata',roidata)
 
 
@@ -233,22 +245,29 @@ cbparams=getappdata(0,'cbparams');
 roi_params=get(handles.edit_set_nframessample,'UserData');
 tracking_params=get(handles.edit_set_bgthresh,'UserData');
 roidata=getappdata(0,'roidata'); 
+count=get(handles.pushbutton_set_count,'UserData');
+visdata=get(handles.popupmenu_vis,'UserData');
 
 restart='';
 setappdata(0,'restart',restart)
 
+if any(isnan(count.nflies_per_roi))
+    roi_params.nframessample=str2double(get(handles.edit_set_nframessample,'String'));
+    [count.nflies_per_roi,visdata.isfore,visdata.cc_ind,visdata.flies_ind,visdata.trx] = CountFliesPerROI_GUI(visdata.dbkgd,roidata,roi_params,tracking_params);
+    count.trx=visdata.trx;
+    roidata.nflies_per_roi=count.nflies_per_roi;
+    roidata.isnew=3;
+end
+
 if roidata.isnew
-    count=get(handles.pushbutton_set_count,'UserData');
-    visdata=get(handles.popupmenu_vis,'UserData');
     if roidata.isnew==2
         msg_change=myquestdlg(14,'Helvetica','You changed some of the parameters but did not count the flyes. Would like to count the flies and save the parameters?','Warning','Yes','No','Cancel','No'); 
         if isempty(msg_change) || strcmp(msg_change,'Cancel')
             return
         elseif strcmp(msg_change,'Yes')
-            BG=getappdata(0,'BG');
-            bgmed=BG.bgmed;            
             roi_params.nframessample=str2double(get(handles.edit_set_nframessample,'String'));
-            [count.nflies_per_roi,visdata.frames,visdata.dbkgd,visdata.isfore,visdata.cc_ind,visdata.flies_ind,visdata.trx] = CountFliesPerROI_GUI(count.readframe,bgmed,count.nframes,roidata,roi_params,tracking_params);
+            [count.nflies_per_roi,visdata.isfore,visdata.cc_ind,visdata.flies_ind,visdata.trx] = CountFliesPerROI_GUI(visdata.dbkgd,roidata,roi_params,tracking_params);
+            count.trx=vistada.trx;
             roidata.nflies_per_roi=count.nflies_per_roi;
             fxROI(:,2)=count.nflies_per_roi';
             for i=1:roidata.nrois
@@ -257,6 +276,7 @@ if roidata.isnew
 
             if visdata.plot==6 && isempty(visdata.trx{1,1})
                 visdata.trx(:,1)=fit_to_ellipse(roidata,count.nflies_per_roi, visdata.dbkgd{1}, visdata.isfore{1},tracking_params);
+                
             end
 
             plot_vis(handles,visdata,1)
@@ -275,20 +295,32 @@ if roidata.isnew
             return
         end
     end
-    cbparams.detect_rois=roi_params;
-    cbparams.track.bgthresh=tracking_params.bgthresh;
-    cbparams.track.minccarea=tracking_params.minccarea;
-    roidata.nflies_per_roi=count.nflies_per_roi;
-    roidata.isnew=false;
-    setappdata(0,'cbparams',cbparams)
-    setappdata(0,'visdata',visdata);
-    setappdata(0,'roidata',roidata);
     if isappdata(0,'t')
         rmappdata(0,'t')
     end
     if isappdata(0,'trackdata')
         rmappdata(0,'trackdata')
     end
+    if isappdata(0,'debugdata_WT')
+        rmappdata(0,'debugdata_WT')
+    end
+    if isappdata(0,'twing')
+        rmappdata(0,'twing')
+    end
+    
+    temp_Tparams=get(handles.pushbutton_trset,'UserData');
+    cbparams.detect_rois=roi_params;
+    cbparams.track=temp_Tparams;
+    cbparams.track.bgthresh=tracking_params.bgthresh;
+    cbparams.track.minccarea=tracking_params.minccarea;
+    visdata.trx=count.trx;
+    roidata.nflies_per_roi=count.nflies_per_roi;
+    roidata.isnew=false;
+    setappdata(0,'cbparams',cbparams)
+    setappdata(0,'visdata',visdata);
+    setappdata(0,'roidata',roidata);
+    setappdata(0,'P_stage','wing_params')
+
     
     out=getappdata(0,'out');
     savefile = fullfile(out.folder,cbparams.dataloc.roidatamat.filestr); 
@@ -300,11 +332,7 @@ if roidata.isnew
     save(savefile,'-struct','roidata');
     savetemp
 end
-if cbparams.track.DEBUG==1
-    cbtrackGUI_tracker_video
-else
-    cbtrackGUI_tracker_NOvideo
-end
+cbtrackGUI_WingTracker;
 
 delete(handles.cbtrackGUI_ROI)
 
@@ -327,7 +355,7 @@ function slider_frame_Callback(hObject, eventdata, handles)
 f=round(get(hObject,'Value'));
 set(hObject,'Value',f);
 visdata=get(handles.popupmenu_vis,'UserData');
-if isempty(visdata.isfore{1,f})
+if isempty(visdata.isfore{1,f}) && visdata.plot~=1 && visdata.plot~=2
     roi_params=get(handles.edit_set_nframessample,'UserData');
     tracking_params=get(handles.edit_set_bgthresh,'UserData');
     roidata=getappdata(0,'roidata');
@@ -396,27 +424,29 @@ function edit_set_bgthresh_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_set_bgthresh (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-roi_params=get(handles.edit_set_nframessample,'UserData');
-tracking_params=get(handles.edit_set_bgthresh,'UserData');
-tracking_params.bgthresh=str2double(get(hObject,'String'));
-set(handles.slider_set_bgthresh,'Value',tracking_params.bgthresh)
-f=get(handles.slider_frame,'UserData');
 visdata=get(handles.popupmenu_vis,'UserData');
-BG=getappdata(0,'BG');
-bgmed=BG.bgmed;
-roidata=getappdata(0,'roidata');
-nROI=roidata.nrois;
-count=get(handles.pushbutton_set_count,'UserData');
-nframes=count.nframes;
-visdata.isfore=cell(1,nframes);
-visdata.cc_ind=cell(nROI,nframes);
-visdata.flies_ind=cell(nROI,nframes);
-visdata.trx=cell(nROI,nframes);
-[visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] = ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
-plot_vis(handles,visdata,f)
-roidata.isnew=2;
-setappdata(0,'roidata',roidata)
-set(handles.edit_set_bgthresh,'UserData',tracking_params);
+if visdata.plot~=1 && visdata.plot~=2
+    roi_params=get(handles.edit_set_nframessample,'UserData');
+    tracking_params=get(handles.edit_set_bgthresh,'UserData');
+    tracking_params.bgthresh=str2double(get(hObject,'String'));
+    set(handles.slider_set_bgthresh,'Value',tracking_params.bgthresh)
+    f=get(handles.slider_frame,'UserData');
+    BG=getappdata(0,'BG');
+    bgmed=BG.bgmed;
+    roidata=getappdata(0,'roidata');
+    nROI=roidata.nrois;
+    count=get(handles.pushbutton_set_count,'UserData');
+    nframes=count.nframes;
+    visdata.isfore=cell(1,nframes);
+    visdata.cc_ind=cell(nROI,nframes);
+    visdata.flies_ind=cell(nROI,nframes);
+    visdata.trx=cell(nROI,nframes);
+    [visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] = ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
+    plot_vis(handles,visdata,f)
+    roidata.isnew=2;
+    setappdata(0,'roidata',roidata)
+    set(handles.edit_set_bgthresh,'UserData',tracking_params);
+end
         
 
 % Hints: get(hObject,'String') returns contents of edit_set_bgthresh as text
@@ -441,27 +471,29 @@ function edit_set_minccarea_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_set_minccarea (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-roi_params=get(handles.edit_set_nframessample,'UserData');
-tracking_params=get(handles.edit_set_bgthresh,'UserData');
-tracking_params.minccarea=str2double(get(hObject,'String'));
-set(handles.slider_set_minccarea,'Value',tracking_params.minccarea)
-f=get(handles.slider_frame,'UserData');
 visdata=get(handles.popupmenu_vis,'UserData');
-BG=getappdata(0,'BG');
-bgmed=BG.bgmed;
-roidata=getappdata(0,'roidata');
-nROI=roidata.nrois;
-count=get(handles.pushbutton_set_count,'UserData');
-nframes=count.nframes;
-visdata.isfore=cell(1,nframes);
-visdata.cc_ind=cell(nROI,nframes);
-visdata.flies_ind=cell(nROI,nframes);
-visdata.trx=cell(nROI,nframes);
-[visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] = ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
-plot_vis(handles,visdata,f)
-set(handles.edit_set_nframessample,'UserData',roi_params);
-roidata.isnew=2;
-setappdata(0,'roidata',roidata)
+if visdata.plot~=1 && visdata.plot~=2
+    roi_params=get(handles.edit_set_nframessample,'UserData');
+    tracking_params=get(handles.edit_set_bgthresh,'UserData');
+    tracking_params.minccarea=str2double(get(hObject,'String'));
+    set(handles.slider_set_minccarea,'Value',tracking_params.minccarea)
+    f=get(handles.slider_frame,'UserData');
+    BG=getappdata(0,'BG');
+    bgmed=BG.bgmed;
+    roidata=getappdata(0,'roidata');
+    nROI=roidata.nrois;
+    count=get(handles.pushbutton_set_count,'UserData');
+    nframes=count.nframes;
+    visdata.isfore=cell(1,nframes);
+    visdata.cc_ind=cell(nROI,nframes);
+    visdata.flies_ind=cell(nROI,nframes);
+    visdata.trx=cell(nROI,nframes);
+    [visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] = ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
+    plot_vis(handles,visdata,f)
+    set(handles.edit_set_nframessample,'UserData',roi_params);
+    roidata.isnew=2;
+    setappdata(0,'roidata',roidata)
+end
 
 
 % --- Executes during object creation, after setting all properties.
@@ -508,21 +540,16 @@ function pushbutton_set_count_Callback(hObject, eventdata, handles)
 roi_params=get(handles.edit_set_nframessample,'UserData');
 tracking_params=get(handles.edit_set_bgthresh,'UserData');
 roidata=getappdata(0,'roidata');
-BG=getappdata(0,'BG');
-bgmed=BG.bgmed;
 count=get(hObject,'UserData');
 visdata=get(handles.popupmenu_vis,'UserData');
 
 roi_params.nframessample=str2double(get(handles.edit_set_nframessample,'String'));
 
-[count.nflies_per_roi,visdata.frames,visdata.dbkgd,visdata.isfore,visdata.cc_ind,visdata.flies_ind,visdata.trx] = CountFliesPerROI_GUI(count.readframe,bgmed,count.nframes,roidata,roi_params,tracking_params);
+[count.nflies_per_roi,visdata.isfore,visdata.cc_ind,visdata.flies_ind,visdata.trx] = CountFliesPerROI_GUI(visdata.dbkgd,roidata,roi_params,tracking_params);
+count.trx=visdata.trx;
 fxROI(:,2)=count.nflies_per_roi';
 for i=1:roidata.nrois
     set(handles.text2(i),'String',num2str(fxROI(i,2)))
-end
-
-if visdata.plot==6 && isempty(visdata.trx{1,1})
-    visdata.trx(:,1)=fit_to_ellipse(roidata,count.nflies_per_roi, visdata.dbkgd{1}, visdata.isfore{1},tracking_params);
 end
 
 plot_vis(handles,visdata,1)
@@ -564,24 +591,26 @@ function slider_set_bgthresh_Callback(hObject, eventdata, handles)
 % hObject    handle to slider_set_bgthresh (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-roi_params=get(handles.edit_set_nframessample,'UserData');
+visdata=get(handles.popupmenu_vis,'UserData');
 tracking_params=get(handles.edit_set_bgthresh,'UserData');
 tracking_params.bgthresh=get(hObject,'Value');
 set(handles.edit_set_bgthresh,'string',num2str(tracking_params.bgthresh))
-f=get(handles.slider_frame,'UserData');
-visdata=get(handles.popupmenu_vis,'UserData');
-BG=getappdata(0,'BG');
-bgmed=BG.bgmed;
 roidata=getappdata(0,'roidata');
-nROI=roidata.nrois;
-count=get(handles.pushbutton_set_count,'UserData');
-nframes=count.nframes;
-visdata.isfore=cell(1,nframes);
-visdata.cc_ind=cell(nROI,nframes);
-visdata.flies_ind=cell(nROI,nframes);
-visdata.trx=cell(nROI,nframes);
-[visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] = ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
-plot_vis(handles,visdata,f)
+if visdata.plot~=1 && visdata.plot~=2
+    roi_params=get(handles.edit_set_nframessample,'UserData');
+    f=get(handles.slider_frame,'UserData');
+    BG=getappdata(0,'BG');
+    bgmed=BG.bgmed;
+    nROI=roidata.nrois;
+    count=get(handles.pushbutton_set_count,'UserData');
+    nframes=count.nframes;
+    visdata.isfore=cell(1,nframes);
+    visdata.cc_ind=cell(nROI,nframes);
+    visdata.flies_ind=cell(nROI,nframes);
+    visdata.trx=cell(nROI,nframes);
+    [visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] = ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
+    plot_vis(handles,visdata,f)
+end
 set(handles.edit_set_bgthresh,'UserData',tracking_params);
 roidata.isnew=2;
 setappdata(0,'roidata',roidata)
@@ -606,24 +635,26 @@ function slider_set_minccarea_Callback(hObject, eventdata, handles)
 % hObject    handle to slider_set_minccarea (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-roi_params=get(handles.edit_set_nframessample,'UserData');
+visdata=get(handles.popupmenu_vis,'UserData');
 tracking_params=get(handles.edit_set_bgthresh,'UserData');
 tracking_params.minccarea=get(hObject,'Value');
 set(handles.edit_set_minccarea,'String',num2str(tracking_params.minccarea))
-f=get(handles.slider_frame,'UserData');
-visdata=get(handles.popupmenu_vis,'UserData');
-BG=getappdata(0,'BG');
-bgmed=BG.bgmed;
 roidata=getappdata(0,'roidata');
-nROI=roidata.nrois;
-count=get(handles.pushbutton_set_count,'UserData');
-nframes=count.nframes;
-visdata.isfore=cell(1,nframes);
-visdata.cc_ind=cell(nROI,nframes);
-visdata.flies_ind=cell(nROI,nframes);
-visdata.trx=cell(nROI,nframes);
-[visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] = ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
-plot_vis(handles,visdata,f)
+if visdata.plot~=1 && visdata.plot~=2
+    roi_params=get(handles.edit_set_nframessample,'UserData');
+    f=get(handles.slider_frame,'UserData');
+    BG=getappdata(0,'BG');
+    bgmed=BG.bgmed;
+    nROI=roidata.nrois;
+    count=get(handles.pushbutton_set_count,'UserData');
+    nframes=count.nframes;
+    visdata.isfore=cell(1,nframes);
+    visdata.cc_ind=cell(nROI,nframes);
+    visdata.flies_ind=cell(nROI,nframes);
+    visdata.trx=cell(nROI,nframes);
+    [visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] = ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
+    plot_vis(handles,visdata,f)
+end
 set(handles.edit_set_bgthresh,'UserData',tracking_params);
 roidata.isnew=2;
 setappdata(0,'roidata',roidata)
@@ -652,8 +683,15 @@ visdata=get(handles.popupmenu_vis,'UserData');
 visdata.plot=get(hObject,'Value');
 roidata=getappdata(0,'roidata');
 tracking_params=get(handles.edit_set_bgthresh,'UserData');
-
-if visdata.plot==6 && isempty(visdata.trx{1,f})
+if isempty(visdata.isfore{1,f}) && visdata.plot~=1 && visdata.plot~=2
+    roi_params=get(handles.edit_set_nframessample,'UserData');
+    tracking_params=get(handles.edit_set_bgthresh,'UserData');
+    roidata=getappdata(0,'roidata');
+    BG=getappdata(0,'BG');
+    bgmed=BG.bgmed;
+    count=get(handles.pushbutton_set_count,'UserData');
+    [visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] = ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
+elseif visdata.plot==6 && isempty(visdata.trx{1,f})
     count=get(handles.pushbutton_set_count,'UserData');
     visdata.trx(:,f)=fit_to_ellipse(roidata,count.nflies_per_roi, visdata.dbkgd{f}, visdata.isfore{f},tracking_params);
 end
@@ -682,7 +720,19 @@ function pushbutton_trset_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_trset (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-cbtrackGUI_tracker_params
+temp_Tparams=get(handles.pushbutton_trset,'UserData');
+temp_Tparams=cbtrackGUI_tracker_params(temp_Tparams);
+cbparams=getappdata(0,'cbparams');
+if ~isequal(temp_Tparams,cbparams.track)
+    roidata=getappdata(0,'roidata');
+    if roidata.isnew~=2
+        roidata.isnew=3;
+    end
+    setappdata(0,'roidata',roidata)
+    set(handles.pushbutton_trset,'UserData',temp_Tparams)
+end
+
+
 
 
 % --- Executes on button press in pushbutton_pff.
@@ -754,4 +804,39 @@ GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
 delete(handles.cbtrackGUI_ROI)
-cbtrackGUI_tracker_video
+
+P_stage=getappdata(0,'P_stage');
+if strcmp(P_stage,'track2')
+    CourtshipBowlTrack_GUI2
+    iscancel=getappdata(0,'iscancel');
+    if iscancel
+        if iscancel==1
+            cancelar
+        end
+        return
+    end
+    CourtshipBowlMakeResultsMovie_GUI
+    pffdata = CourtshipBowlComputePerFrameFeatures_GUI(1);
+    setappdata(0,'pffdata',pffdata)
+    cancelar
+elseif strcmp(P_stage,'track1')
+    cbtrackGUI_tracker_video
+end
+
+
+
+% --- Executes on button press in pushbutton_WT.
+function pushbutton_WT_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_WT (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+GUIscale=getappdata(0,'GUIscale');
+new_pos=get(handles.cbtrackGUI_ROI,'position'); 
+old_pos=GUIscale.original_position;
+GUIscale.rescalex=new_pos(3)/old_pos(3);
+GUIscale.rescaley=new_pos(4)/old_pos(4);
+GUIscale.position=new_pos;
+setappdata(0,'GUIscale',GUIscale)
+
+delete(handles.cbtrackGUI_ROI)
+cbtrackGUI_WingTracker

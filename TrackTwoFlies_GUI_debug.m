@@ -9,7 +9,7 @@ out=getappdata(0,'out');
 [restart] = myparse(varargin,'restart',''); 
 
 dorestart = false;
-if ~isempty(restart),
+if ~isempty(restart) && ~isempty(trackdata)
   restartstage = trackdata.stage; 
   dorestart = true;
 else
@@ -98,7 +98,7 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
 
     fprintf(logfid,'Starting main tracking from frame %i at %s...\n',startframe,datestr(now,'yyyymmddTHHMMSS'));
     if ~params.DEBUG
-      hwait=waitbar(0,['Tracking frame 0 of ', num2str(nframes_track)],'CreateCancelBtn','setappdata(0,''cancel_hwait'',1)');
+      hwait=waitbar(0,['Tracking: frame ',num2str(startframe),'(0 of ',num2str(nframes_track),')'],'CreateCancelBtn','setappdata(0,''cancel_hwait'',1)');
     end
     for t = startframe:min(params.lastframetrack,nframes),
       if ISPAUSE
@@ -168,9 +168,9 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
             end
           end
         end
-      set(handles.text_info,'String',['Tracking: frame ',num2str(iframe),' of ',num2str(min(params.lastframetrack,nframes)),' (',num2str(iframe*100/min(params.lastframetrack,nframes),'%.1f'),'%).'])  
+      set(handles.text_info,'String',['Tracking: frame ',num2str(t),' (',num2str(iframe),' of ',num2str(nframes_track),', ',num2str(iframe*100/nframes_track,'%.1f'),'%).'])  
       else
-        waitbar(iframe/nframes_track,hwait,['Tracking frame ', num2str(iframe),' of ', num2str(nframes_track)]);  
+        waitbar(iframe/nframes_track,hwait,['Tracking: frame ',num2str(t),' (',num2str(iframe),' of ',num2str(nframes_track),')']);  
       end    
 
       if params.DEBUG || mod(t,1) == 0,

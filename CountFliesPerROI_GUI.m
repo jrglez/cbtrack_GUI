@@ -1,4 +1,4 @@
-function [nflies_per_roi,im,dbkgd_in,isfore_in,cc_ind,flies_ind,trx] = CountFliesPerROI_GUI(readframe,bgmed,nframes,roidata,roiparams,tracking_params)
+function [nflies_per_roi,isfore_in,cc_ind,flies_ind,trx] = CountFliesPerROI_GUI(dbkgd,roidata,roiparams,tracking_params)
 
 nrois = roidata.nrois;
 
@@ -7,33 +7,15 @@ logfid=open_log('roi_log',getappdata(0,'cbparams'),out.folder);
 fprintf(logfid,'Counting flies per ROI at %s\n',datestr(now,'yyyymmddTHHMMSS'));
 
 % do background subtraction to count flies in each roi
-framessample = round(linspace(1,nframes,roiparams.nframessample));
 areassample = cell(nrois,roiparams.nframessample);
-im=cell(1,roiparams.nframessample);
-dbkgd=cell(1,roiparams.nframessample);
-dbkgd_in=cell(1,roiparams.nframessample);
 isfore=cell(1,roiparams.nframessample);
 isfore_in=cell(1,roiparams.nframessample);
 cc_ind=cell(nrois,roiparams.nframessample);
 flies_ind=cell(nrois,roiparams.nframessample);
-trx=cell(nrois,roiparams.nframessample);
 hwait=waitbar(0,['Counting flies: Analazing frame 0 of ', num2str(roiparams.nframessample)]);
 
 for i = 1:roiparams.nframessample,
-  waitbar(i/roiparams.nframessample,hwait,['Counting flies: Analazing frame ',num2str(i),' of ', num2str(roiparams.nframessample)]);
-  im{i} = readframe(framessample(i));
-  switch tracking_params.bgmode,
-    case 'DARKBKGD',
-      dbkgd{i} = imsubtract(im{i},bgmed);
-    case 'LIGHTBKGD',
-      dbkgd{i} = imsubtract(bgmed,im{i});
-    case 'OTHERBKGD',
-      dbkgd{i} = imabsdiff(im{i},bgmed);
-    otherwise
-      error('Unknown background type');
-  end
-  dbkgd_in{i}=dbkgd{i}; dbkgd_in{i}(~roidata.inrois_all)=255;
-  
+  waitbar(i/roiparams.nframessample,hwait,['Counting flies: Analazing frame ',num2str(i),' of ', num2str(roiparams.nframessample)]);  
   % threshold
   isfore{i} = dbkgd{i} >= tracking_params.bgthresh;
   isfore_in{i}=isfore{i}; isfore_in{i}(~roidata.inrois_all)=1;
@@ -49,7 +31,6 @@ for i = 1:roiparams.nframessample,
     cc_ind{j,i}=cellfun(@(x,y) cat(2,x+roibb(1)-1,y+roibb(3)-1),x,y,'UniformOutpu',0);
     flies_ind{j,i}=cellfun(@(x,y) cat(2,x+roibb(1)-1,y+roibb(3)-1),x(isfly),y(isfly),'UniformOutpu',0);
   end
-  
 end
 close (hwait)
 
@@ -71,6 +52,14 @@ for j = 1:nrois,
     nflies_per_roi(j) = round(prctile(nccs,99));
   end
 end
+
+hwait=waitbar(0,['Computing positions: Analazing frame 0 of ', num2str(roiparams.nframessample)]);
+trx=cell(nrois,roiparams.nframessample);
+for i=1:roiparams.nframessample,
+    waitbar(i/roiparams.nframessample,hwait,['Computing positions: Analazing frame ',num2str(i),' of ', num2str(roiparams.nframessample)]);
+    trx(:,i)=fit_to_ellipse(roidata,nflies_per_roi, dbkgd{i}, isfore_in{i},tracking_params);
+end
+close (hwait);
 
 fprintf(logfid,'nflies\tnrois\n');
 for i = 0:2,

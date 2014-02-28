@@ -1,4 +1,4 @@
-function [trx,perframedata,wingplotdata,info,units,debugdata] = TrackWingsHelper_GUI(handles,trx,moviefile,bgmodel,isarena,params,debugdata,varargin)
+function [trx,wingtrxcurr,perframedata,wingplotdata,info,units,debugdata] = TrackWingsHelper_GUI_old(handles,trx,moviefile,bgmodel,isarena,params,debugdata,varargin)
 global ISPAUSE
 info.trackwings_version = '0.1';
 info.trackwings_timestamp = datestr(now,'yyyymmddTHHMMSS');
@@ -62,11 +62,14 @@ trxcurr = struct(...
 
 %% start tracking
 
+wingtrxprev = [];
+
 if any([ischar(restart),ISPAUSE]) && isfield(trackdata,'twing'),
   trx=trackdata.trx;
   perframedata=trackdata.perframedata;
   wingplotdata=trackdata.wingplotdata;
   t=trackdata.twing;
+  wingtrxprev=trackdata.wingtrxprev;
   fprintf('Restarting tracking at frame %d...\n',t);
   startframe = t;
 else
@@ -95,15 +98,6 @@ if isempty(framestrack),
 end
 
 %% initialize debug plots
-if ~isfield(debugdata,'framestrack')
-    debugdata.framestrack=framestrack;
-    debugdata.nframestrack=length(debugdata.framestrack);
-end
-if ~isfield(debugdata,'framestracked')
-    framestracked=[];
-    debugdata.framestracked=framestracked;
-    debugdata.nframestracked=0;
-end
 if debugdata.DEBUG 
   if ~isfield(debugdata,'colors') 
     debugdata.colors = hsv(nflies);
@@ -115,6 +109,15 @@ if debugdata.DEBUG
   end
 elseif  ~debugdata.DEBUG
       debugdata.hwait=waitbar(0,'Tracking wings','CreateCancelBtn','setappdata(0,''cancel_hwait'',1)');
+end
+if ~isfield(debugdata,'framestrack')
+debugdata.framestrack=framestrack;
+debugdata.nframestrack=length(debugdata.framestrack);
+end
+if ~isfield(debugdata,'framestracked')
+framestracked=[];
+debugdata.framestracked=framestracked;
+debugdata.nframestracked=0;
 end
 
 %for t = round(linspace(max(firstframe,min([trx.firstframe])),max([trx.endframe]),50)),
@@ -159,8 +162,7 @@ setappdata(0,'twing',t);
   else
       waitbar(debugdata.nframestracked/debugdata.nframestrack,debugdata.hwait,['Tracking wings: frame ',num2str(t),' (',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),')']);
   end
-  [wingtrxcurr,debugdata,idxfore_thresh,fore2flywing] = TrackWingsOneFrame_GUI(im,bgmodel,isarena,trxcurr,params,XGRID,YGRID,debugdata);
-
+  [wingtrxcurr,debugdata,idxfore_thresh,fore2flywing] = TrackWingsOneFrame_GUI_old(im,bgmodel,isarena,trxcurr,wingtrxprev,params,XGRID,YGRID,debugdata);
   
   % store results
   for fly = 1:nflies,
@@ -189,8 +191,11 @@ setappdata(0,'twing',t);
     trackdata.perframedata = perframedata;
     trackdata.perframeunits = units;
     trackdata.twing = t;
+    trackdata.wingtrxprev = wingtrxcurr;
     save(out.temp_full,'trackdata','-append')
   end
+
+  wingtrxprev = wingtrxcurr;
 end
 if isfield(debugdata,'hwait')
     delete(debugdata.hwait(ishandle(debugdata.hwait)))

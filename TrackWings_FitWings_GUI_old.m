@@ -1,4 +1,4 @@
-function [wingtrx,debugdata] = TrackWings_FitWings_GUI(fore2flywing,dthetawing,idxfore_thresh,trx,params,debugdata)
+function [wingtrx,debugdata,fore2flywing] = TrackWings_FitWings_GUI_old(fore2fly,xgrid_isfore,ygrid_isfore,isfore_thresh,iswing,fore2dbkgd,idxfore_thresh,trx,wingtrxprev,params,debugdata)
 
 % initialize output
 
@@ -10,15 +10,30 @@ wingtrx = struct('wing_anglel',cell(1,nflies),...
   'wing_arear',cell(1,nflies),...
   'wing_trough_angle',cell(1,nflies));
 
+fore2wing = iswing(isfore_thresh);
+fore2flywing = zeros(size(fore2fly));
 for fly = 1:nflies,
   
   % find pixels that belong to each fly's wings
   if isempty(trx(fly).x),
     continue;
   end
-
-  % fit wings  
-  wingtrx(fly) = TrackWings_FitWings_Peak(dthetawing{fly},params);
+  x = trx(fly).x;
+  y = trx(fly).y;
+  theta = trx(fly).theta;
+  idxcurr = fore2wing&fore2fly==fly;
+  xwing = xgrid_isfore(idxcurr);
+  ywing = ygrid_isfore(idxcurr);
+  dthetawing = modrange(atan2(ywing-y,xwing-x)-(theta+pi),-pi,pi);
+  isallowed = abs(dthetawing) <= params.max_wingpx_angle;
+  idxcurr = find(idxcurr);
+  idxcurr(~isallowed) = [];
+  fore2flywing(idxcurr) = fly;
+  dthetawing(~isallowed) = [];
+  
+  % fit wings
+  
+  wingtrx(fly) = TrackWings_FitWings_Peak(dthetawing,params);
   
 end
 
