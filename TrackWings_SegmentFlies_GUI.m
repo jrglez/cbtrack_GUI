@@ -326,7 +326,7 @@ for cci = unique_cc,
       sqrt_wingarea = sqrt_wingarea+sqrt(numel(idxcomb_fly));
       flycc=flycc+1;
     end
-    if sqrt_wingarea>max_sqrt_wingarea
+    if sqrt_wingarea>=max_sqrt_wingarea
       max_sqrt_wingarea = sqrt_wingarea;
       flycurr1 = flycurrcomb;
       best_comb = combs(:,comb);
