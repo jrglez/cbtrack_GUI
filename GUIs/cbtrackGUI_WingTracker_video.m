@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_WingTracker_video(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_ROI_temp
 
-% Last Modified by GUIDE v2.5 21-Feb-2014 16:33:05
+% Last Modified by GUIDE v2.5 06-Mar-2014 12:02:11
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -293,9 +293,7 @@ if isempty(msg_cancel)
 end
 if strcmp('Yes',msg_cancel)
     setappdata(0,'iscancel',true)
-    if ishandle(hObject)
-        delete(hObject)
-    end
+    uiresume(hObject)
 end
 
 
@@ -345,9 +343,10 @@ elseif ISPAUSE
     set(handles.text_info,'String',['Displaying frame ',num2str(t-1),'. ',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),' (',num2str(debugdata.nframestracked*100/debugdata.nframestrack,'%.1f'),'%) tracked.'])  
     
     if ~ISPAUSE
+        experiment=getappdata(0,'experiment');
         out=getappdata(0,'out');
         logfid=open_log('track_log',cbparams,out.folder);
-        fprintf(logfid,'Wing tracking finished at %s...\n',datestr(now,'yyyymmddTHHMMSS'));
+        fprintf(logfid,'Wing tracking finished at %s for experiment %s...\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
         
         if logfid > 1,
             fclose(logfid);
@@ -564,6 +563,3 @@ setappdata(0,'GUIscale',GUIscale)
 delete(handles.cbtrackGUI_ROI)
 setappdata(0,'iscancel',2)
 cbtrackGUI_WingTracker
-
-%%%%% Aquí. Ya está terminado. Mirar las listas
-

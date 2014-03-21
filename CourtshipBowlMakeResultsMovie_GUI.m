@@ -3,8 +3,8 @@ function resultsmoviedata = CourtshipBowlMakeResultsMovie_GUI
 
 version = '0.1.1';
 timestamp = datestr(now,TimestampFormat);
-expdirs=getappdata(0,'expdirs');
-expdir=expdirs.test{1}; %(expdirs)
+expdir=getappdata(0,'expdir');
+experiment=getappdata(0,'experiment');
 analysis_protocol=getappdata(0,'analysis_protocol');
 cbparams = getappdata(0,'cbparams');
 
@@ -40,8 +40,9 @@ end
 %% log file
 logfid=open_log('resultsmovie_log',cbparams,out.folder);
 
-fprintf(logfid,'\n\n***\nRunning CourtshipBowlMakeResultsMovie version %s analysis_protocol %s at %s\n',version,analysis_protocol,timestamp);
+fprintf(logfid,'\n\n***\nRunning CourtshipBowlMakeResultsMovie version %s for experiment %s at %s\n',version,experiment,timestamp);
 resultsmoviedata.analysis_protocol = analysis_protocol;
+resultsmoviedata.experiment=experiment;
 
 %% location of data
 
@@ -277,7 +278,7 @@ save(filename,'-struct','resultsmoviedata');
 
 %% close log
 
-fprintf(logfid,'Finished running CourtshipBowlMakeResultsMovie at %s.\n',datestr(now,'yyyymmddTHHMMSS'));
+fprintf(logfid,'Finished running CourtshipBowlMakeResultsMovie at %s for experiment %s.\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
 
 if logfid > 1,
   fclose(logfid);

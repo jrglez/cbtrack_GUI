@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_files(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_files
 
-% Last Modified by GUIDE v2.5 15-Nov-2013 08:41:45
+% Last Modified by GUIDE v2.5 28-Feb-2014 11:07:11
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -57,10 +57,10 @@ handles.output = hObject;
 addpath(genpath(fileparts(which('cbtrackGUI_files'))))
 
 fullfilein=get(handles.edit_infile,'String');
-[in.folder.test{1},in.file{1},ext]=fileparts(fullfilein);
+[in.folder,in.file{1},ext]=fileparts(fullfilein);
 in.file{1}=[in.file{1} ext];
 try
-    in.analysis_protocol = splitdir(in.folder.test{1},'last');
+    in.analysis_protocol = splitdir(in.folder,'last');
 catch ME
     in.analysis_protocol='';
     mymsgbox(50,190,14,'Helvetica','The file path is not valid','Error','error')        
@@ -89,17 +89,17 @@ function edit_infile_Callback(hObject, eventdata, handles) %#ok<*DEFNU,*INUSD>
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 fullfilein=get(hObject,'String');
-[in.folder.test{1},in.file{1},ext]=fileparts(fullfilein);
+[in.folder,in.file{1},ext]=fileparts(fullfilein);
 in.file{1}=[in.file{1} ext];
 try
-    in.analysis_protocol = splitdir(in.folder.test{1},'last');
+    in.analysis_protocol = splitdir(in.folder,'last');
 catch ME
     in.analysis_protocol='';
     mymsgbox(50,190,14,'Helvetica','The file path is not valid','Error','error')        
 end
 set(handles.pushbutton_infile,'UserData',in)
 if isempty(get(handles.pushbutton_outfile,'UserData'))
-    out.folder=fullfile(in.folder.test{1},'ouput');
+    out.folder=fullfile(in.folder,'ouput');
     set(handles.edit_outfile,'String',out.folder)
     set(handles.pushbutton_outfile,'UserData',out)
 end
@@ -134,18 +134,18 @@ filetypes={  '*.ufmf','MicroFlyMovieFormat (*.ufmf)'; ...
   '*.mov','MOV (*.mov)'
   '*.mmf','MMF (*.mmf)'
   '*.*','*.*'};
-[in.file,in.folder.test{1}]=open_files2(filetypes); %in.folder is a structure as is required by the main code. 
+[in.file,in.folder]=open_files2(filetypes); %in.folder is a structure as is required by the main code. 
 if in.file{1}~=0
     try
-        in.analysis_protocol = splitdir(in.folder.test{1},'last');
+        in.analysis_protocol = splitdir(in.folder,'last');
     catch ME
         mymsgbox(50,190,14,'Helvetica','The file path is not valid','Error','error')
         
     end
-    set(handles.edit_infile,'String',[in.folder.test{1},in.file{1}])
+    set(handles.edit_infile,'String',[in.folder,in.file{1}])
     set(handles.pushbutton_infile,'UserData',in)
     if isempty(get(handles.pushbutton_outfile,'UserData'))
-        out.folder=fullfile(in.folder.test{1},'ouput');
+        out.folder=fullfile(in.folder,'ouput');
         set(handles.edit_outfile,'String',out.folder)
         set(handles.pushbutton_outfile,'UserData',out)
     end
@@ -245,7 +245,7 @@ if get(hObject,'Value')
     set(handles.text_outfile,'enable','off')
     set(handles.edit_outfile,'enable','off')
     set(handles.pushbutton_outfile,'enable','off')
-    set(handles.checkbox_log,'Enable','off')
+    set(handles.checkbox_savetemp,'Enable','off')
 elseif ~get(hObject,'Value')
     set(handles.text_restart,'enable','off')
     set(handles.edit_restart,'enable','off')
@@ -257,18 +257,18 @@ elseif ~get(hObject,'Value')
     set(handles.text_outfile,'enable','on')
     set(handles.edit_outfile,'enable','on')
     set(handles.pushbutton_outfile,'enable','on')
-    set(handles.checkbox_log,'Enable','on')
+    set(handles.checkbox_savetemp,'Enable','on')
 end
 % Hint: get(hObject,'Value') returns toggle state of checkbox_restart
 
 
-% --- Executes on button press in checkbox_log.
-function checkbox_log_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox_log (see GCBO)
+% --- Executes on button press in checkbox_savetemp.
+function checkbox_savetemp_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_savetemp (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of checkbox_log
+% Hint: get(hObject,'Value') returns toggle state of checkbox_savetemp
 
 
 % --- Executes on button press in checkbox_debug.
@@ -291,8 +291,8 @@ if get(handles.checkbox_restart,'Value');
     if exist(restart,'file')
         load(restart);
         logfid=open_log('track_log',cbparams,out.folder); %#ok<NODEF>
-        fprintf(logfid,'\n\n***\nRestarting analysis_protocol %s from %s at %s\n',analysis_protocol,restart,datestr(now,'yyyymmddTHHMMSS')); %#ok<NODEF>
-        appdatalist={'cancel_hwait','expdirs','moviefile','out','analysis_protocol','P_stage','cbparams','restart','GUIscale','startframe','endframe','BG','fidBG','roidata','visdata','pff_all','t','trackdata','debugdata_WT'};
+        fprintf(logfid,'\n\n***\nRestarting experiment %s from %s at %s\n',experiment,restart,datestr(now,'yyyymmddTHHMMSS')); %#ok<NODEF>
+        appdatalist={'cancel_hwait','expdir','experiment','moviefile','out','analysis_protocol','P_stage','cbparams','restart','GUIscale','startframe','endframe','BG','fidBG','roidata','visdata','pff_all','t','trackdata','debugdata_WT'};
         for i=1:length(appdatalist)
             if exist(appdatalist{i},'var')
                 setappdata(0,appdatalist{i},eval(appdatalist{i}))
@@ -339,21 +339,24 @@ if get(handles.checkbox_restart,'Value');
 else
     restart=[];
     in=get(handles.pushbutton_infile,'UserData');
-    expdirs=in.folder;
+    expdir=in.folder;
     out=get(handles.pushbutton_outfile,'UserData');
-    out.temp=['Temp_',datestr(now,TimestampFormat),'_',in.analysis_protocol,'.mat'];
+    out.temp=['Temp_',datestr(now,TimestampFormat),'_',experiment,'.mat'];
     out.temp_full=fullfile(out.folder,out.temp);
-    moviefile=fullfile(expdirs.test{1},in.file{1});
+    moviefile=fullfile(expdir,in.file{1});
     analysis_protocol=in.analysis_protocol;
+    experiment=in.analysis_protocol;
+    experiment(experiment=='_')=' ';
+
     if exist(moviefile, 'file')
         % auto checks
         paramsfilestr='params.xml';
-        cbparams = ReadXMLParams(fullfile(expdirs.test{1},paramsfilestr)); % (expdirs)
+        cbparams = ReadXMLParams(fullfile(expdir,paramsfilestr)); 
         if ~isfield(cbparams.track,'DEBUG')
             cbparams.track.DEBUG=false;
         end
 
-        if ~get(handles.checkbox_log,'Value')
+        if ~get(handles.checkbox_savetemp,'Value')
             cbparams.dataloc.ufmf_log.filestr=[];
             cbparams.dataloc.fbdc_log.filestr=[];
             cbparams.dataloc.automaticchecks_incoming_log.filestr=[];
@@ -366,40 +369,24 @@ else
         end
         setappdata(0,'cbparams',cbparams)
 
-        fns = fieldnames(expdirs);
-        issuccess = struct;
-        k=0;
-        nexp=0;
-        for i=1:numel(fns)
-            nexp=nexp+numel(expdirs.(fns{i}));
-        end
-        prog=k/nexp;
-        hwait=waitbar(prog,['Checking files. experiment ', num2str(k),' of ',num2str(nexp),'.']);
+        hwait=waitbar(1,'Checking files.');
         setappdata(0,'out',out);
-        for i = 1:numel(fns),    
-            fn = fns{i};
-            issuccess.(fn) = false(1,numel(expdirs.(fn)));
-            for j = 1:numel(expdirs.(fn)),
-                k=k+1; prog=k/nexp;
-                waitbar(prog,hwait,['Checking files. experiment ', num2str(k),' of ',num2str(nexp),'.'])
-                expdir = expdirs.(fn){j};
-                [success,msgs,iserror] = CourtshipBowlAutomaticChecks_Incoming(expdir,'analysis_protocol',in.analysis_protocol); %#ok<*NASGU>
-                issuccess.(fn)(j) = success;
-                if ~success,
-                    logfid=open_log('automaticchecks_incoming_log',cbparams,out.folder);
-                    fprintf(logfid, '\nAuto checks incoming failed for %s\n',expdir);
-                    fprintf(logfid, '%s\n',msgs{:});
-                end
-            end
+        [issuccess,msgs,iserror] = CourtshipBowlAutomaticChecks_Incoming(expdir,'analysis_protocol',in.analysis_protocol); %#ok<*NASGU>
+        if ~issuccess,
+            logfid=open_log('automaticchecks_incoming_log',cbparams,out.folder);
+            fprintf(logfid, '\nAuto checks incoming failed for experiment %s\n',experiment);
+            fprintf(logfid, '%s\n',msgs{:});
         end
+
         if ishandle(hwait)
             delete(hwait)
         end
         if ~exist(out.folder,'dir')
             mkdir(out.folder)
         end
-        setappdata(0,'expdirs',expdirs)
-        setappdata(0,'moviefile',moviefile)%(expdirs)
+        setappdata(0,'expdir',expdir)
+        setappdata(0,'experiment',experiment);
+        setappdata(0,'moviefile',moviefile)
         setappdata(0,'analysis_protocol',analysis_protocol)
         setappdata(0,'restart',restart)
         setappdata(0,'P_stage','BG')

@@ -361,9 +361,10 @@ elseif ISPAUSE
         GUIscale.position=new_pos;
         setappdata(0,'GUIscale',GUIscale)
 
+        experiment=getappdata(0,'experiment');
         out=getappdata(0,'out');
         logfid=open_log('track_log',cbparams,out.folder);
-        fprintf(logfid,'Main tracking finished at %s...\n',datestr(now,'yyyymmddTHHMMSS'));
+        fprintf(logfid,'Main tracking finished at %s for experiment %s...\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
         finalfile = fullfile(out.folder,cbparams.dataloc.trx.filestr);
         fprintf(logfid,'Saving tracking results up to frame %i...\n',t);
         CourtshipBowlTrack_GUI_save(finalfile,t)

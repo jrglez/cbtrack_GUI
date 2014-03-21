@@ -2,6 +2,7 @@ function [trx,perframedata,wingplotdata,info,units,debugdata] = TrackWingsHelper
 global ISPAUSE
 info.trackwings_version = '0.1';
 info.trackwings_timestamp = datestr(now,'yyyymmddTHHMMSS');
+experiment=getappdata(0,'experiment');
 out=getappdata(0,'out');
 trackdata=getappdata(0,'trackdata');
 %% parse parameters
@@ -114,7 +115,7 @@ if debugdata.DEBUG
     wingplotdata.fore2flywing=cell(debugdata.nframestrack,1);
   end
 elseif  ~debugdata.DEBUG
-      debugdata.hwait=waitbar(0,'Tracking wings','CreateCancelBtn','setappdata(0,''cancel_hwait'',1)');
+      debugdata.hwait=waitbar(0,{['Experiment ',experiment];'Tracking wings'},'CreateCancelBtn','setappdata(0,''cancel_hwait'',1)');
 end
 
 %for t = round(linspace(max(firstframe,min([trx.firstframe])),max([trx.endframe]),50)),
@@ -157,7 +158,7 @@ setappdata(0,'twing',t);
   if debugdata.DEBUG
       set(handles.text_info,'String',['Tracking wings: frame ',num2str(t),' (',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),', ',num2str(debugdata.nframestracked*100/(debugdata.nframestrack),'%.1f'),'%).'])
   else
-      waitbar(debugdata.nframestracked/debugdata.nframestrack,debugdata.hwait,['Tracking wings: frame ',num2str(t),' (',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),')']);
+      waitbar(debugdata.nframestracked/debugdata.nframestrack,debugdata.hwait,{['Experiment ',experiment];['Tracking wings: frame ',num2str(t),' (',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),')']});
   end
   [wingtrxcurr,debugdata,idxfore_thresh,fore2flywing] = TrackWingsOneFrame_GUI(im,bgmodel,isarena,trxcurr,params,XGRID,YGRID,debugdata);
 

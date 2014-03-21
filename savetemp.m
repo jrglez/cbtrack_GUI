@@ -1,4 +1,4 @@
-savelist={'expdirs','moviefile','analysis_protocol','P_stage','cbparams','BG','roidata','visdata','trackdata','debugdata'};
+savelist={'expdir','moviefile','experiment','analysis_protocol','P_stage','cbparams','BG','roidata','visdata','trackdata','debugdata'};
 out=getappdata(0,'out');
 save(out.temp_full,'out')
 logfid=open_log('track_log',getappdata(0,'cbparams'),out.folder);

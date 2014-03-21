@@ -1,13 +1,14 @@
 function [im,dbkgd_in]=compute_dbkgd(readframe,nframes,roiparams,tracking_params,bgmed,roidata)
+experiment=getappdata(0,'experiment');
 framessample = round(linspace(1,nframes,roiparams.nframessample));
 im=cell(1,roiparams.nframessample);
 dbkgd=cell(1,roiparams.nframessample);
 dbkgd_in=cell(1,roiparams.nframessample);
 
-hwait=waitbar(0,['Reading frame 0 of ', num2str(roiparams.nframessample)]);
+hwait=waitbar(0,{['Experiment ',experiment];['Reading frame 0 of ', num2str(roiparams.nframessample)]});
 
 for i = 1:roiparams.nframessample,
-  waitbar(i/roiparams.nframessample,hwait,['Reading frame ',num2str(i),' of ', num2str(roiparams.nframessample)]);
+  waitbar(i/roiparams.nframessample,hwait,{['Experiment ',experiment];['Reading frame ',num2str(i),' of ', num2str(roiparams.nframessample)]});
   im{i} = readframe(framessample(i));
   switch tracking_params.bgmode,
     case 'DARKBKGD',

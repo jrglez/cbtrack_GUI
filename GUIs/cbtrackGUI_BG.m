@@ -59,8 +59,7 @@ GUIsize(handles,hObject)
 
 cbparams=getappdata(0,'cbparams');
 tracking_params=cbparams.track;
-expdirs=getappdata(0,'expdirs');%(expdirs)
-BG.expdir=expdirs.test{1}; %(expdirs)
+BG.expdir=getappdata(0,'expdir');
 BG.moviefile=getappdata(0,'moviefile');
 BG.analysis_protocol=getappdata(0,'analysis_protocol');
 out=getappdata(0,'out');

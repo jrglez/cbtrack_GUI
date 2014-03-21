@@ -1,5 +1,5 @@
 function [idscurr,mudata,sigmadata,sigmamotion,costcurr,iter] = ...
-  AssignIdentities(x,y,data,varargin)
+  AssignIdentities_GUI(x,y,data,varargin)
 
 [vel_dampen,sigmamotion,niters,appearanceweight,sortbyidx] = myparse(varargin,'vel_dampen',0,...
   'sigmamotion',[],'niters',100,'appearanceweight',[],'sortbyidx',1);
@@ -30,7 +30,7 @@ if isappearanceweight
   end
   
 else
-  mudata = reshape(mean(dataasort,2),[nids,ndata]);
+  mudata = reshape(mean(datasort,2),[nids,ndata]);
   sigmadata = reshape(std(datasort,1,2),[nids,ndata]);
 end
 
@@ -39,9 +39,9 @@ sigmadata = max(sigmadata,.0001);
 state2ids = perms(1:nids);
 nstates = size(state2ids,1);
 
-if any(isnan(mudata(:))) || any(isnan(sigmadata(:))),
-  error('NaNs found in initialization');
-end
+% if any(isnan(mudata(:))) || any(isnan(sigmadata(:))),
+%   error('NaNs found in initialization');
+% end
 
 if estimatesigmamotion,
 
@@ -73,7 +73,7 @@ end
 
 for iter = 1:niters,
  
-  [idscurr,costcurr] = AssignIdentities_GivenDistributions(x,y,data,mudata,sigmadata,sigmamotion,vel_dampen,appearanceweight);
+  [idscurr,costcurr] = AssignIdentities_GivenDistributions_GUI(x,y,data,mudata,sigmadata,sigmamotion,vel_dampen,appearanceweight);
 
   if iter > 1 && all(idsprev(:) == idscurr(:)),
     break;
@@ -102,9 +102,9 @@ for iter = 1:niters,
     sigmadata = reshape(std(datasort,1,2),[nids,ndata]);
   end
   
-  if any(isnan(mudata(:))),
-    error('NaNs found at iteration %d',iter);
-  end
+%   if any(isnan(mudata(:))),
+%     error('NaNs found at iteration %d',iter);
+%   end
   
   if estimatesigmamotion,
     xpred = [xsort(:,1),(2-vel_dampen)*xsort(:,2:end-1) - (1-vel_dampen)*xsort(:,1:end-2)];

@@ -7,11 +7,8 @@ roidata = struct;
 roidata.cbdetectrois_version = version;
 roidata.cbdetectrois_timestamp = timestamp;
 
-expdirs=getappdata(0,'expdirs');
-expdir=expdirs.test{1}; % (expdirs)
+experiment=getappdata(0,'experiment');
 out=getappdata(0,'out');
-experiment_name = splitdir(expdir,'last');
-experiment_name(experiment_name=='_')=' ';
 
 %% open log file
 
@@ -22,7 +19,7 @@ roidata.params = cbparams;
 roidata.params.detect_rois=params;
 
 %% detect circles
-fprintf(logfid,'Detecting ROIs for %s at %s...\n',experiment_name,timestamp);
+fprintf(logfid,'Detecting ROIs for experiment %s at %s...\n',experiment,timestamp);
 [roidata.centerx,roidata.centery,roidata.radii,roidata.scores] = DetectCourtshipBowlROIs(bgmed,params);
 nrois = numel(roidata.centerx);
 roidata.nrois=nrois;
@@ -124,10 +121,10 @@ for i = 1:nrois,
     handles.hrois(i,1).setFixedAspectRatioMode(1);
     handles.hrois(i,1).setColor(colors(i,:));
     handles.hroisT(i,1)=text(roidata.centerx(i),roidata.centery(i),['ROI: ',num2str(i)],...
-      'Color',colors(i,:),'HorizontalAlignment','center','VerticalAlignment','middle');
+      'Color',colors(i,:),'HorizontalAlignment','center','VerticalAlignment','middle','Clipping','on');
 end
 
-fprintf(logfid,'Finished detecting ROIs at %s.\n',datestr(now,'yyyymmddTHHMMSS'));
+fprintf(logfid,'Finished detecting ROIs at %s for experiment %s.\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
 if logfid > 1,
   fclose(logfid);
 end

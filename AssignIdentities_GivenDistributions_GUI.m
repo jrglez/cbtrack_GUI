@@ -1,6 +1,6 @@
 % [ids,mincost] = AssignIdentities_GivenDistributions(x,y,a,b,area,mua,sigmaa,mub,sigmab,muarea,sigmaarea,sigmamotion,vel_dampen)
 % assign identities based on area and motion
-function [ids,mincost] = AssignIdentities_GivenDistributions(x,y,data,mudata,sigmadata,sigmamotion,vel_dampen,appearanceweight)
+function [ids,mincost] = AssignIdentities_GivenDistributions_GUI(x,y,data,mudata,sigmadata,sigmamotion,vel_dampen,appearanceweight)
 
 isappearanceweight = exist('appearanceweight','var') && ~isempty(appearanceweight);
 
@@ -25,7 +25,11 @@ for sc = 1:nstates,
   idsc = state2ids(sc,:);
   % trx(idsc(i),t) corresponds to distribution(i)
   % compute appearance likelihood for current frame
-  nll_appearance_c = sum(sum( ((data(idsc,t,:)-mudata)./sigmadata).^2/2 + constdata, 1 ), 3);
+  if any(isnan(mudata))
+    nll_appearance_c = 0;
+  else
+    nll_appearance_c = sum(sum( ((data(idsc,t,:)-mudata)./sigmadata).^2/2 + constdata, 1 ), 3);
+  end    
       
   if isappearanceweight,
     nll_appearance_c = nll_appearance_c * appearanceweight(t);
@@ -35,7 +39,11 @@ for sc = 1:nstates,
     idsp = state2ids(sp,:);
     % trx(idsc(i),t) corresponds to distribution(i)
     % compute appearance likelihood for current frame
-    nll_appearance_p = sum(sum( ((data(idsc,t-1,:)-mudata)./sigmadata).^2/2 + constdata, 1 ), 3);
+    if any(isnan(mudata))
+      nll_appearance_p = 0;
+    else       
+      nll_appearance_p = sum(sum( ((data(idsc,t-1,:)-mudata)./sigmadata).^2/2 + constdata, 1 ), 3);
+    end
     if isappearanceweight,
       nll_appearance_p = nll_appearance_p * appearanceweight(t-1);
     end
@@ -59,7 +67,11 @@ for t = 3:T,
     % trx(idsc(i),t) corresponds to distribution(i)
     
     % compute appearance likelihood for current frame
-    nll_appearance_c = sum(sum( ((data(idsc,t,:)-mudata)./sigmadata).^2/2 + constdata, 1 ), 3);
+    if any(isnan(mudata))
+      nll_appearance_c = 0;
+    else
+      nll_appearance_c = sum(sum( ((data(idsc,t,:)-mudata)./sigmadata).^2/2 + constdata, 1 ), 3);
+    end
     
     if isappearanceweight,
       nll_appearance_c = nll_appearance_c * appearanceweight(t);

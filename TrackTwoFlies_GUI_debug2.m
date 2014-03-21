@@ -308,7 +308,7 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
           error('Unknown assignidsby value');
       end
       [idsfit_curr,mudatafit_curr,sigmadatafit_curr,sigmamotionfit_curr,cost_curr,niters_curr] = ...
-        AssignIdentities(x,y,iddata,'vel_dampen',params.err_dampen_pos,'appearanceweight',appearanceweight);
+        AssignIdentities_GUI(x,y,iddata,'vel_dampen',params.err_dampen_pos,'appearanceweight',appearanceweight);
       assignids_nflips(roii) = nnz(idsfit_curr(1,1:end-1)~=idsfit_curr(1,2:end));
       fprintf(logfid,'Roi %d, flipped ids %d times\n',roii,assignids_nflips(roii));
 

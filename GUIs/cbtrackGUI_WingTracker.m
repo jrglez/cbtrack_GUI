@@ -214,7 +214,7 @@ wing_params=get(handles.uipanel_set,'UserData');
 cbparams.wing_track=wing_params;
 setappdata(0,'cbparams',cbparams)
 
-debugdata=get(handles.axes_wingtracker,'UserData');;
+debugdata=get(handles.axes_wingtracker,'UserData');
 
 delete(handles.cbtrackGUI_ROI);
 
@@ -247,7 +247,6 @@ if strcmp(P_stage,'track2')
     setappdata(0,'pffdata',pffdata)
     cancelar
 else
-    strcmp(P_stage,'track1')
     setappdata(0,'P_stage','track1')
     savetemp
     WriteParams

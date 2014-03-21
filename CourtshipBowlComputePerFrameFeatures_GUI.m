@@ -2,10 +2,9 @@ function pffdata = CourtshipBowlComputePerFrameFeatures_GUI(forcecompute)
 
 version = '0.1.2';
 timestamp = datestr(now,TimestampFormat);
-expdirs=getappdata(0,'expdirs');
-expdir=expdirs.test{1}; %(expdirs)
 analysis_protocol=getappdata(0,'analysis_protocol');
 cbparams = getappdata(0,'cbparams');
+experiment=getappdata(0,'experiment');
 out=getappdata(0,'out');
 
 
@@ -19,8 +18,9 @@ pffdata.perframe_params = perframe_params;
 pffdata.forcecompute = forcecompute;
 %% log file
 logfid=open_log('perframefeature_log',cbparams,out.folder);
-fprintf(logfid,'\n\n***\nRunning CourtshipBowlComputePerFrameFeatures version %s analysis_protocol %s at %s\n',version,analysis_protocol,timestamp);
+fprintf(logfid,'\n\n***\nRunning CourtshipBowlComputePerFrameFeatures version %s experiment %s at %s\n',version,experiment,timestamp);
 pffdata.analysis_protocol = analysis_protocol;
+pffdata.experiment=experiment;
 
 %% load the trx
 
@@ -32,7 +32,7 @@ trx = Trx('trxfilestr',cbparams.dataloc.trx.filestr,...
   'moviefilestr',cbparams.dataloc.movie.filestr,...
   'perframe_params',perframe_params);
 
-fprintf(logfid,'Loading trajectories for %s...\n',expdir);
+fprintf(logfid,'Loading trajectories for %s...\n',experiment);
 
 trx.AddExpDir(out.folder,'openmovie',false);
 
@@ -68,9 +68,9 @@ end
 
 % compute each
 set(0,'DefaultTextInterpreter','none')
-hwait=waitbar(0,'Computing Perframe Features','CreateCancelBtn','setappdata(0,''cancel_hwait'',1)');
+hwait=waitbar(0,{['Experiment ',experiment];'Computing Perframe Features','CreateCancelBtn','setappdata(0,''cancel_hwait'',1)'});
 for i = 1:nfns,
-  waitbar(i/nfns,hwait,['Computing ',perframefns{i}]);
+  waitbar(i/nfns,hwait,{['Experiment ',experiment];['Computing ',perframefns{i}]});
   fn = perframefns{i};
   fprintf(logfid,'Computing %s...\n',fn);
   trx.(fn); 
@@ -90,7 +90,7 @@ save(filename,'-struct','pffdata');
 
 %% close log
 
-fprintf(logfid,'Finished running CourtshipBowlComputePerFrameFeatures at %s.\n',datestr(now,'yyyymmddTHHMMSS'));
+fprintf(logfid,'Finished running CourtshipBowlComputePerFrameFeatures for experiment %s at %s.\n',experiment,datestr(now,'yyyymmddTHHMMSS'));
 
 if logfid > 1,
   fclose(logfid);

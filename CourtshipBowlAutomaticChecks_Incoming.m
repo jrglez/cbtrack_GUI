@@ -3,6 +3,7 @@ function [success,msgs,iserror] = CourtshipBowlAutomaticChecks_Incoming(expdir,v
 version = '0.1.1';
 timestamp = datestr(now,TimestampFormat);
 ParseCourtshipBowlParams_GUI;
+experiment=getappdata(0,'experiment');
 out=getappdata(0,'out');
 
 success = true;
@@ -18,7 +19,7 @@ check_params = cbparams.auto_checks_incoming;
 
 logfid=open_log('automaticchecks_incoming_log',cbparams,out.folder);
 
-fprintf(logfid,'\n\n***\nRunning CourtshipBowlAutomaticChecks_Incoming version %s analysis_protocol %s at %s\n',version,analysis_protocol,timestamp);
+fprintf(logfid,'\n\n***\nRunning CourtshipBowlAutomaticChecks_Incoming version %s for experiment %s at %s\n',version,experiment,timestamp);
 
 %%
 
@@ -225,7 +226,7 @@ end
 % version info
 fprintf(fid,'cbautochecksincoming_version,%s\n',version);
 fprintf(fid,'cbautochecksincoming_timestamp,%s\n',timestamp);
-fprintf(fid,'analysis_protocol,%s\n',analysis_protocol);
+fprintf(fid,'experiment,%s\n',experiment);
 
 
 if ~DEBUG && fid > 1,
@@ -239,7 +240,7 @@ end
   
 %% print results to log file
 
-fprintf(logfid,'Finished running CourtshipBowlAutomaticChecks_Incoming at %s.\n',datestr(now,'yyyymmddTHHMMSS'));
+fprintf(logfid,'Finished running CourtshipBowlAutomaticChecks_Incoming at %s for experiment %s.\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
 fprintf(logfid,'success = %d\n',success);
 if isempty(msgs),
   fprintf(logfid,'No error or warning messages.\n');

@@ -4,8 +4,8 @@ timestamp = datestr(now,TimestampFormat);
 
 %% parse inputs
 % ParseCourtshipBowlParams_GUI;
-expdirs=getappdata(0,'expdirs');
-expdir=expdirs.test{1}; %(expdirs)
+expdir=getappdata(0,'expdir');
+experiment=getappdata(0,'experiment');
 out=getappdata(0,'out');
 analysis_protocol=getappdata(0,'analysis_protocol');
 moviefile=getappdata(0,'moviefile');
@@ -38,6 +38,7 @@ bgmed=BG.bgmed;
 roidata=getappdata(0,'roidata');
 
 %% Secondary tracking
+fprintf(logfid,'Starting secondary tracking at %s for experiment %s.\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
 trackdata=TrackTwoFlies_GUI_debug2(moviefile,bgmed,roidata,params,'restart',restart);
 iscancel=getappdata(0,'iscancel');
 if iscancel
@@ -46,6 +47,7 @@ end
 trackdata.courtshipbowltrack_version = version;
 trackdata.courtshipbowltrack_timestamp = timestamp;
 trackdata.analysis_protocol = analysis_protocol;
+trackdata.experiment=experiment;
 trackdata.params = params;
 trx = trackdata.trx; %#ok<NASGU>
 timestamps = trackdata.timestamps; %#ok<NASGU>
@@ -111,7 +113,7 @@ save(outfilename,'-struct','trackdata');
 setappdata(0,'trackdata',trackdata)
 %% close log file
 
-fprintf(logfid,'Finished secondary tracking at %s.\n',datestr(now,'yyyymmddTHHMMSS'));
+fprintf(logfid,'Finished secondary tracking at %s for experiment %s.\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
 if logfid > 1,
   fclose(logfid);
 end
