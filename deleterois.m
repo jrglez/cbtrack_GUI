@@ -24,4 +24,4 @@ list.text=cell(0); %list of selected points to display at listbox_manual
 list.ind=cell(0);
 list.ind_mat=[]; %(ROI,point) index matrix
 
-set(handles.listbox_manual,'String',vertcat(list.text{:}))
+set(handles.listbox_manual,'String',vertcat(list.text{:}),'Value',1)

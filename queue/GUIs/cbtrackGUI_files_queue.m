@@ -351,10 +351,11 @@ else
         end
     end
 end 
-delete(handles.cbtrackGUI_files)
+cancelar
+delete(handles.figure1)
 
-%%% Aquí. Creo que funciona todo bien, así que falta añadir lo que está en
-%%% la lista.
+%%% Aquí. Continuar con la lista principal. Continuar traqueando el video
+%%% de Shelby (poner db stop if)
 
 function pushbutton_cancel_Callback(hObject, eventdata, handles)
 close(handles.figure1)

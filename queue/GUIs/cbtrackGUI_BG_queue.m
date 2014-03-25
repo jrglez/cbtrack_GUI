@@ -64,7 +64,7 @@ P_curr_stage='BG';
 P_stage=getappdata(0,'P_stage');
 if find(strcmp(P_stage,P_stages))>find(strcmp(P_curr_stage,P_stages))
     BG.data=getappdata(0,'BG');
-    set(handles.pushbutton_ROIs,'Enable','on')
+    set(handles.pushbutton_ROIs,'Enable','off')
 else
     if exist(loadfile,'file')
         msg_load=myquestdlg(14,'Helvetica',['There is a file that contains backgound data for experiment ''',experiment,'''. Would you like to load it?'],'Existing BG data','Yes','No','No');  
@@ -284,8 +284,7 @@ GUIscale.rescalex=new_pos(3)/old_pos(3);
 GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
-setappdata(0,'iscancel',true)
-uiresume(handles.cbtrackGUI_BG)
+delete(handles.cbtrackGUI_BG)
 
 
 function pushbutton_manual_ButtonDownFcn(hObject, eventdata, handles)

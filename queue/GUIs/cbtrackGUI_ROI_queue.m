@@ -152,16 +152,25 @@ list=get(handles.listbox_manual,'UserData');
 cbparams=getappdata(0,'cbparams');
 params=get(handles.uipanel_settings,'UserData');
 
-new_nrois=length(handles.hrois);
-new_position=nan(4,new_nrois);
-for i=1:new_nrois
-    new_position(:,i)=handles.hrois(i).getPosition;
-end
-new_centerx=new_position(1,:)+new_position(3,:)./2;
-new_centery=new_position(2,:)+new_position(4,:)./2;
-new_radii=new_position(3,:)./2;
-if new_nrois~=roidata.nrois || any(new_centerx~=roidata.centerx) || any(new_centery~=roidata.centery) || any(new_radii~=roidata.radii)
-    roidata = updateROIs(cbparams,params,roidata,[new_centerx;new_centery;new_radii]);
+
+if isempty(roidata) || size(fieldnames(roidata),1)==0 || isempty(roidata.centerx)
+    BG=getappdata(0,'BG');    
+    roidata=AllROI(BG.bgmed);
+    params.roimus=[];
+else
+    new_nrois=length(handles.hrois);
+    new_position=nan(4,new_nrois);
+    for i=1:new_nrois
+        new_position(:,i)=handles.hrois(i).getPosition;
+    end
+    new_centerx=new_position(1,:)+new_position(3,:)./2;
+    new_centery=new_position(2,:)+new_position(4,:)./2;
+    new_radii=new_position(3,:)./2;
+    if new_nrois~=roidata.nrois || any(new_centerx~=roidata.centerx) || any(new_centery~=roidata.centery) || any(new_radii~=roidata.radii)
+        roidata = updateROIs(cbparams,params,roidata,[new_centerx;new_centery;new_radii]);
+    end
+    params.roimus.x=roidata.centerx;
+    params.roimus.y=roidata.centery;
 end
 
 roidata.manual=manual;
@@ -260,7 +269,11 @@ rem_roi=list.ind_mat(rem_v,1);
 rem_proi=list.ind_mat(rem_v,2);
 
 if manual.add==3 %use when the button "add" has been pushed; no point is removed and roi and proi are set acordingly
-    manual.oldroi=manual.roi+1;
+    if manual.proi(manual.roi)==0
+        manual.oldroi=manual.roi;
+    else
+        manual.oldroi=manual.roi+1;
+    end
     manual.oldproi=manual.proi(manual.roi);
     manual.roi=rem_roi;
     manual.add=2;
@@ -769,7 +782,7 @@ GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
 delete(handles.cbtrackGUI_ROI)
-cbtrackGUI_BG
+cbtrackGUI_BG_queue
 
 
 function pushbutton_delete_Callback(hObject, eventdata, handles)

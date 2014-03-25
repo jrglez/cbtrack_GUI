@@ -145,6 +145,7 @@ set(handles.pushbutton_start,'UserData',wingtrack);
 setappdata(0,'debugdata_WT',debugdata)
 setappdata(0,'cbparams',cbparams);
 
+guidata(hObject, handles);
 
 if ~ISPAUSE
     ISPAUSE=true;
@@ -156,8 +157,6 @@ else
     ISPAUSE=true;
     uiwait(handles.cbtrackGUI_ROI);
 end
-guidata(hObject, handles);
-
 
 
 
@@ -488,9 +487,10 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-delete(handles.cbtrackGUI_ROI)
 setappdata(0,'iscancel',2)
 cbtrackGUI_BG
+uiresume(hObject)
+
 
 
 
@@ -509,9 +509,10 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-delete(handles.cbtrackGUI_ROI)
 setappdata(0,'iscancel',2)
 cbtrackGUI_ROI
+uiresume(handles.cbtrackGUI_ROI)
+
 
 
 % --- Executes on button press in pushbutton_tracker_setup.
@@ -529,9 +530,10 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-delete(handles.cbtrackGUI_ROI)
 setappdata(0,'iscancel',2)
 cbtrackGUI_tracker
+uiresume(hObject)
+
 
 % --- Executes on button press in pushbutton_debuger.
 function pushbutton_debuger_Callback(hObject, eventdata, handles)
@@ -560,6 +562,6 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-delete(handles.cbtrackGUI_ROI)
 setappdata(0,'iscancel',2)
 cbtrackGUI_WingTracker
+uiresume(hObject)

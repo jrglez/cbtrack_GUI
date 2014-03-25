@@ -211,6 +211,7 @@ params=get(handles.uipanel_settings,'UserData');
 if isempty(roidata) || size(fieldnames(roidata),1)==0 || isempty(roidata.centerx)
     BG=getappdata(0,'BG');    
     roidata=AllROI(BG.bgmed);
+    params.roimus=[];
 else
     new_nrois=length(handles.hrois);
     new_position=nan(4,new_nrois);
@@ -223,6 +224,8 @@ else
     if new_nrois~=roidata.nrois || any(new_centerx~=roidata.centerx) || any(new_centery~=roidata.centery) || any(new_radii~=roidata.radii)
         roidata = updateROIs(cbparams,params,roidata,[new_centerx;new_centery;new_radii]);
     end
+    params.roimus.x=roidata.centerx;
+    params.roimus.y=roidata.centery;
 end
 
 restart='';
@@ -374,7 +377,11 @@ rem_roi=list.ind_mat(rem_v,1);
 rem_proi=list.ind_mat(rem_v,2);
 
 if manual.add==3 %use when the button "add" has been pushed; no point is removed and roi and proi are set acordingly
-    manual.oldroi=manual.roi+1;
+    if manual.proi(manual.roi)==0
+        manual.oldroi=manual.roi;
+    else
+        manual.oldroi=manual.roi+1;
+    end
     manual.oldproi=manual.proi(manual.roi);
     manual.roi=rem_roi;
     manual.add=2;

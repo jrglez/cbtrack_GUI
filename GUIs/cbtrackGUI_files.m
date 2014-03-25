@@ -341,7 +341,7 @@ else
     in=get(handles.pushbutton_infile,'UserData');
     expdir=in.folder;
     out=get(handles.pushbutton_outfile,'UserData');
-    out.temp=['Temp_',datestr(now,TimestampFormat),'_',experiment,'.mat'];
+    out.temp=['Temp_',datestr(now,TimestampFormat),'_',in.analysis_protocol,'.mat'];
     out.temp_full=fullfile(out.folder,out.temp);
     moviefile=fullfile(expdir,in.file{1});
     analysis_protocol=in.analysis_protocol;
