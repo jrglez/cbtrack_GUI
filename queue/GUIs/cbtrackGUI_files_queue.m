@@ -354,9 +354,6 @@ end
 cancelar
 delete(handles.figure1)
 
-%%% Aquí. Continuar con la lista principal. Continuar traqueando el video
-%%% de Shelby (poner db stop if)
-
 function pushbutton_cancel_Callback(hObject, eventdata, handles)
 close(handles.figure1)
 

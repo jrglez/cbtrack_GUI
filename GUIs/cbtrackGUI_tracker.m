@@ -1,3 +1,8 @@
+% roidata.isnew=0; Nothing has changed. Nothing is saved.
+% roidata.isnew=1; Only cbparams.track.DEBUG has changed. Only cbparams is saved
+% roidata.isnew=2; Some parameters have changed but flies have not been recounte. The user is offered to either continue without saving or recounting.
+% roidata.isnew=3; Flies have been recounted. roidata and cbparams are saved
+
 function varargout = cbtrackGUI_tracker(varargin)
 % CBTRACKGUI_ROI_TEMP MATLAB code for cbtrackGUI_ROI_temp.fig
 %      CBTRACKGUI_ROI_TEMP, by itself, creates a new CBTRACKGUI_ROI_TEMP or raises the existing
@@ -22,7 +27,7 @@ function varargout = cbtrackGUI_tracker(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_ROI_temp
 
-% Last Modified by GUIDE v2.5 21-Feb-2014 12:22:52
+% Last Modified by GUIDE v2.5 10-Apr-2014 15:10:30
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -93,17 +98,19 @@ P_curr_stage='params';
 P_stage=getappdata(0,'P_stage');
 if find(strcmp(P_stage,P_stages))>find(strcmp(P_curr_stage,P_stages))
     visdata=getappdata(0,'visdata');
-    count.nflies_per_roi=roidata.nflies_per_roi;
+    visdata.trx=cell(roidata.nrois,roi_params.nframessample);
     count.trx=visdata.trx;
+    count.nflies_per_roi=roidata.nflies_per_roi;
     set(handles.pushbutton_WT,'Enable','on')
     if find(strcmp(P_stage,P_stages))>=find(strcmp('track1',P_stages)) && cbparams.track.DEBUG==1
         set(handles.pushbutton_debuger,'Enable','on')
     end
 else
     count.nflies_per_roi = nan(1,roidata.nrois);
-    [visdata.frames,visdata.dbkgd]=compute_dbkgd(count.readframe,count.nframes,roi_params,tracking_params,bgmed,roidata);
+    [visdata.frames,visdata.dbkgd]=compute_dbkgd(count.readframe,count.nframes,roi_params.nframessample,tracking_params.bgmode,bgmed,roidata.inrois_all);
     visdata.isfore=cell(1,roi_params.nframessample);
     visdata.cc_ind=cell(roidata.nrois,roi_params.nframessample);
+    visdata.flies_ind=cell(roidata.nrois,roi_params.nframessample);
     visdata.trx=cell(roidata.nrois,roi_params.nframessample);
     count.trx=visdata.trx;
     roidata.isnew=3;
@@ -292,7 +299,23 @@ if roidata.isnew
             
             roidata.isnew=3;
             setappdata(0,'roidata',roidata)
-            return
+            return        
+        end
+    elseif roidata.isnew==3
+        visdata.trx=struct('x',[],'y',[],'a',[],'b',[],'theta',[]);
+        visdata.trx=repmat(visdata.trx,[sum(roidata.nflies_per_roi),roi_params.nframessample]);
+        k=1;
+        for iroi = 1:size(count.trx,1),
+            for fly=1:roidata.nflies_per_roi(iroi)
+                for t=1:size(count.trx,2)
+                    visdata.trx(k,t).x = count.trx{iroi,t}.x(fly);
+                    visdata.trx(k,t).y = count.trx{iroi,t}.y(fly);
+                    visdata.trx(k,t).a = count.trx{iroi,t}.a(fly)/2;
+                    visdata.trx(k,t).b = count.trx{iroi,t}.b(fly)/2;
+                    visdata.trx(k,t).theta = count.trx{iroi,t}.theta(fly);           
+                end
+                k=k+1;
+            end
         end
     end
     if isappdata(0,'t')
@@ -313,7 +336,6 @@ if roidata.isnew
     cbparams.track=temp_Tparams;
     cbparams.track.bgthresh=tracking_params.bgthresh;
     cbparams.track.minccarea=tracking_params.minccarea;
-    visdata.trx=count.trx;
     roidata.nflies_per_roi=count.nflies_per_roi;
     roidata.isnew=false;
     setappdata(0,'cbparams',cbparams)
@@ -726,7 +748,11 @@ cbparams=getappdata(0,'cbparams');
 if ~isequal(temp_Tparams,cbparams.track)
     roidata=getappdata(0,'roidata');
     if roidata.isnew~=2
-        roidata.isnew=3;
+        if temp_Tparams.DEBUG~=cbparams.track.DEBUG
+            roidata.isnew=1;
+        else
+            roidata.isnew=3;
+        end
     end
     setappdata(0,'roidata',roidata)
     set(handles.pushbutton_trset,'UserData',temp_Tparams)
@@ -840,3 +866,11 @@ setappdata(0,'GUIscale',GUIscale)
 
 delete(handles.cbtrackGUI_ROI)
 cbtrackGUI_WingTracker
+
+
+% --- Executes on button press in pushbutton_vid.
+function pushbutton_vid_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_vid (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+video_params

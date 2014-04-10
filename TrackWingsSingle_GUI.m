@@ -1,4 +1,4 @@
-function debugdata=TrackWingsSingle_GUI(trx,bgmodel,isarena,params,im,debugdata)
+function [debugdata,trxcurr]=TrackWingsSingle_GUI(trxcurr,bgmodel,isarena,params,im,debugdata)
 
 % choose histogram bins for wing pixel angles for fitting wings
 params.edges_dthetawing = linspace(-params.max_wingpx_angle,params.max_wingpx_angle,params.nbins_dthetawing+1);
@@ -14,7 +14,6 @@ params.subbin_x = (-params.wing_radius_quadfit_bins:params.wing_radius_quadfit_b
 
 roidata=getappdata(0,'roidata');
 [nr,nc,~] = size(im);
-nrois = numel(trx);
 nflies = sum(roidata.nflies_per_roi);
 npx = nr*nc; %#ok<NASGU>
 %% initialize debug plots
@@ -24,32 +23,14 @@ if ~isfield(debugdata,'DEBUG')
     debugdata.colors = hsv(nflies);
     debugdata.colors = debugdata.colors(randperm(nflies),:);
 end
+if ~isfield(debugdata,'vid')
+    debugdata.vid = 0;
+end
 
-%% allocate
+
 [XGRID,YGRID] = meshgrid(1:nc,1:nr);
 
-% trajectories for the current frame
-trxcurr = struct(...
-  'x',cell(1,nflies),...
-  'y',cell(1,nflies),...
-  'a',cell(1,nflies),...
-  'b',cell(1,nflies));
-  
-
 %% start tracking
-
-k=1;
-for iroi = 1:nrois,
-    for fly=1:roidata.nflies_per_roi(iroi)
-        trxcurr(k).x = trx{iroi}.x(fly);
-        trxcurr(k).y = trx{iroi}.y(fly);
-        trxcurr(k).a = trx{iroi}.a(fly);
-        trxcurr(k).b = trx{iroi}.b(fly);
-        trxcurr(k).theta = trx{iroi}.theta(fly);
-        k=k+1;
-    end
-end
-  
   % fit this frame
 im=double(im);
 debugdata.im = im;
@@ -60,22 +41,17 @@ if debugdata.vis>5
     [fore2flywing,dthetawing,trxcurr,debugdata] = TrackWings_SegmentFlies_GUI(im,isfore_thresh,idxfore_thresh,npxfore_thresh,fore2body,iswing,...
       trxcurr,params,XGRID,YGRID,debugdata);
   if debugdata.vis==8
-        [~,debugdata] = TrackWings_FitWings_GUI(fore2flywing,dthetawing,idxfore_thresh,trxcurr,params,debugdata);
+        [wingtrxcurr,debugdata] = TrackWings_FitWings_GUI(fore2flywing,dthetawing,idxfore_thresh,trxcurr,params,debugdata);
   end
 end
 
-
-% % store results
-% for fly = 1:nflies,    
-% trx(fly).wing_anglel = wingtrxcurr(fly).wing_anglel;
-% trx(fly).wing_angler = wingtrxcurr(fly).wing_angler;    
-% end
-% 
-% %% add in x, y positions for plotting
-% 
-% for fly = 1:nflies,    
-%   trx(fly).xwingl = trx(fly).x + 4*trx(fly).a.*cos(trx(fly).theta+ pi+trx(fly).wing_anglel);
-%   trx(fly).ywingl = trx(fly).y + 4*trx(fly).a.*sin(trx(fly).theta+ pi+trx(fly).wing_anglel);
-%   trx(fly).xwingr = trx(fly).x + 4*trx(fly).a.*cos(trx(fly).theta+ pi+trx(fly).wing_angler);
-%   trx(fly).ywingr = trx(fly).y + 4*trx(fly).a.*sin(trx(fly).theta+ pi+trx(fly).wing_angler);
-% end
+if debugdata.vid
+    for fly = 1:nflies,    
+        wing_anglel = wingtrxcurr(fly).wing_anglel;
+        wing_angler = wingtrxcurr(fly).wing_angler;    
+        trxcurr(fly).xwingl = trxcurr(fly).x + 4*trxcurr(fly).a.*cos(trxcurr(fly).theta+ pi+wing_anglel);
+        trxcurr(fly).ywingl = trxcurr(fly).y + 4*trxcurr(fly).a.*sin(trxcurr(fly).theta+ pi+wing_anglel);
+        trxcurr(fly).xwingr = trxcurr(fly).x + 4*trxcurr(fly).a.*cos(trxcurr(fly).theta+ pi+wing_angler);
+        trxcurr(fly).ywingr = trxcurr(fly).y + 4*trxcurr(fly).a.*sin(trxcurr(fly).theta+ pi+wing_angler);
+    end
+end

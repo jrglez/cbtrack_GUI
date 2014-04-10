@@ -68,7 +68,7 @@ end
 
 % compute each
 set(0,'DefaultTextInterpreter','none')
-hwait=waitbar(0,{['Experiment ',experiment];'Computing Perframe Features','CreateCancelBtn','setappdata(0,''cancel_hwait'',1)'});
+hwait=waitbar(0,{['Experiment ',experiment];'Computing Perframe Features'},'CreateCancelBtn','setappdata(0,''cancel_hwait'',1)');
 for i = 1:nfns,
   waitbar(i/nfns,hwait,{['Experiment ',experiment];['Computing ',perframefns{i}]});
   fn = perframefns{i};

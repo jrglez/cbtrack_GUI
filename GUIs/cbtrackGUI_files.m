@@ -56,16 +56,6 @@ function cbtrackGUI_files_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 addpath(genpath(fileparts(which('cbtrackGUI_files'))))
 
-fullfilein=get(handles.edit_infile,'String');
-[in.folder,in.file{1},ext]=fileparts(fullfilein);
-in.file{1}=[in.file{1} ext];
-try
-    in.analysis_protocol = splitdir(in.folder,'last');
-catch ME
-    in.analysis_protocol='';
-    mymsgbox(50,190,14,'Helvetica','The file path is not valid','Error','error')        
-end
-set(handles.pushbutton_infile,'UserData',in)
 % Update handles structure
 guidata(hObject, handles);
 
