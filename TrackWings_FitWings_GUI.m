@@ -57,6 +57,7 @@ end
       if isempty(trx(dfly).x),
         continue;
       end
+      hold on
       xwing = [nan,trx(dfly).x,nan];
       ywing = [nan,trx(dfly).y,nan];
       wing_angles = [wingtrx(dfly).wing_anglel,wingtrx(dfly).wing_angler];
