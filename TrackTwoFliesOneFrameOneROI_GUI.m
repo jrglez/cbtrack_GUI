@@ -34,7 +34,7 @@ if nflies_per_roi == 1,
   [trxcurr.a(i),trxcurr.b(i),trxcurr.theta(i)] = cov2ell(S);
   trxcurr.x(i) = mu(1);
   trxcurr.y(i) = mu(2);
-  trxcurr.area(i) = numel(cc.PixelIdxList{j});
+  trxcurr.area(i) = numel(cc.PixelIdxList{i});
   trxpriors(i) = 1;
   
   trxcurr.istouching = 0;
