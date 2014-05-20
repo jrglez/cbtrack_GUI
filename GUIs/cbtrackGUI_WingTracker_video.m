@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_WingTracker_video(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_ROI_temp
 
-% Last Modified by GUIDE v2.5 06-Mar-2014 12:02:11
+% Last Modified by GUIDE v2.5 13-May-2014 15:48:19
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -44,21 +44,14 @@ end
 % End initialization code - DO NOT EDIT
 
 
-% --- Executes just before cbtrackGUI_ROI_temp is made visible.
 function cbtrackGUI_WingTracker_video_OpeningFcn(hObject, eventdata, handles, varargin)
-% This function has no output args, see OutputFcn.
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% varargin   command line arguments to cbtrackGUI_ROI_temp (see VARARGIN)
-
-% Choose default command line output for cbtrackGUI_ROI_temp
 global ISPAUSE
 global ISPLAYING
 ISPLAYING=false;
 
 handles.output = hObject;
 GUIsize(handles,hObject)
+experiment=getappdata(0,'experiment');
 moviefile=getappdata(0,'moviefile');
 cbparams=getappdata(0,'cbparams');
 roidata=getappdata(0,'roidata');
@@ -86,6 +79,19 @@ handles.video_img=imagesc(frame);
 set(handles.axes_wingtracker_video,'XTick',[],'YTick',[])
 axis equal
 
+if ~cbparams.track.dosetBG || ~getappdata(0,'singleexp')
+    set(handles.pushbutton_BG,'Enable','off')
+end
+if ~cbparams.detect_rois.dosetROI || ~getappdata(0,'singleexp')
+    set(handles.pushbutton_ROIs,'Enable','off')
+end
+if ~cbparams.track.dosettrack || ~getappdata(0,'singleexp')
+    set(handles.pushbutton_tracker_setup,'Enable','off')
+end
+if ~ cbparams.wingtrack.dosetwingtrack || ~getappdata(0,'singleexp')
+    set(handles.pushbutton_WT,'Enable','off')
+end
+
 % Plot ROIs
 if ~roidata.isall
     nROI=roidata.nrois;
@@ -97,7 +103,8 @@ if ~roidata.isall
     %       'Color',colors_roi(i,:),'HorizontalAlignment','center','VerticalAlignment','middle');
     end
 end
-    
+
+set(handles.text_info,'String',{['Experiment ',experiment];'Tracking wings: No frames tracked'})
  % Set slider
 set(handles.slider_frame,'Value',1,'Min',1,'Max',2,'SliderStep',[.01,.1],'Enable','off')
 fcn_slider_frame = get(handles.slider_frame,'Callback');
@@ -110,7 +117,7 @@ if isfield(trackdata,'twing')
     %set slider
     t=trackdata.twing;
     set(handles.slider_frame,'Value',debugdata.nframestracked,'Max',debugdata.nframestracked,'SliderStep',[.01,.1],'Enable','on')
-    set(handles.text_info,'String',['Displaying frame ',num2str(t-1),'. ',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),' (',num2str(debugdata.nframestracked*100/debugdata.nframestrack,'%.1f'),'%) tracked.'])  
+    set(handles.text_info,'String',{['Experiment ',experiment];['Displaying frame ',num2str(t-1),'. ',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),' (',num2str(debugdata.nframestracked*100/debugdata.nframestrack,'%.1f'),'%) tracked.']})  
     set(handles.pushbutton_clear,'Enable','on');
     set(handles.pushbutton_save,'Enable','on');
 
@@ -159,53 +166,19 @@ else
 end
 
 
-
-% UIWAIT makes cbtrackGUI_ROI_temp wait for user response (see UIRESUME)
-% uiwait(handles.cbtrackGUI_ROI_temp);
+function varargout = cbtrackGUI_WingTracker_video_OutputFcn(hObject, eventdata, handles)
 
 
-% --- Outputs from this function are returned to the command line.
-function varargout = cbtrackGUI_WingTracker_video_OutputFcn(hObject, eventdata, handles) 
-% varargout  cell array for returning output args (see VARARGOUT);
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Get default command line output from handles structure
-varargout{1} = handles.output;
-if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
-    delete(handles.cbtrackGUI_ROI)
-end
-
-
-
-% --- Executes during object creation, after setting all properties.
 function axes_wingtracker_video_CreateFcn(hObject, eventdata, handles) %#ok<*INUSD,*DEFNU>
-% hObject    handle to axes_wingtracker_video (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
 
 
-% Hint: place code in OpeningFcn to populate axes_wingtracker_video
-
-
-
-% --- Executes on button press in pushbutton_cancel.
 function pushbutton_cancel_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_cancel (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 global ISPAUSE
 ISPAUSE=true;
 close(handles.cbtrackGUI_ROI)
 
 
-% --- Executes on button press in pushbutton_accept.
 function pushbutton_accept_Callback(hObject, eventdata, handles) %#ok<*INUSL>
-% hObject    handle to pushbutton_accept (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 %Save size
 GUIscale=getappdata(0,'GUIscale');
 new_pos=get(handles.cbtrackGUI_ROI,'position'); 
@@ -222,85 +195,71 @@ cbparams=getappdata(0,'cbparams');
 trackdata=getappdata(0,'trackdata');
 debugdata=getappdata(0,'debugdata_WT');
 out=getappdata(0,'out');
+if debugdata.nframestrack~=debugdata.nframestracked
+    msg_nframes=myquestdlg(14,'Helvetica',{'The number of tracked frames for bodies and wings must be simmilar.'; 'Continue tracking? (''No'' will delete missmatching frames)'},'Number of frames mismatch','Yes','No','Yes'); 
+    if ~strcmp(msg_nframes,'No')
+        return
+    end
+end
 logfid=open_log('track_log',cbparams,out.folder);
 iframe=debugdata.nframestracked;
 fprintf(logfid,'Saving tracking results up to frame %i at %s...\n',debugdata.framestracked(iframe),datestr(now,'yyyymmddTHHMMSS'));
 [trackdata,debugdata]=delete_partial_wing(iframe,trackdata,debugdata);
 setappdata(0,'trackdata',trackdata)
 setappdata(0,'debugdata_WT',debugdata);
-setappdata(0,'iscancel',false)
 if logfid > 1,
   fclose(logfid);
 end
-uiresume(handles.cbtrackGUI_ROI);
+
+setappdata(0,'iscancel',false)
+uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
 
 
-
-% --- Executes when cbtrackGUI_WingTracker_video is resized.
 function cbtrackGUI_ROI_ResizeFcn(hObject, eventdata, handles)
-% hObject    handle to cbtrackGUI_WingTracker_video (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 GUIresize(handles,hObject);
 
-% --- Executes on slider movement.
+
 function slider_frame_Callback(hObject, eventdata, handles)
-% hObject    handle to slider_frame (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 iframe=round(get(hObject,'Value'));
 set(hObject,'Value',iframe);
 set(handles.slider_frame,'UserData',iframe);
 % Plot
+experiment=getappdata(0,'experiment');
 debugdata=getappdata(0,'debugdata_WT');
 wingtrack=get(handles.pushbutton_start,'UserData');
 frame=double(wingtrack.readframe(debugdata.framestracked(iframe)));
 debugdata=plot_wings(iframe,debugdata,frame);
-set(handles.text_info,'String',['Displaying frame ',num2str(debugdata.framestracked(iframe)),'. ',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),' (',num2str(debugdata.nframestracked*100/debugdata.nframestrack,'%.1f'),'%) tracked.'])  
+set(handles.text_info,'String',{['Experiment ',experiment];['Displaying frame ',num2str(debugdata.framestracked(iframe)),'. ',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),' (',num2str(debugdata.nframestracked*100/debugdata.nframestrack,'%.1f'),'%) tracked.']})  
 setappdata(0,'debugdata_WT',debugdata)
 
 
-
-% --- Executes during object creation, after setting all properties.
 function slider_frame_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to slider_frame (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
 
 
-% --- Executes on mouse press over axes background.
 function axes_wingtracker_video_ButtonDownFcn(hObject, eventdata, handles)
-% hObject    handle to axes_wingtracker_video (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 
-
-% --- Executes when user attempts to close cbtrackGUI_ROI.
 function cbtrackGUI_ROI_CloseRequestFcn(hObject, eventdata, handles)
-% hObject    handle to cbtrackGUI_ROI (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 msg_cancel=myquestdlg(14,'Helvetica','Cancel current project? All setup options will be lost','Cancel','Yes','No','No'); 
 if isempty(msg_cancel)
     msg_cancel='No';
 end
 if strcmp('Yes',msg_cancel)
     setappdata(0,'iscancel',true)
-    uiresume(hObject)
+    uiresume(handles.cbtrackGUI_ROI)
+    if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+        delete(handles.cbtrackGUI_ROI)
+    end
 end
 
 
-% --- Executes on button press in pushbutton_start.
 function pushbutton_start_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_start (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 global ISPAUSE
 if ~ISPAUSE
     set(hObject,'String','CONTINUE')
@@ -314,6 +273,7 @@ elseif ISPAUSE
     set(handles.slider_frame,'Enable','off')
     
     trackdata=getappdata(0,'trackdata');
+    experiment=getappdata(0,'experiment');
     moviefile=getappdata(0,'moviefile');
     BG=getappdata(0,'BG');
     roidata=getappdata(0,'roidata');
@@ -339,10 +299,9 @@ elseif ISPAUSE
     %set slider
     t=getappdata(0,'twing');
     set(handles.slider_frame,'Value',debugdata.nframestracked,'Max',debugdata.nframestracked,'SliderStep',[.01,.1],'Enable','on')
-    set(handles.text_info,'String',['Displaying frame ',num2str(t-1),'. ',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),' (',num2str(debugdata.nframestracked*100/debugdata.nframestrack,'%.1f'),'%) tracked.'])  
+    set(handles.text_info,'String',{['Experiment ',experiment];['Displaying frame ',num2str(t-1),'. ',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),' (',num2str(debugdata.nframestracked*100/debugdata.nframestrack,'%.1f'),'%) tracked.']})  
     
     if ~ISPAUSE
-        experiment=getappdata(0,'experiment');
         out=getappdata(0,'out');
         logfid=open_log('track_log',cbparams,out.folder);
         fprintf(logfid,'Wing tracking finished at %s for experiment %s...\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
@@ -354,17 +313,16 @@ elseif ISPAUSE
         setappdata(0,'restart',restart)
         setappdata(0,'iscancel',false)
         uiresume(handles.cbtrackGUI_ROI);
+        if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+            delete(handles.cbtrackGUI_ROI)
+        end
     end
 end
 
 
 
 
-% --- Executes on button press in pushbutton_play.
 function pushbutton_play_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_play (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 global ISPLAYING
 if ISPLAYING
     ISPLAYING=false;
@@ -376,6 +334,7 @@ elseif ~ISPLAYING
     set(handles.pushbutton_start,'Enable','off');
     set(handles.pushbutton_accept,'Enable','off');
     iframe=get(handles.slider_frame,'Value');
+    experiment=getappdata(0,'experiment');
     debugdata=getappdata(0,'debugdata_WT');
     wingtrack=get(handles.pushbutton_start,'UserData');
     frame=double(wingtrack.readframe(debugdata.framestracked(iframe)));
@@ -387,7 +346,7 @@ elseif ~ISPLAYING
         if ~ISPLAYING
             break
         end
-        set(handles.text_info,'String',['Displaying frame ',num2str(tframe),'. ',num2str(ilastf),' of ',num2str(debugdata.nframestracked),' (',num2str(ilastf*100/debugdata.nframestracked,'%.1f'),'%) tracked.'])  
+        set(handles.text_info,'String',{['Experiment ',experiment];['Displaying frame ',num2str(tframe),'. ',num2str(ilastf),' of ',num2str(debugdata.nframestracked),' (',num2str(ilastf*100/debugdata.nframestracked,'%.1f'),'%) tracked.']})  
         frame=double(wingtrack.readframe(j));
         debugdata=plot_wings(j,debugdata,frame);        
     end
@@ -402,14 +361,11 @@ elseif ~ISPLAYING
 end
 
 
-% --- Executes on button press in pushbutton_clear.
 function pushbutton_clear_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_clear (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 msg_clear=myquestdlg(14,'Helvetica',{'Which data would you like to delete?';'- All: Delete all the tracked frames';'- Current: Delete from the displayed frame'},'Cancel','All','Current','Cancel','Cancel'); 
 out=getappdata(0,'out');
 logfid=open_log('track_log',getappdata(0,'cbparams'),out.folder);
+experiment=getappdata(0,'experiment');
 debugdata=getappdata(0,'debugdata_WT');
 trackdata=getappdata(0,'trackdata');
 if strcmp(msg_clear,'All')
@@ -437,13 +393,13 @@ if strcmp(msg_clear,'All')
     set(handles.pushbutton_accept,'Enable','off')
     set(handles.pushbutton_play,'Enable','off')
     set(handles.slider_frame,'Value',1,'Min',1,'Max',2,'SliderStep',[.01,.1],'Enable','off')
-    set(handles.text_info,'String','Tracking wings: No frames trackedNo frames tracked')
+    set(handles.text_info,'String',{['Experiment ',experiment];'Tracking wings: No frames trackedNo frames tracked'})
     fprintf(logfid,'All wing tracking data cleared at %s.\n',datestr(now,'yyyymmddTHHMMSS')');
 elseif strcmp(msg_clear,'Current')
     iframe=get(handles.slider_frame,'Value');
     [trackdata,debugdata]=clear_partial_wing(iframe,trackdata,debugdata);
     set(handles.slider_frame,'Max',iframe);
-    set(handles.text_info,'String',['Displaying frame ',num2str(debugdata.framestracked(iframe)),'. ',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),' (',num2str(debugdata.nframestracked*100/debugdata.nframestrack,'%.1f'),'%) tracked.'])  
+    set(handles.text_info,'String',{['Experiment ',experiment];['Displaying frame ',num2str(debugdata.framestracked(iframe)),'. ',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),' (',num2str(debugdata.nframestracked*100/debugdata.nframestrack,'%.1f'),'%) tracked.']})  
     fprintf(logfid,'Tracking data cleared from frame %i at %s.\n',iframe,datestr(now,'yyyymmddTHHMMSS'));
 end
 if logfid > 1,
@@ -453,11 +409,7 @@ setappdata(0,'trackdata',trackdata);
 setappdata(0,'debugdata_WT',debugdata)
 
 
-% --- Executes on button press in pushbutton_save.
 function pushbutton_save_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_save (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 [tempfile,tempdir]=uiputfile('.mat');
 out=getappdata(0,'out');
 cbparams=getappdata(0,'cbparams');
@@ -472,12 +424,8 @@ if logfid > 1,
   fclose(logfid);
 end
 
-% --- Executes on button press in pushbutton_BG.
+
 function pushbutton_BG_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_BG (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 %Save size
 GUIscale=getappdata(0,'GUIscale');
 new_pos=get(handles.cbtrackGUI_ROI,'position'); 
@@ -488,39 +436,15 @@ GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
 setappdata(0,'iscancel',2)
-cbtrackGUI_BG
-uiresume(hObject)
-
-
-
-
-% --- Executes on button press in pushbutton_ROIs.
-function pushbutton_ROIs_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_ROIs (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-%Save size
-GUIscale=getappdata(0,'GUIscale');
-new_pos=get(handles.cbtrackGUI_ROI,'position'); 
-old_pos=GUIscale.original_position;
-GUIscale.rescalex=new_pos(3)/old_pos(3);
-GUIscale.rescaley=new_pos(4)/old_pos(4);
-GUIscale.position=new_pos;
-setappdata(0,'GUIscale',GUIscale)
-
-setappdata(0,'iscancel',2)
-cbtrackGUI_ROI
 uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
+
+cbtrackGUI_BG
 
 
-
-% --- Executes on button press in pushbutton_tracker_setup.
-function pushbutton_tracker_setup_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_tracker_setup (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
+function pushbutton_ROIs_Callback(hObject, eventdata, handles)
 %Save size
 GUIscale=getappdata(0,'GUIscale');
 new_pos=get(handles.cbtrackGUI_ROI,'position'); 
@@ -531,29 +455,16 @@ GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
 setappdata(0,'iscancel',2)
-cbtrackGUI_tracker
-uiresume(hObject)
+uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
+
+cbtrackGUI_ROI
 
 
-% --- Executes on button press in pushbutton_debuger.
-function pushbutton_debuger_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_debuger (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --- Executes on button press in pushbutton_debug.
-function pushbutton_debug_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_debug (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --- Executes on button press in pushbutton_WT.
-function pushbutton_WT_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_WT (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+function pushbutton_tracker_setup_Callback(hObject, eventdata, handles)
+%Save size
 GUIscale=getappdata(0,'GUIscale');
 new_pos=get(handles.cbtrackGUI_ROI,'position'); 
 old_pos=GUIscale.original_position;
@@ -563,5 +474,34 @@ GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
 setappdata(0,'iscancel',2)
+uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
+
+cbtrackGUI_tracker
+
+
+
+function pushbutton_debuger_Callback(hObject, eventdata, handles)
+
+
+function pushbutton_debug_Callback(hObject, eventdata, handles)
+
+
+function pushbutton_WT_Callback(hObject, eventdata, handles)
+GUIscale=getappdata(0,'GUIscale');
+new_pos=get(handles.cbtrackGUI_ROI,'position'); 
+old_pos=GUIscale.original_position;
+GUIscale.rescalex=new_pos(3)/old_pos(3);
+GUIscale.rescaley=new_pos(4)/old_pos(4);
+GUIscale.position=new_pos;
+setappdata(0,'GUIscale',GUIscale)
+
+setappdata(0,'iscancel',2)
+uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
+
 cbtrackGUI_WingTracker
-uiresume(hObject)

@@ -49,17 +49,12 @@ end
 % End initialization code - DO NOT EDIT
 
 
-% --- Executes just before cbtrackGUI_ROI_temp is made visible.
 function cbtrackGUI_tracker_OpeningFcn(hObject, eventdata, handles, varargin)
-% This function has no output args, see OutputFcn.
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% varargin   command line arguments to cbtrackGUI_ROI_temp (see VARARGIN)
-
-% Choose default command line output for cbtrackGUI_ROI_temp
 handles.output = hObject;
+
 GUIsize(handles,hObject)
+
+experiment=getappdata(0,'experiment');
 moviefile=getappdata(0,'moviefile');
 cbparams=getappdata(0,'cbparams');
 roi_params=cbparams.detect_rois;
@@ -98,15 +93,38 @@ P_curr_stage='params';
 P_stage=getappdata(0,'P_stage');
 if find(strcmp(P_stage,P_stages))>find(strcmp(P_curr_stage,P_stages))
     visdata=getappdata(0,'visdata');
-    visdata.trx=cell(roidata.nrois,roi_params.nframessample);
+    if isstruct(visdata.trx) && numel(visdata.trx.x)==sum(roidata.nframes_per_roi)
+        trx=struct('x',[],'y',[],'a',[],'b',[],'theta',[]);
+        trx=repmat({trx},[roidata.nrois,roi_params.nframessample]);
+        f=0;
+        for i=1:roidata.nrois
+            f=f(end)+1:f(end)+roidata.nflies_per_roi(i);
+            for t=1:roi_params.nframessample
+                trx{i,t}.x=visdata.trx(f,t).x;
+                trx{i,t}.y=visdata.trx(f,t).y;
+                trx{i,t}.a=visdata.trx(f,t).a;
+                trx{i,t}.b=visdata.trx(f,t).b;
+                trx{i,t}.theta=visdata.trx(f,t).theta;
+            end
+        end    
+        visdata.trx=trx;
+    end
     count.trx=visdata.trx;
     count.nflies_per_roi=roidata.nflies_per_roi;
-    set(handles.pushbutton_WT,'Enable','on')
-    if find(strcmp(P_stage,P_stages))>=find(strcmp('track1',P_stages)) && cbparams.track.DEBUG==1
+    if cbparams.wingtrack.dosetwingtrack
+        set(handles.pushbutton_WT,'Enable','on')
+    end
+    if find(strcmp(P_stage,P_stages))>=find(strcmp('track1',P_stages)) && cbparams.track.DEBUG==1 && getappdata(0,'singleexp')
         set(handles.pushbutton_debuger,'Enable','on')
     end
 else
-    count.nflies_per_roi = nan(1,roidata.nrois);
+    if isfield(roidata,'nflies_per_roi') && getappdata(0,'usefiles')
+        count.nflies_per_roi=roidata.nflies_per_roi;
+    elseif ~isempty(roi_params.nflies_per_roi) && length(roi_params.nflies_per_roi)==roidata.nrois
+        count.nflies_per_roi=roi_params.nflies_per_roi;
+    else
+        count.nflies_per_roi = nan(1,roidata.nrois);
+    end
     [visdata.frames,visdata.dbkgd]=compute_dbkgd(count.readframe,count.nframes,roi_params.nframessample,tracking_params.bgmode,bgmed,roidata.inrois_all);
     visdata.isfore=cell(1,roi_params.nframessample);
     visdata.cc_ind=cell(roidata.nrois,roi_params.nframessample);
@@ -117,13 +135,26 @@ else
 end
 
 % Set parameters on the gui
+if ~cbparams.track.dosetBG
+    set(handles.pushbutton_BG,'Enable','off')
+end
+if ~cbparams.detect_rois.dosetROI
+    set(handles.pushbutton_ROIs,'Enable','off')
+end
+
+% Estimate maximum minccarea as the area of the biggest cc
+isfore = visdata.dbkgd{1} >= tracking_params.bgthresh;
+cc=bwconncomp(isfore);
+cc.Area = cellfun(@numel,cc.PixelIdxList);
+maxccarea=max(cc.Area);
+clear cc
 set(handles.edit_set_nframessample,'String',num2str(roi_params.nframessample));
 set(handles.edit_set_bgthresh,'String',num2str(tracking_params.bgthresh));
 set(handles.slider_set_bgthresh,'Value',tracking_params.bgthresh);
 fcn_slider_bgthresh = get(handles.slider_set_bgthresh,'Callback');
 hlisten_bgthresh=addlistener(handles.slider_set_bgthresh,'ContinuousValueChange',fcn_slider_bgthresh); %#ok<NASGU>
 set(handles.edit_set_minccarea,'String',num2str(tracking_params.minccarea));
-set(handles.slider_set_minccarea,'Value',tracking_params.minccarea,'Max',200);
+set(handles.slider_set_minccarea,'Value',tracking_params.minccarea,'Max',maxccarea);
 fcn_slider_minccarea = get(handles.slider_set_minccarea,'Callback');
 hlisten_minccarea=addlistener(handles.slider_set_minccarea,'ContinuousValueChange',fcn_slider_minccarea); %#ok<NASGU>
 
@@ -133,10 +164,11 @@ visdata.hflies=[];
 visdata.hell=[];
 
 % Plot ROIs
+hold on
 nROI=roidata.nrois;
 if ~roidata.isall
     colors_roi = jet(nROI)*.7;
-    hold on
+    
     for i = 1:nROI,
       drawellipse(roidata.centerx(i),roidata.centery(i),0,roidata.radii(i),roidata.radii(i),'Color',colors_roi(i,:));
         text(roidata.centerx(i),roidata.centery(i),['ROI: ',num2str(i)],...
@@ -154,7 +186,7 @@ text1=nan(nROI,1);
 text2=nan(nROI,1);
 edit1=nan(nROI,1);
 
-fxROI=[(1:nROI)',count.nflies_per_roi',nan(nROI,1)];
+fxROI=[(1:nROI)',nan(nROI,1),count.nflies_per_roi'];
 posx=[14, 81, 146]*GUIscale.rescalex;
 lowposy=topposy-26*(nROI-1)*GUIscale.rescaley;
 posy=(topposy:-26*GUIscale.rescaley:lowposy);
@@ -176,7 +208,9 @@ end
  handles.text1=text1;
  handles.text2=text2;
  handles.edit1=edit1;
-  
+
+ handles.textexp=text(250,450,'','FontSize',24,'Color',[1 0 0],'HorizontalAlignment','center','units','pixels','String',experiment);
+ 
  % Set slider
 nframessample=roi_params.nframessample;
 set(handles.slider_frame,'Value',1,'Min',1,'Max',nframessample,'SliderStep',[1/(nframessample-1),10/(nframessample-1)])
@@ -197,48 +231,20 @@ set(handles.slider_frame,'UserData',1);
 set(handles.pushbutton_trset,'UserData',cbparams.track)
 setappdata(0,'roidata',roidata)
 
+uiwait(handles.cbtrackGUI_ROI)
 
 
-% UIWAIT makes cbtrackGUI_ROI_temp wait for user response (see UIRESUME)
-% uiwait(handles.cbtrackGUI_ROI_temp);
+function varargout = cbtrackGUI_tracker_OutputFcn(hObject, eventdata, handles)  %#ok<STOUT>
 
 
-% --- Outputs from this function are returned to the command line.
-function varargout = cbtrackGUI_tracker_OutputFcn(hObject, eventdata, handles) 
-% varargout  cell array for returning output args (see VARARGOUT);
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Get default command line output from handles structure
-varargout{1} = handles;
-
-
-% --- Executes during object creation, after setting all properties.
 function axes_tracker_CreateFcn(hObject, eventdata, handles) %#ok<*INUSD,*DEFNU>
-% hObject    handle to axes_tracker (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
 
 
-% Hint: place code in OpeningFcn to populate axes_tracker
-
-
-
-% --- Executes on button press in pushbutton_cancel.
 function pushbutton_cancel_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_cancel (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 close(handles.cbtrackGUI_ROI)
 
 
-% --- Executes on button press in pushbutton_accept.
 function pushbutton_accept_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_accept (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 %Save size
 GUIscale=getappdata(0,'GUIscale');
 new_pos=get(handles.cbtrackGUI_ROI,'position'); 
@@ -252,38 +258,38 @@ cbparams=getappdata(0,'cbparams');
 roi_params=get(handles.edit_set_nframessample,'UserData');
 tracking_params=get(handles.edit_set_bgthresh,'UserData');
 roidata=getappdata(0,'roidata'); 
+isnew=roidata.isnew;
 count=get(handles.pushbutton_set_count,'UserData');
 visdata=get(handles.popupmenu_vis,'UserData');
 
 restart='';
 setappdata(0,'restart',restart)
 
-if any(isnan(count.nflies_per_roi))
+if any(isnan(count.nflies_per_roi)) || all([cbparams.wingtrack.dosetwingtrack,any(any(cellfun(@isempty,visdata.trx)))]) 
     roi_params.nframessample=str2double(get(handles.edit_set_nframessample,'String'));
-    [count.nflies_per_roi,visdata.isfore,visdata.cc_ind,visdata.flies_ind,visdata.trx] = CountFliesPerROI_GUI(visdata.dbkgd,roidata,roi_params,tracking_params);
+    [count.nflies_per_roi,visdata.isfore,visdata.cc_ind,visdata.flies_ind,visdata.trx] = CountFliesPerROI_GUI(visdata.dbkgd,roidata,roi_params,tracking_params,cbparams.wingtrack.dosetwingtrack);
     count.trx=visdata.trx;
     roidata.nflies_per_roi=count.nflies_per_roi;
     roidata.isnew=3;
 end
 
-if roidata.isnew
-    if roidata.isnew==2
+if isnew
+    if isnew==2
         msg_change=myquestdlg(14,'Helvetica','You changed some of the parameters but did not count the flyes. Would like to count the flies and save the parameters?','Warning','Yes','No','Cancel','No'); 
         if isempty(msg_change) || strcmp(msg_change,'Cancel')
             return
         elseif strcmp(msg_change,'Yes')
             roi_params.nframessample=str2double(get(handles.edit_set_nframessample,'String'));
-            [count.nflies_per_roi,visdata.isfore,visdata.cc_ind,visdata.flies_ind,visdata.trx] = CountFliesPerROI_GUI(visdata.dbkgd,roidata,roi_params,tracking_params);
-            count.trx=vistada.trx;
+            [count.nflies_per_roi,visdata.isfore,visdata.cc_ind,visdata.flies_ind,visdata.trx] = CountFliesPerROI_GUI(visdata.dbkgd,roidata,roi_params,tracking_params,cbparams.wingtrack.dosetwingtrack);
+            count.trx=visdata.trx;
             roidata.nflies_per_roi=count.nflies_per_roi;
             fxROI(:,2)=count.nflies_per_roi';
             for i=1:roidata.nrois
                 set(handles.text2(i),'String',num2str(fxROI(i,2)))
             end
-
-            if visdata.plot==6 && isempty(visdata.trx{1,1})
-                visdata.trx(:,1)=fit_to_ellipse(roidata,count.nflies_per_roi, visdata.dbkgd{1}, visdata.isfore{1},tracking_params);
-                
+            f=get(handles.slider_frame,'Value');
+            if visdata.plot==6 && isempty(visdata.trx{1,f})
+                visdata.trx(:,f)=fit_to_ellipse(roidata,count.nflies_per_roi, visdata.dbkgd{1}, visdata.isfore{1},tracking_params);    
             end
 
             plot_vis(handles,visdata,1)
@@ -301,12 +307,12 @@ if roidata.isnew
             setappdata(0,'roidata',roidata)
             return        
         end
-    elseif roidata.isnew==3
+    elseif isnew==3 && cbparams.wingtrack.dosetwingtrack
         visdata.trx=struct('x',[],'y',[],'a',[],'b',[],'theta',[]);
-        visdata.trx=repmat(visdata.trx,[sum(roidata.nflies_per_roi),roi_params.nframessample]);
+        visdata.trx=repmat(visdata.trx,[sum(count.nflies_per_roi),roi_params.nframessample]);
         k=1;
         for iroi = 1:size(count.trx,1),
-            for fly=1:roidata.nflies_per_roi(iroi)
+            for fly=1:count.nflies_per_roi(iroi)
                 for t=1:size(count.trx,2)
                     visdata.trx(k,t).x = count.trx{iroi,t}.x(fly);
                     visdata.trx(k,t).y = count.trx{iroi,t}.y(fly);
@@ -341,8 +347,6 @@ if roidata.isnew
     setappdata(0,'cbparams',cbparams)
     setappdata(0,'visdata',visdata);
     setappdata(0,'roidata',roidata);
-    setappdata(0,'P_stage','wing_params')
-
     
     out=getappdata(0,'out');
     savefile = fullfile(out.folder,cbparams.dataloc.roidatamat.filestr); 
@@ -352,28 +356,55 @@ if roidata.isnew
       delete(savefile);
     end
     save(savefile,'-struct','roidata');
-    savetemp
+    if cbparams.track.dosave
+        savetemp({'roidata','visdata'})
+    end
 end
-cbtrackGUI_WingTracker;
 
-delete(handles.cbtrackGUI_ROI)
+setappdata(0,'iscancel',false)
+uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
+
+if cbparams.wingtrack.dosetwingtrack
+    setappdata(0,'P_stage','wing_params')
+    cbtrackGUI_WingTracker
+elseif getappdata(0,'singleexp') && cbparams.track.dotrack
+    if ~cbparams.track.DEBUG
+        WriteParams
+        setappdata(0,'P_stage','track1')
+        cbtrackGUI_tracker_NOvideo
+    else
+        if isnew
+            WriteParams
+            setappdata(0,'P_stage','track1')
+            cbtrackGUI_tracker_video
+        else
+            P_stage=getappdata(0,'P_stage');       
+            if strcmp(P_stage,'track2')
+                CourtshipBowlTrack_GUI2
+                iscancel=getappdata(0,'iscancel');
+                if iscancel
+                    if iscancel==1
+                        cancelar
+                    end
+                    return
+                end
+            elseif strcmp(P_stage,'track1')
+                cbtrackGUI_tracker_video
+            end
+        end        
+    end
+end
 
 
 
-% --- Executes when cbtrackGUI_tracker is resized.
 function cbtrackGUI_ROI_ResizeFcn(hObject, eventdata, handles)
-% hObject    handle to cbtrackGUI_tracker (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 GUIresize(handles,hObject);
 
 
-
-% --- Executes on slider movement.
 function slider_frame_Callback(hObject, eventdata, handles)
-% hObject    handle to slider_frame (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 f=round(get(hObject,'Value'));
 set(hObject,'Value',f);
 visdata=get(handles.popupmenu_vis,'UserData');
@@ -396,39 +427,16 @@ plot_vis(handles,visdata,f)
 set(handles.slider_frame,'UserData',f);
 
 
-
-
-% Hints: get(hObject,'Value') returns position of slider
-%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
-
-
-% --- Executes during object creation, after setting all properties.
 function slider_frame_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to slider_frame (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
 
 
-% --- Executes on mouse press over axes background.
 function axes_tracker_ButtonDownFcn(hObject, eventdata, handles)
-% hObject    handle to axes_tracker (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 
-% --- Executes when selected object is changed in uipanel_fxROI.
 function uipanel_fxROI_SelectionChangeFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in uipanel_fxROI 
-% eventdata  structure with the following fields (see UIBUTTONGROUP)
-%	EventName: string 'SelectionChanged' (read only)
-%	OldValue: handle of the previously selected object or empty if none was selected
-%	NewValue: handle of the currently selected object
-% handles    structure with handles and user data (see GUIDATA)
 if eventdata.NewValue==handles.radiobutton_automatic %???
     for i=1:length(handles.edit1)
         set(handles.edit1(i),'Enable','off')
@@ -443,9 +451,6 @@ guidata(hObject, handles);
 
 
 function edit_set_bgthresh_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_set_bgthresh (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 visdata=get(handles.popupmenu_vis,'UserData');
 if visdata.plot~=1 && visdata.plot~=2
     roi_params=get(handles.edit_set_nframessample,'UserData');
@@ -469,30 +474,16 @@ if visdata.plot~=1 && visdata.plot~=2
     setappdata(0,'roidata',roidata)
     set(handles.edit_set_bgthresh,'UserData',tracking_params);
 end
-        
-
-% Hints: get(hObject,'String') returns contents of edit_set_bgthresh as text
-%        str2double(get(hObject,'String')) returns contents of edit_set_bgthresh as a double
 
 
-% --- Executes during object creation, after setting all properties.
 function edit_set_bgthresh_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_set_bgthresh (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
 
 
-
 function edit_set_minccarea_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_set_minccarea (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 visdata=get(handles.popupmenu_vis,'UserData');
 if visdata.plot~=1 && visdata.plot~=2
     roi_params=get(handles.edit_set_nframessample,'UserData');
@@ -518,14 +509,7 @@ if visdata.plot~=1 && visdata.plot~=2
 end
 
 
-% --- Executes during object creation, after setting all properties.
 function edit_set_minccarea_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_set_minccarea (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -533,32 +517,14 @@ end
 
 
 function edit_set_nframessample_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_set_nframessample (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit_set_nframessample as text
-%        str2double(get(hObject,'String')) returns contents of edit_set_nframessample as a double
-
-
-% --- Executes during object creation, after setting all properties.
 function edit_set_nframessample_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_set_nframessample (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
 
 
-% --- Executes on button press in pushbutton_set_count.
 function pushbutton_set_count_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_set_count (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+cbparams=getappdata(0,'cbparams');
 roi_params=get(handles.edit_set_nframessample,'UserData');
 tracking_params=get(handles.edit_set_bgthresh,'UserData');
 roidata=getappdata(0,'roidata');
@@ -567,7 +533,7 @@ visdata=get(handles.popupmenu_vis,'UserData');
 
 roi_params.nframessample=str2double(get(handles.edit_set_nframessample,'String'));
 
-[count.nflies_per_roi,visdata.isfore,visdata.cc_ind,visdata.flies_ind,visdata.trx] = CountFliesPerROI_GUI(visdata.dbkgd,roidata,roi_params,tracking_params);
+[count.nflies_per_roi,visdata.isfore,visdata.cc_ind,visdata.flies_ind,visdata.trx] = CountFliesPerROI_GUI(visdata.dbkgd,roidata,roi_params,tracking_params,cbparams.wingtrack.dosetwingtrack);
 count.trx=visdata.trx;
 fxROI(:,2)=count.nflies_per_roi';
 for i=1:roidata.nrois
@@ -589,30 +555,25 @@ set(handles.edit_set_nframessample,'UserData',roi_params);
 setappdata(0,'roidata',roidata)
 
 
-
-% --- Executes when user attempts to close cbtrackGUI_ROI.
 function cbtrackGUI_ROI_CloseRequestFcn(hObject, eventdata, handles)
-% hObject    handle to cbtrackGUI_ROI (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 count=get(handles.pushbutton_set_count,'UserData');
 msg_cancel=myquestdlg(14,'Helvetica','Cancel current project? All setup options will be lost','Cancel','Yes','No','No'); 
 if isempty(msg_cancel)
     msg_cancel='No';
 end
 if isfield(count,'fid')
-    fidBG=count.fid; %#ok<NASGU>
+    fclose(count.fid); 
 end
 if strcmp('Yes',msg_cancel)
-    cancelar
+    setappdata(0,'iscancel',true)
+    uiresume(handles.cbtrackGUI_ROI)
+    if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+        delete(handles.cbtrackGUI_ROI)
+    end
 end
 
 
-% --- Executes on slider movement.
 function slider_set_bgthresh_Callback(hObject, eventdata, handles)
-% hObject    handle to slider_set_bgthresh (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 visdata=get(handles.popupmenu_vis,'UserData');
 tracking_params=get(handles.edit_set_bgthresh,'UserData');
 tracking_params.bgthresh=get(hObject,'Value');
@@ -639,24 +600,13 @@ setappdata(0,'roidata',roidata)
 
 
 
-
-% --- Executes during object creation, after setting all properties.
 function slider_set_bgthresh_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to slider_set_bgthresh (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
 
 
-% --- Executes on slider movement.
 function slider_set_minccarea_Callback(hObject, eventdata, handles)
-% hObject    handle to slider_set_minccarea (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 visdata=get(handles.popupmenu_vis,'UserData');
 tracking_params=get(handles.edit_set_bgthresh,'UserData');
 tracking_params.minccarea=get(hObject,'Value');
@@ -683,23 +633,13 @@ setappdata(0,'roidata',roidata)
 
 
 
-% --- Executes during object creation, after setting all properties.
 function slider_set_minccarea_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to slider_set_minccarea (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
 
 
-% --- Executes on selection change in popupmenu_vis.
 function popupmenu_vis_Callback(hObject, eventdata, handles)
-% hObject    handle to popupmenu_vis (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 f=get(handles.slider_frame,'UserData');
 visdata=get(handles.popupmenu_vis,'UserData');
 visdata.plot=get(hObject,'Value');
@@ -720,28 +660,14 @@ end
 
 plot_vis(handles,visdata,f)
 
-% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_vis contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from popupmenu_vis
 
-
-% --- Executes during object creation, after setting all properties.
 function popupmenu_vis_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to popupmenu_vis (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
 
 
-% --- Executes on button press in pushbutton_trset.
 function pushbutton_trset_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_trset (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 temp_Tparams=get(handles.pushbutton_trset,'UserData');
 temp_Tparams=cbtrackGUI_tracker_params(temp_Tparams);
 cbparams=getappdata(0,'cbparams');
@@ -759,21 +685,11 @@ if ~isequal(temp_Tparams,cbparams.track)
 end
 
 
-
-
-% --- Executes on button press in pushbutton_pff.
 function pushbutton_pff_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_pff (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 cbtrackGUI_pff
 
-% --- Executes on button press in pushbutton_BG.
-function pushbutton_BG_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_BG (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
+function pushbutton_BG_Callback(hObject, eventdata, handles)
 %Save size
 GUIscale=getappdata(0,'GUIscale');
 new_pos=get(handles.cbtrackGUI_ROI,'position'); 
@@ -783,17 +699,16 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-delete(handles.cbtrackGUI_ROI)
+setappdata(0,'iscancel',false)
+uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
+
 cbtrackGUI_BG
 
 
-
-% --- Executes on button press in pushbutton_ROIs.
 function pushbutton_ROIs_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_ROIs (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 %Save size
 GUIscale=getappdata(0,'GUIscale');
 new_pos=get(handles.cbtrackGUI_ROI,'position'); 
@@ -803,23 +718,19 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-delete(handles.cbtrackGUI_ROI)
+setappdata(0,'iscancel',false)
+uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
+
 cbtrackGUI_ROI
 
 
-% --- Executes on button press in pushbutton_tracker_setup.
 function pushbutton_tracker_setup_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_tracker_setup (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 
-% --- Executes on button press in pushbutton_debuger.
 function pushbutton_debuger_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_debuger (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 %Save size
 GUIscale=getappdata(0,'GUIscale');
 new_pos=get(handles.cbtrackGUI_ROI,'position'); 
@@ -829,7 +740,11 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-delete(handles.cbtrackGUI_ROI)
+setappdata(0,'iscancel',false)
+uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
 
 P_stage=getappdata(0,'P_stage');
 if strcmp(P_stage,'track2')
@@ -841,21 +756,12 @@ if strcmp(P_stage,'track2')
         end
         return
     end
-    CourtshipBowlMakeResultsMovie_GUI
-    pffdata = CourtshipBowlComputePerFrameFeatures_GUI(1);
-    setappdata(0,'pffdata',pffdata)
-    cancelar
 elseif strcmp(P_stage,'track1')
     cbtrackGUI_tracker_video
 end
 
 
-
-% --- Executes on button press in pushbutton_WT.
 function pushbutton_WT_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_WT (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 GUIscale=getappdata(0,'GUIscale');
 new_pos=get(handles.cbtrackGUI_ROI,'position'); 
 old_pos=GUIscale.original_position;
@@ -864,13 +770,14 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-delete(handles.cbtrackGUI_ROI)
+setappdata(0,'iscancel',false)
+uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
+
 cbtrackGUI_WingTracker
 
 
-% --- Executes on button press in pushbutton_vid.
 function pushbutton_vid_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_vid (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 video_params

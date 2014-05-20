@@ -106,7 +106,7 @@ end
 setappdata(0,'trackdata',trackdata)
 
 % tracking data without the trx
-trackdata = rmfield(trackdata,{'trx','timestamps','perframedata','perframeunits'});
+%trackdata = rmfield(trackdata,{'trx','timestamps','perframedata','perframeunits'}); % TO DO: cuando arregle el bug relacionado con esto, incluir trx en los fields que eliminar
 cbparams.dataloc.trackingdatamat.filestr='trackingdata.mat';
 outfilename = fullfile(out.folder,cbparams.dataloc.trackingdatamat.filestr);
 save(outfilename,'-struct','trackdata');

@@ -1,10 +1,10 @@
-function clear_partial(t)
+function clear_partial(iframe)
 cbparams=getappdata(0,'cbparams');
 roidata=getappdata(0,'roidata');
 params=cbparams.track;
 trackdata=getappdata(0,'trackdata');
+t = iframe + cbparams.track.firstframetrack - 1;
 trackdata.t=t;
-iframe = t - cbparams.track.firstframetrack + 1;
 trackdata.trxx(:,:,iframe+1:end)=nan; %#ok<*NASGU>
 trackdata.trxy(:,:,iframe+1:end)=nan;
 trackdata.trxa(:,:,iframe+1:end)=nan;
@@ -36,7 +36,7 @@ for i=1:nrois
     pred(i).y = (2-params.err_dampen_pos)*trxcurr(i).y - (1-params.err_dampen_pos)*trxprev(i).y;
     dtheta = modrange(trxcurr(i).theta-trxprev(i).theta,-pi/2,pi/2);
     pred(i).theta = trxcurr(i).theta+(1-params.err_dampen_theta)*dtheta;
-    pred(i).mix.priors = (1-params.err_dampen_priors)*trackdata.trxpriors(i,end) + params.err_dampen_priors*.5;
+    pred(i).mix.priors = (1-params.err_dampen_priors)*trackdata.trxpriors(:,i,iframe) + params.err_dampen_priors*.5;
     % set centres, covars to predicted positions
     pred(i).mix.centres = [pred(i).x,pred(i).y];
     pred(i).mix.covars = axes2cov(trxcurr(i).a,trxcurr(i).b,pred(i).theta);

@@ -5,17 +5,17 @@ timestamp = datestr(now,TimestampFormat);
 [restart] = myparse(varargin,'restart',''); %[restart,tmpfilename,logfid] = myparse(varargin,'restart','','tmpfilename',tmpfilename,'logfid',1);
 SetBackgroundTypes;
 flycolors = {'r','b'};
-stages = {'maintracking','reformat','chooseorientations','trackwings1','assignids','chooseorientations2','trackwings2'};
+stages = {'maintracking','reformat','chooseorientations','trackwings1','assignids','chooseorientations2','trackwings2','realunits','arena','end'};
 
+cbparams=getappdata(0,'cbparams');
 out=getappdata(0,'out');
-logfid=open_log('track_log',getappdata(0,'cbparams'),out.folder);
+logfid=open_log('track_log',cbparams,out.folder);
 
 %% open movie
 
 fprintf(logfid,'Opening movie...\n');
 [readframe,nframes,fid,headerinfo] = get_readframe_fcn(moviefile);
 
-%% initialize
 trackdata=getappdata(0,'trackdata');
 
 restartstage = trackdata.stage;
@@ -24,13 +24,6 @@ if ~isempty(restart),
 end
 t=trackdata.t;
 nframes_track = t - params.firstframetrack + 1;
-trxx = trackdata.trxx(:,:,1:nframes_track); 
-trxy = trackdata.trxy(:,:,1:nframes_track); 
-trxa = trackdata.trxa(:,:,1:nframes_track); 
-trxb = trackdata.trxb(:,:,1:nframes_track); 
-trxtheta = trackdata.trxtheta(:,:,1:nframes_track); 
-istouching = trackdata.istouching(:,1:nframes_track);
-gmm_isbadprior = trackdata.gmm_isbadprior(:,1:nframes_track);
 
 
 
@@ -49,6 +42,14 @@ end
 if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
     %% correct for bounding box of rois
     trackdata.stage=stage;
+    % initialize
+    trxx = trackdata.trxx(:,:,1:nframes_track); 
+    trxy = trackdata.trxy(:,:,1:nframes_track); 
+    trxa = trackdata.trxa(:,:,1:nframes_track); 
+    trxb = trackdata.trxb(:,:,1:nframes_track); 
+    trxtheta = trackdata.trxtheta(:,:,1:nframes_track); 
+    istouching = trackdata.istouching(:,1:nframes_track);
+    gmm_isbadprior = trackdata.gmm_isbadprior(:,1:nframes_track);
 
     fprintf(logfid,'Correcting for ROI bounding boxes...\n');
     for roii = 1:nrois, 
@@ -103,7 +104,10 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
     trackdata.istouching = istouching;
     trackdata.gmm_isbadprior = gmm_isbadprior;
     trackdata.stage=stages{find(strcmp(stage,stages))+1};
-    save(out.temp_full,'trackdata','-append')
+    trackdata=rmfield(trackdata,{'trxx','trxy','trxa','trxb','trxtheta','trxarea','trxpriors','trxcurr','pred'});
+    if cbparams.track.dosave
+        save(out.temp_full,'trackdata','-append')
+    end
     setappdata(0,'trackdata',trackdata)
 end
 nflies = numel(trackdata.trx); 
@@ -144,7 +148,9 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
       trackdata.trx(i).theta = choose_orientations2(x,y,theta,weight_theta,weight_phi);
     end
     trackdata.stage=stages{find(strcmp(stage,stages))+1};
-    save(out.temp_full,'trackdata','-append')
+    if cbparams.track.dosave
+        save(out.temp_full,'trackdata','-append')
+    end
     setappdata(0,'trackdata',trackdata)
 end
 
@@ -246,7 +252,9 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
 
     end
     trackdata.stage=stages{find(strcmp(stage,stages))+1};
-    save(out.temp_full,'trackdata','-append')
+    if cbparams.track.dosave
+        save(out.temp_full,'trackdata','-append')
+    end
     setappdata(0,'trackdata',trackdata)
 end
 
@@ -386,7 +394,9 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
       end
     end
     trackdata.stage=stages{find(strcmp(stage,stages))+1};
-    save(out.temp_full,'trackdata','-append')
+    if cbparams.track.dosave
+        save(out.temp_full,'trackdata','-append')
+    end
     setappdata(0,'trackdata',trackdata)
 end
 
@@ -414,7 +424,9 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
 
     end
     trackdata.stage=stages{find(strcmp(stage,stages))+1};
-    save(out.temp_full,'trackdata','-append')
+    if cbparams.track.dosave
+        save(out.temp_full,'trackdata','-append')
+    end
     setappdata(0,'trackdata',trackdata)
 end
 
@@ -429,7 +441,7 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
         if isempty(flies),
           continue;
         end
-        framestrack{roii} = find(any(isflip(flies,:),1));
+        framestrack{roii} = find(any(isflip(flies,:),1))+params.firstframetrack-1;
       end
       roistrack = find(~cellfun(@isempty,framestrack));
     else
@@ -499,91 +511,96 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
           end
       end       
     end
-
+    trackdata.stage=stages{find(strcmp(stage,stages))+1};
 end
 %% convert to real units
+stage='realunits';
+if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
+    if isfield(roidata,'pxpermm') 
 
-if isfield(roidata,'pxpermm'),
+      dorotate = isfield(roidata,'rotateby');
+      dotranslate = all(isfield(roidata,{'centerx','centery'}));
+      if dorotate,
+        costheta = cos(roidata.rotateby);
+        sintheta = sin(roidata.rotateby);
+        R = [costheta,-sintheta;sintheta,costheta];
+      end
 
-  dorotate = isfield(roidata,'rotateby');
-  dotranslate = all(isfield(roidata,{'centerx','centery'}));
-  if dorotate,
-    costheta = cos(roidata.rotateby);
-    sintheta = sin(roidata.rotateby);
-    R = [costheta,-sintheta;sintheta,costheta];
-  end
+      for fly = 1:numel(trackdata.trx),
 
-  for fly = 1:numel(trackdata.trx),
+        roii = trackdata.trx(fly).roi;
+        x = trackdata.trx(fly).x;
+        if dotranslate,
+          x = x - roidata.centerx(roii);
+        end
+        x = x / roidata.pxpermm;
+        y = trackdata.trx(fly).y;
+        if dotranslate,
+          y = y - roidata.centery(roii);
+        end
+        y = y / roidata.pxpermm;
+        a = trackdata.trx(fly).a / roidata.pxpermm;
+        b = trackdata.trx(fly).b / roidata.pxpermm;
+        theta = trackdata.trx(fly).theta;
+        if dorotate,
+          p = R*[x;y];
+          x = p(1,:);
+          y = p(2,:);
+          theta = modrange(theta + roidata.rotateby,-pi,pi);
+        end
 
-    roii = trackdata.trx(fly).roi;
-    x = trackdata.trx(fly).x;
-    if dotranslate,
-      x = x - roidata.centerx(roii);
+        trackdata.trx(fly).x_mm = x;
+        trackdata.trx(fly).y_mm = y;
+        trackdata.trx(fly).theta_mm = theta;
+        trackdata.trx(fly).a_mm = a;
+        trackdata.trx(fly).b_mm = b;
+
+        trackdata.trx(fly).pxpermm = roidata.pxpermm;
+        trackdata.trx(fly).fps = 1/median(timestamps);
+
+      end
+
     end
-    x = x / roidata.pxpermm;
-    y = trackdata.trx(fly).y;
-    if dotranslate,
-      y = y - roidata.centery(roii);
+
+    dt = diff(timestamps);
+    if all(isnan(dt)),
+      fps = 30;
+      warning('Unknown fps, assigning to 30');
+      mediandt = 1/fps;
+    else
+      mediandt = median(dt(~isnan(dt)));
+      fps = 1/mediandt;
     end
-    y = y / roidata.pxpermm;
-    a = trackdata.trx(fly).a / roidata.pxpermm;
-    b = trackdata.trx(fly).b / roidata.pxpermm;
-    theta = trackdata.trx(fly).theta;
-    if dorotate,
-      p = R*[x;y];
-      x = p(1,:);
-      y = p(2,:);
-      theta = modrange(theta + roidata.rotateby,-pi,pi);
+    for fly = 1:nflies,
+      trackdata.trx(fly).fps = fps;
     end
 
-    trackdata.trx(fly).x_mm = x;
-    trackdata.trx(fly).y_mm = y;
-    trackdata.trx(fly).theta_mm = theta;
-    trackdata.trx(fly).a_mm = a;
-    trackdata.trx(fly).b_mm = b;
+    if isfield(params,'usemediandt') && params.usemediandt,
 
-    trackdata.trx(fly).pxpermm = roidata.pxpermm;
-    trackdata.trx(fly).fps = 1/median(timestamps);
-
-  end
-
+      for fly = 1:nflies,
+        trackdata.trx(fly).dt = repmat(mediandt,[1,trackdata.trx(fly).nframes-1]);
+      end
+    end
+    trackdata.stage=stages{find(strcmp(stage,stages))+1};
+    setappdata(0,'trackdata',trackdata);
 end
-
-dt = diff(timestamps);
-if all(isnan(dt)),
-  fps = 30;
-  warning('Unknown fps, assigning to 30');
-  mediandt = 1/fps;
-else
-  mediandt = median(dt(~isnan(dt)));
-  fps = 1/mediandt;
-end
-for fly = 1:nflies,
-  trackdata.trx(fly).fps = fps;
-end
-
-if isfield(params,'usemediandt') && params.usemediandt,
-
-  for fly = 1:nflies,
-    trackdata.trx(fly).dt = repmat(mediandt,[1,trackdata.trx(fly).nframes-1]);
-  end
-
-end
-
 
 %% add arena parameters
+stage='arena';
+if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
+    if all(isfield(roidata,{'centerx','centery','radii'})),
 
-if all(isfield(roidata,{'centerx','centery','radii'})),
-
-  for i = 1:nflies,
-    roii = trackdata.trx(i).roi;
-    trackdata.trx(i).arena.arena_radius_mm = roidata.radii(roii) / roidata.pxpermm;
-    trackdata.trx(i).arena.arena_center_mm_x = 0;
-    trackdata.trx(i).arena.arena_center_mm_y = 0;
-  end
-
+      for i = 1:nflies,
+        roii = trackdata.trx(i).roi;
+        trackdata.trx(i).arena.arena_radius_mm = roidata.radii(roii) / roidata.pxpermm;
+        trackdata.trx(i).arena.arena_center_mm_x = 0;
+        trackdata.trx(i).arena.arena_center_mm_y = 0;
+      end
+      trackdata.stage=stages{find(strcmp(stage,stages))+1};
+    end
+    trackdata.stage=stages{find(strcmp(stage,stages))+1};
+    setappdata(0,'trackdata',trackdata)
 end
-setappdata(0,'trackdata',trackdata)
 %% clean up
 fprintf(logfid,'Clean up...\n');
 

@@ -44,19 +44,13 @@ end
 % End initialization code - DO NOT EDIT
 
 
-% --- Executes just before cbtrackGUI_ROI_temp is made visible.
 function cbtrackGUI_ROI_OpeningFcn(hObject, eventdata, handles, varargin)
-% This function has no output args, see OutputFcn.
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% varargin   command line arguments to cbtrackGUI_ROI_temp (see VARARGIN)
-
 % Choose default command line output for cbtrackGUI_ROI_temp
 handles.output = hObject;
 
 GUIsize(handles,hObject)
 
+experiment=getappdata(0,'experiment');
 BG=getappdata(0,'BG');
 bgmed=BG.bgmed;
 aspect_ratio=size(bgmed,2)/size(bgmed,1);
@@ -88,12 +82,12 @@ manual.add=0; % 1 whena dding point to a ROI after removing any of the exitent o
 manual.pos_h=cell(0);
 manual.on=0;
 manual.delete=0;
-handles.texth=text(250,420,'','FontSize',20,'Color',[1 0 0],'HorizontalAlignment','center','units','pixels');    
+handles.texth=text(255,420,'','FontSize',20,'Color',[1 0 0],'HorizontalAlignment','center','units','pixels');    
+handles.textexp=text(250,445,'','FontSize',24,'Color',[1 0 0],'HorizontalAlignment','center','units','pixels','String',experiment);
 list.text=cell(0); %list of selected points to display at listbox_manual
 list.ind=cell(0);
 list.ind_mat=[]; %(ROI,point) index matrix
 GUI.bgmed=bgmed;
-roidata=struct;
 set(handles.cbtrackGUI_ROI,'WindowButtonDownFcn',{@axes_ROI_ButtonDownFcn,handles});
 cbparams=getappdata(0,'cbparams');
 
@@ -104,9 +98,17 @@ P_curr_stage='ROIs';
 P_stage=getappdata(0,'P_stage');
 if find(strcmp(P_stage,P_stages))>find(strcmp(P_curr_stage,P_stages))
     roidata=getappdata(0,'roidata');
-    manual=roidata.manual;
-    list=roidata.list;
-    params=roidata.params.detect_rois;
+    if isfield(roidata,'manual')
+        manual=roidata.manual;
+    else
+        manual=[];
+    end
+    if isfield(roidata,'list')
+        list=roidata.list;
+    else
+        list=[];
+    end
+    params=roidata.params;
     colors = jet(roidata.nrois)*.7;
     axes(handles.axes_ROI)
     hold on
@@ -118,24 +120,88 @@ if find(strcmp(P_stage,P_stages))>find(strcmp(P_curr_stage,P_stages))
         handles.hrois(i,1).setColor(colors(i,:));
         handles.hroisT(i,1)=text(roidata.centerx(i),roidata.centery(i),['ROI: ',num2str(i)],...
           'Color',colors(i,:),'HorizontalAlignment','center','VerticalAlignment','middle','Clipping','on');
-        for j=1:length(manual.pos{i})
-            manual.pos_h{i}(j)=plot(manual.pos{i}(j,1),manual.pos{i}(j,2),'rx');
+        if ~isempty(manual.pos)
+            for j=1:length(manual.pos{i})
+                manual.pos_h{i}(j)=plot(manual.pos{i}(j,1),manual.pos{i}(j,2),'rx');
+            end
+            set(handles.listbox_manual,'string',vertcat(list.text{:}))
         end
-        set(handles.listbox_manual,'string',vertcat(list.text{:}))
     end
     set(handles.pushbutton_delete,'Enable','on')
     set(handles.pushbutton_detect,'UserData',roidata)
-    set(handles.pushbutton_tracker_setup,'Enable','on')
-    if find(strcmp(P_stage,P_stages))>=find(strcmp('wing_params',P_stages))
+    if cbparams.track.dosettrack
+        set(handles.pushbutton_tracker_setup,'Enable','on')
+    end
+    if find(strcmp(P_stage,P_stages))>=find(strcmp('wing_params',P_stages)) && cbparams.wingtrack.dosetwingtrack
         set(handles.pushbutton_WT,'Enable','on')
     end
-    if find(strcmp(P_stage,P_stages))>=find(strcmp('track1',P_stages)) && cbparams.track.DEBUG==1
+    if find(strcmp(P_stage,P_stages))>=find(strcmp('track1',P_stages)) && cbparams.track.DEBUG==1 && getappdata(0,'singleexp')
         set(handles.pushbutton_debuger,'Enable','on')
     end
 else
-    params=cbparams.detect_rois;
+    out=getappdata(0,'out');
+    loadfile=fullfile(out.folder,cbparams.dataloc.roidatamat.filestr);
+    if getappdata(0,'usefiles') && exist(loadfile,'file')
+        try
+            roidata=load(loadfile);
+            logfid=open_log('roi_log',cbparams,out.folder);
+            fprintf(logfid,'Loading ROI data data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
+            if logfid > 1,
+              fclose(logfid);
+            end
+            isempty(roidata.cbdetectrois_version);
+            roidata.params.dosetROI=cbparams.detect_rois.dosetROI;
+            params=roidata.params;
+            colors = jet(roidata.nrois)*.7;
+            axes(handles.axes_ROI)
+            hold on
+            handles.hroisT=nan(roidata.nrois,1);
+            for i = 1:roidata.nrois,
+                ROIpos=[roidata.centerx(i)-roidata.radii(i),roidata.centery(i)-roidata.radii(i),2*roidata.radii(i),2*roidata.radii(i)];
+                handles.hrois(i,1)=imellipse(handles.axes_ROI,ROIpos);
+                handles.hrois(i,1).setFixedAspectRatioMode(1);
+                handles.hrois(i,1).setColor(colors(i,:));
+                handles.hroisT(i,1)=text(roidata.centerx(i),roidata.centery(i),['ROI: ',num2str(i)],...
+                  'Color',colors(i,:),'HorizontalAlignment','center','VerticalAlignment','middle','Clipping','on');
+                if ~isempty(manual.pos)
+                    for j=1:length(manual.pos{i})
+                        manual.pos_h{i}(j)=plot(manual.pos{i}(j,1),manual.pos{i}(j,2),'rx');
+                    end
+                    set(handles.listbox_manual,'string',vertcat(list.text{:}))
+                end
+            end
+        catch
+            logfid=open_log('roi_log',cbparams,out.folder);
+            fprintf(logfid,'File %s could not be loaded.',loadfile);
+            if logfid > 1,
+              fclose(logfid);
+            end
+            waitfor(mymsgbox(50,190,14,'Helvetica',{['File ', loadfile,' could not be loaded.'];'Trying to detect ROIs automatically'},'Warning','warn','modal'))
+            params=cbparams.detect_rois;
+            if isempty(params.roimus)
+                roidata=AllROI(BG.bgmed);
+            else
+                params.roimus=[params.roimus.x',params.roimus.y'];
+                [handles,roidata] = DetectROIsGUI(bgmed,cbparams,params,handles);
+                roidata.ignore=[];
+            end
+        end
+    else
+        params=cbparams.detect_rois;
+        if isempty(params.roimus) || ~cbparams.track.computeBG
+            roidata=AllROI(BG.bgmed);
+        else
+            params.roimus=[params.roimus.x',params.roimus.y'];
+            [handles,roidata] = DetectROIsGUI(bgmed,cbparams,params,handles);
+            roidata.ignore=[];
+        end
+    end
+    roidata.isnew=true;
 end
 % set parameter in the GUI
+if ~cbparams.track.dosetBG
+    set(handles.pushbutton_BG,'Enable','off')
+end
 set(handles.edit_set_ROId,'String', num2str(params.roidiameter_mm))
 set(handles.edit_set_rot,'String', num2str(params.baserotateby))
 set(handles.edit_set_thres1,'String', num2str(params.cannythresh(1)))
@@ -152,47 +218,20 @@ set(handles.uipanel_settings,'Userdata',params)
 set(handles.pushbutton_detect,'Userdata',roidata);
 guidata(hObject, handles);
 
-% UIWAIT makes cbtrackGUI_ROI_temp wait for user response (see UIRESUME)
-% uiwait(handles.cbtrackGUI_ROI_temp);
+uiwait(handles.cbtrackGUI_ROI)
 
 
-% --- Outputs from this function are returned to the command line.
-function varargout = cbtrackGUI_ROI_OutputFcn(hObject, eventdata, handles) 
-% varargout  cell array for returning output args (see VARARGOUT);
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Get default command line output from handles structure
-varargout{1} = handles;
+function varargout = cbtrackGUI_ROI_OutputFcn(hObject, eventdata, handles)  %#ok<STOUT>
 
 
-% --- Executes during object creation, after setting all properties.
 function axes_ROI_CreateFcn(hObject, eventdata, handles) %#ok<*INUSD,*DEFNU>
-% hObject    handle to axes_ROI (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
 
 
-% Hint: place code in OpeningFcn to populate axes_ROI
-
-
-
-% --- Executes on button press in pushbutton_cancel.
 function pushbutton_cancel_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_cancel (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 close(handles.cbtrackGUI_ROI)
 
 
-
-% --- Executes on button press in pushbutton_accept.
 function pushbutton_accept_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_accept (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 %Save size
 GUIscale=getappdata(0,'GUIscale');
 new_pos=get(handles.cbtrackGUI_ROI,'position'); 
@@ -221,17 +260,19 @@ else
     new_centerx=new_position(1,:)+new_position(3,:)./2;
     new_centery=new_position(2,:)+new_position(4,:)./2;
     new_radii=new_position(3,:)./2;
-    if new_nrois~=roidata.nrois || any(new_centerx~=roidata.centerx) || any(new_centery~=roidata.centery) || any(new_radii~=roidata.radii)
+    if new_nrois~=roidata.nrois || any(abs(new_centerx-roidata.centerx)>1) || any(abs(new_centery-roidata.centery)>1) || any(abs(new_radii-roidata.radii)>1)
         roidata = updateROIs(cbparams,params,roidata,[new_centerx;new_centery;new_radii]);
+        roidata.isnew=true;
     end
     params.roimus.x=roidata.centerx;
     params.roimus.y=roidata.centery;
 end
 
+isnew=roidata.isnew;
 restart='';
 setappdata(0,'restart',restart)
 
-if roidata.isnew
+if isnew
     if isfield(roidata,'nflies_per_roi')
         roidata=rmfield(roidata,'nflies_per_roi');
     end
@@ -254,10 +295,10 @@ if roidata.isnew
     roidata.isnew=false;
     roidata.manual=manual;
     roidata.list=list;
+    roidata.params=params;
     cbparams.detect_rois=params;
     setappdata(0,'roidata',roidata)
     setappdata(0,'cbparams',cbparams)
-    setappdata(0,'P_stage','params')
     
     out=getappdata(0,'out');
     logfid=open_log('roi_log',cbparams,out.folder);
@@ -277,48 +318,72 @@ if roidata.isnew
     copyobj(handles.axes_ROI,hfig)
     save2png(imsavename,hfig);
     close(hfig)
-    savetemp
+    if cbparams.track.dosave
+        savetemp({'roidata'})
+    end
 end
+
+setappdata(0,'iscancel',false)
+uiresume(handles.cbtrackGUI_ROI)
 if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
-cbtrackGUI_tracker
 
-% --- Executes when cbtrackGUI_ROI is resized.
+if cbparams.track.dosettrack
+    if isnew
+        setappdata(0,'P_stage','params')
+    end
+    cbtrackGUI_tracker
+else
+    if isnew
+        cbtrackNOGUI_tracker
+    end
+    if cbparams.wingtrack.dosetwingtrack
+        cbtrackGUI_WingTracker
+    elseif getappdata(0,'singleexp') && cbparams.track.dotrack
+        if ~cbparams.track.DEBUG
+            WriteParams
+            setappdata(0,'P_stage','track1')
+            cbtrackGUI_tracker_NOvideo
+        else
+            if isnew
+                WriteParams
+                setappdata(0,'P_stage','track1')
+                cbtrackGUI_tracker_video
+            else
+                P_stage=getappdata(0,'P_stage');       
+                if strcmp(P_stage,'track2')
+                    CourtshipBowlTrack_GUI2
+                    iscancel=getappdata(0,'iscancel');
+                    if iscancel
+                        if iscancel==1
+                            cancelar
+                        end
+                        return
+                    end
+                elseif strcmp(P_stage,'track1')
+                    cbtrackGUI_tracker_video
+                end
+            end        
+        end
+    end
+end
+
+
 function cbtrackGUI_ROI_ResizeFcn(hObject, eventdata, handles)
-% hObject    handle to cbtrackGUI_ROI (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 GUIresize(handles,hObject);
 
 
 function text_load_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_load (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit_load as text
-%        str2double(get(hObject,'String')) returns contents of edit_load as a double
 
 
-% --- Executes during object creation, after setting all properties.
 function edit_load_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_load (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
 
 
-% --- Executes on button press in pushbutton_load.
 function pushbutton_load_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_load (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 [file_ROI, folder_ROI]=open_files2('mat');
 if ~file_ROI{1}==0
     set(handles.edit_load,'String',fullfile(folder_ROI,file_ROI{1}),'HorizontalAlignment','right')
@@ -348,6 +413,8 @@ if ~file_ROI{1}==0
     if isfield(roidata,'nflies_per_roi')
         roidata=rmfield(roidata,'nflies_per_roi');
     end
+    params=get(handles.uipanel_settings,'Userdata');
+    roidata.params.dosetROI=params.dosetROI;
     manual.on=0;
     manual.detected=1;
     manual.delete=0;
@@ -358,17 +425,14 @@ if ~file_ROI{1}==0
     set(handles.radiobutton_manual,'UserData',manual)
     set(handles.listbox_manual,'UserData',list);
     set(handles.pushbutton_detect,'UserData',roidata);
+    set(handles.uipanel_settings,'Userdata',roidata.params)
 end
 guidata(handles.cbtrackGUI_ROI, handles);
 
 
 
 
-% --- Executes on selection change in listbox_manual.
 function listbox_manual_Callback(hObject, eventdata, handles)
-% hObject    handle to listbox_manual (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 list=get(handles.listbox_manual,'UserData');
 manual=get(handles.radiobutton_manual,'UserData');
 roidata=get(handles.pushbutton_detect,'UserData');
@@ -514,32 +578,14 @@ if manual.delete
     guidata(handles.cbtrackGUI_ROI,handles);
 end
 
-    
-    
-    
 
-% Hints: contents = cellstr(get(hObject,'String')) returns listbox_manual contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from listbox_manual
-
-
-% --- Executes during object creation, after setting all properties.
 function listbox_manual_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to listbox_manual (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: listbox controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
 
 
-% --- Executes on button press in pushbutton_detect.
 function pushbutton_detect_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_detect (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 cbparams=getappdata(0,'cbparams');
 params=get(handles.uipanel_settings,'UserData');
 params.nROI=str2double(get(handles.edit_set_nROI,'String'));
@@ -596,15 +642,7 @@ else
 end
 
 
-
-
-
-
-% --- Executes on button press in pushbutton_nextROI.
 function pushbutton_nextROI_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_nextROI (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 manual=get(handles.radiobutton_manual,'UserData');
 if manual.proi(manual.roi)<3
     msg_manual=mymsgbox(50,190,14,'Helvetica',{'Please, select at least THREE points in the current ROI'},'Error','error','modal'); %#ok<NASGU>
@@ -617,18 +655,10 @@ else
     manual.proi(manual.roi)=0;
     set(handles.texth,'string',['Selecting ROI ', num2str(manual.roi),' point ', num2str(manual.proi(manual.roi)+1)])
     set(handles.radiobutton_manual,'UserData',manual);
-end    
+end
 
 
-% --- Executes when selected object is changed in uipanel_method.
 function uipanel_method_SelectionChangeFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in uipanel_method 
-% eventdata  structure with the following fields (see UIBUTTONGROUP)
-%	EventName: string 'SelectionChanged' (read only)
-%	OldValue: handle of the previously selected object or empty if none was selected
-%	NewValue: handle of the currently selected object
-% handles    structure with handles and user data (see GUIDATA)
-
 %Select the method to detect circles
 manual=get(handles.radiobutton_manual,'UserData');
 roidata=get(handles.pushbutton_detect,'UserData');
@@ -687,12 +717,7 @@ set(handles.radiobutton_manual,'UserData',manual);
 guidata(handles.cbtrackGUI_ROI,handles)
 
 
-
-% --- Executes on button press in pushbutton_add.
 function pushbutton_add_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_add (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 manual=get(handles.radiobutton_manual,'UserData');
 if manual.proi(manual.roi)<3 && manual.proi(manual.roi)~=0
     msg_manual=mymsgbox(50,190,14,'Helvetica',{'Please, select at least THREE points in the current ROI'},'Error','error','modal'); %#ok<NASGU>
@@ -703,14 +728,7 @@ manual.add=3;
 set(handles.radiobutton_manual,'UserData',manual);
 
 
-
-
-% --- Executes on mouse press over axes background.
 function axes_ROI_ButtonDownFcn(hObject, eventdata, handles)
-% hObject    handle to axes_ROI (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 %Gets the coordinates of the cliked point and ads it to the listbox_manual
 handles=guidata(hObject);
 manual=get(handles.radiobutton_manual,'UserData');
@@ -849,11 +867,7 @@ end
 guidata(handles.cbtrackGUI_ROI,handles);
 
 
-% --- Executes on button press in pushbutton_clear.
 function pushbutton_clear_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_clear (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 msg_clear=myquestdlg(14,'Helvetica',{'Would you like to delete all the points and ROIs?'},'Clear points?','Yes','No','No'); 
 if isempty(msg_clear)
     msg_clear='No';
@@ -876,192 +890,86 @@ end
 
 
 function edit_set_std_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_set_std (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit_set_std as text
-%        str2double(get(hObject,'String')) returns contents of edit_set_std as a double
 
 
-% --- Executes during object creation, after setting all properties.
 function edit_set_std_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_set_std (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 
 function edit_set_thres1_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_set_thres1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit_set_thres1 as text
-%        str2double(get(hObject,'String')) returns contents of edit_set_thres1 as a double
 
 
-% --- Executes during object creation, after setting all properties.
 function edit_set_thres1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_set_thres1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 
 function edit_set_rot_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_set_rot (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit_set_rot as text
-%        str2double(get(hObject,'String')) returns contents of edit_set_rot as a double
 
 
-% --- Executes during object creation, after setting all properties.
 function edit_set_rot_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_set_rot (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 
 function edit_set_ROId_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_set_ROId (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit_set_ROId as text
-%        str2double(get(hObject,'String')) returns contents of edit_set_ROId as a double
 
 
-% --- Executes during object creation, after setting all properties.
 function edit_set_ROId_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_set_ROId (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 
 function edit_nframes_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_nframes (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit_nframes as text
-%        str2double(get(hObject,'String')) returns contents of edit_nframes as a double
 
 
-% --- Executes during object creation, after setting all properties.
 function edit_nframes_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_nframes (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 
 function edit_set_thres2_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_set_thres2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit_set_thres2 as text
-%        str2double(get(hObject,'String')) returns contents of edit_set_thres2 as a double
 
 
-% --- Executes during object creation, after setting all properties.
 function edit_set_thres2_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_set_thres2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
 
 
-% --- Executes on button press in pushbutton_advanced.
 function pushbutton_advanced_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_advanced (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 
 
 function edit_set_nROI_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_set_nROI (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit_set_nROI as text
-%        str2double(get(hObject,'String')) returns contents of edit_set_nROI as a double
 
 
-% --- Executes during object creation, after setting all properties.
 function edit_set_nROI_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_set_nROI (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
 
 
-% --- Executes when user attempts to close cbtrackGUI_ROI.
 function cbtrackGUI_ROI_CloseRequestFcn(hObject, eventdata, handles)
-% hObject    handle to cbtrackGUI_ROI (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 msg_cancel=myquestdlg(14,'Helvetica','Cancel current project? All setup options will be lost','Cancel','Yes','No','No'); 
 if isempty(msg_cancel)
     msg_cancel='No';
 end
 if strcmp('Yes',msg_cancel)
-    cancelar
+    setappdata(0,'iscancel',true)
+    uiresume(handles.cbtrackGUI_ROI)
+    if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+        delete(handles.cbtrackGUI_ROI)
+    end
 end
 
 
-% --- Executes on button press in pushbutton_BG.
 function pushbutton_BG_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_BG (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 %Save size
 GUIscale=getappdata(0,'GUIscale');
 new_pos=get(handles.cbtrackGUI_ROI,'position'); 
@@ -1071,25 +979,19 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-delete(handles.cbtrackGUI_ROI)
+setappdata(0,'iscancel',false)
+uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
+
 cbtrackGUI_BG
 
 
-
-% --- Executes on button press in pushbutton_ROIs.
 function pushbutton_ROIs_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_ROIs (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 
-
-% --- Executes on button press in pushbutton_tracker_setup.
 function pushbutton_tracker_setup_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_tracker_setup (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 %Save size
 GUIscale=getappdata(0,'GUIscale');
 new_pos=get(handles.cbtrackGUI_ROI,'position'); 
@@ -1099,15 +1001,16 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-delete(handles.cbtrackGUI_ROI)
+setappdata(0,'iscancel',false)
+uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
+
 cbtrackGUI_tracker
 
-% --- Executes on button press in pushbutton_debuger.
-function pushbutton_debuger_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_debuger (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
+function pushbutton_debuger_Callback(hObject, eventdata, handles)
 %Save size
 GUIscale=getappdata(0,'GUIscale');
 new_pos=get(handles.cbtrackGUI_ROI,'position'); 
@@ -1117,7 +1020,11 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-delete(handles.cbtrackGUI_ROI)
+setappdata(0,'iscancel',false)
+uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
 
 P_stage=getappdata(0,'P_stage');
 if strcmp(P_stage,'track2')
@@ -1129,22 +1036,12 @@ if strcmp(P_stage,'track2')
         end
         return
     end
-    CourtshipBowlMakeResultsMovie_GUI
-    pffdata = CourtshipBowlComputePerFrameFeatures_GUI(1);
-    setappdata(0,'pffdata',pffdata)
-    cancelar
 elseif strcmp(P_stage,'track1')
     cbtrackGUI_tracker_video
 end
 
 
-
-% --- Executes on button press in pushbutton_delete.
 function pushbutton_delete_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_delete (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 manual=get(handles.radiobutton_manual,'UserData');
 %When the user decides to delete any point, the previous rois is considered to be completed    
 if manual.proi(manual.roi)<3 && manual.proi(manual.roi)~=0 %the user must have selected at least three points in the last ROI before starting a selection process unless the deleted point belong to such a ROI
@@ -1162,11 +1059,8 @@ end
 set(handles.radiobutton_manual,'UserData',manual)
 
 
-% --- Executes on button press in pushbutton_WT.
+
 function pushbutton_WT_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_WT (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 %Save size
 GUIscale=getappdata(0,'GUIscale');
 new_pos=get(handles.cbtrackGUI_ROI,'position'); 
@@ -1176,5 +1070,10 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-delete(handles.cbtrackGUI_ROI)
+setappdata(0,'iscancel',false)
+uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
+
 cbtrackGUI_WingTracker

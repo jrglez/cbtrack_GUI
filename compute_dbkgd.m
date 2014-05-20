@@ -4,7 +4,7 @@ framessample = round(linspace(1,nframes,nframessample));
 im=cell(1,nframessample);
 dbkgd=cell(1,nframessample);
 dbkgd_in=cell(1,nframessample);
-
+    
 hwait=waitbar(0,{['Experiment ',experiment];['Reading frame 0 of ', num2str(nframessample)]});
 
 for i = 1:nframessample,

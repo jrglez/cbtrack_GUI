@@ -27,7 +27,7 @@ P=-(1/B)*log(1-rho0*g*B.*z);
 % Calculate the temperature
 temp_mod=input('1) HSCM, 2) GDH1: ');
 if temp_mod==1 %Half Space Temperature
-    Tm=1400+273; T0=273; k=1e-6; t=150e6*365*24*3600;
+    Tm=1400+273; T0=273; k=1e-6; t=50e6*365*24*3600;
     T=(Tm-T0)*erf(z./(2*sqrt(k*t)))+T0+z*3e-4;
 
 else %     T(T>Tm-1)=T(T>Tm-1)+(z(T>Tm-1)-z(T>Tm-1)))*3e-4;

@@ -59,6 +59,8 @@ handles.output = hObject;
 vid.old_pos=get(hObject,'position');
 set(handles.figure1,'UserData',vid)
 
+set(hObject,'Visible','off')
+
 % set up path
 if isempty(which('myparse')),
   if exist('../misc','file'),

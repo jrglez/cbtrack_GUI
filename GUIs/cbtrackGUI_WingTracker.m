@@ -44,16 +44,11 @@ end
 % End initialization code - DO NOT EDIT
 
 
-% --- Executes just before cbtrackGUI_ROI_temp is made visible.
 function cbtrackGUI_WingTracker_OpeningFcn(hObject, eventdata, handles, varargin)
-% This function has no output args, see OutputFcn.
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% varargin   command line arguments to cbtrackGUI_ROI_temp (see VARARGIN)
-
 handles.output = hObject;
 GUIsize(handles,hObject)
+
+experiment=getappdata(0,'experiment');
 moviefile=getappdata(0,'moviefile');
 cbparams=getappdata(0,'cbparams');
 roi_params=cbparams.detect_rois;
@@ -86,6 +81,17 @@ axis equal
 
 
 % Set parameters on the gui
+if ~cbparams.track.dosetBG
+    set(handles.pushbutton_BG,'Enable','off')
+end
+if ~cbparams.detect_rois.dosetROI
+    set(handles.pushbutton_ROIs,'Enable','off')
+end
+if ~cbparams.track.dosettrack
+    set(handles.pushbutton_tracker_setup,'Enable','off')
+end
+
+handles.textexp=text(250,450,'','FontSize',24,'Color',[1 0 0],'HorizontalAlignment','center','units','pixels','String',experiment);
 
 set(handles.edit_set_Hbgthresh,'String',num2str(wing_params.mindwing_high));
 set(handles.slider_set_Hbgthresh,'Value',wing_params.mindwing_high,'Min',0,'Max',255);
@@ -135,7 +141,9 @@ P_curr_stage='wing_params';
 P_stage=getappdata(0,'P_stage');
 if find(strcmp(P_stage,P_stages))>find(strcmp(P_curr_stage,P_stages))
     debugdata.isnew=false;
-    set(handles.pushbutton_debuger,'Enable','on')
+    if cbparams.track.DEBUG==1 && getappdata(0,'singleexp')
+        set(handles.pushbutton_debuger,'Enable','on')
+    end
 else
     debugdata.isnew=true;
 end
@@ -156,48 +164,22 @@ set(handles.uipanel_set,'UserData',wing_params);
 set(handles.slider_frame,'UserData',1);
 set(handles.axes_wingtracker,'UserData',debugdata);
 
+fclose(wings.fid);
+
+uiwait(handles.cbtrackGUI_ROI)
 
 
-% UIWAIT makes cbtrackGUI_ROI_temp wait for user response (see UIRESUME)
-% uiwait(handles.cbtrackGUI_ROI_temp);
+function varargout = cbtrackGUI_WingTracker_OutputFcn(hObject, eventdata, handles)  %#ok<STOUT>
 
 
-% --- Outputs from this function are returned to the command line.
-function varargout = cbtrackGUI_WingTracker_OutputFcn(hObject, eventdata, handles) 
-% varargout  cell array for returning output args (see VARARGOUT);
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Get default command line output from handles structure
-varargout{1} = handles;
-
-
-% --- Executes during object creation, after setting all properties.
 function axes_wingtracker_CreateFcn(hObject, eventdata, handles) %#ok<*INUSD,*DEFNU>
-% hObject    handle to axes_wingtracker (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
 
 
-% Hint: place code in OpeningFcn to populate axes_wingtracker
-
-
-
-% --- Executes on button press in pushbutton_cancel.
 function pushbutton_cancel_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_cancel (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 close(handles.cbtrackGUI_ROI)
 
 
-% --- Executes on button press in pushbutton_accept.
 function pushbutton_accept_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_accept (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 %Save size
 GUIscale=getappdata(0,'GUIscale');
 new_pos=get(handles.cbtrackGUI_ROI,'position'); 
@@ -211,70 +193,68 @@ restart='';
 setappdata(0,'restart',restart)
 cbparams=getappdata(0,'cbparams');
 wing_params=get(handles.uipanel_set,'UserData');
-cbparams.wing_track=wing_params;
+cbparams.wingtrack=wing_params;
 setappdata(0,'cbparams',cbparams)
 
 debugdata=get(handles.axes_wingtracker,'UserData');
 
-delete(handles.cbtrackGUI_ROI);
+setappdata(0,'iscancel',false)
+uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
 
-P_stage=getappdata(0,'P_stage');       
-if strcmp(P_stage,'track2')
-    if debugdata.isnew
-        if isappdata(0,'debugdata_WT')
-            rmappdata(0,'debugdata_WT')
-        end
-        if isappdata(0,'twing')
-            rmappdata(0,'twing')
-        end
-        trackdata=getappdata(0,'trackdata');
-        trackdata=rmfield(trackdata,{'trackwings_timestamp','trackwings_version','twing','perframedata','wingplotdata','perframeunits'});
-        trackdata.trx=rmfield(trackdata.trx,{'wing_anglel','wing_angler','xwingl','ywingl','xwingr','ywingr'});
-        setappdata(0,'trackdata',trackdata);
-        savetemp
-        WriteParams
+if debugdata.isnew
+    if cbparams.track.dosave
+        savetemp({'debugdata'})
     end
-    CourtshipBowlTrack_GUI2
-    iscancel=getappdata(0,'iscancel');
-    if iscancel
-        if iscancel==1
-            cancelar
+end
+if getappdata(0,'singleexp')
+    P_stage=getappdata(0,'P_stage');       
+    if strcmp(P_stage,'track2')
+        if debugdata.isnew
+            if isappdata(0,'debugdata_WT')
+                rmappdata(0,'debugdata_WT')
+            end
+            if isappdata(0,'twing')
+                rmappdata(0,'twing')
+            end
+            trackdata=getappdata(0,'trackdata');
+            trackdata=rmfield(trackdata,{'trackwings_timestamp','trackwings_version','twing','perframedata','wingplotdata','perframeunits'});
+            trackdata.trx=rmfield(trackdata.trx,{'wing_anglel','wing_angler','xwingl','ywingl','xwingr','ywingr'});
+            setappdata(0,'trackdata',trackdata);
+            WriteParams
         end
-        return
+        CourtshipBowlTrack_GUI2
+        iscancel=getappdata(0,'iscancel');
+        if iscancel
+            if iscancel==1
+                cancelar
+            end
+            return
+        end
+    else
+        setappdata(0,'P_stage','track1')
+        if debugdata.isnew
+            WriteParams
+        end
+        if cbparams.track.DEBUG==1
+            cbtrackGUI_tracker_video
+        else
+            cbtrackGUI_tracker_NOvideo
+        end
     end
-    CourtshipBowlMakeResultsMovie_GUI
-    pffdata = CourtshipBowlComputePerFrameFeatures_GUI(1);
-    setappdata(0,'pffdata',pffdata)
-    cancelar
 else
     setappdata(0,'P_stage','track1')
-    savetemp
-    WriteParams
-    if cbparams.track.DEBUG==1
-        cbtrackGUI_tracker_video
-    else
-        cbtrackGUI_tracker_NOvideo
-    end
+    WriteParams    
 end
 
 
-
-
-
-% --- Executes when cbtrackGUI_WingTracker is resized.
 function cbtrackGUI_ROI_ResizeFcn(hObject, eventdata, handles)
-% hObject    handle to cbtrackGUI_WingTracker (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 GUIresize(handles,hObject);
 
 
-
-% --- Executes on slider movement.
 function slider_frame_Callback(hObject, eventdata, handles)
-% hObject    handle to slider_frame (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 f=round(get(hObject,'Value'));
@@ -304,22 +284,13 @@ end
 set(handles.axes_wingtracker,'UserData',debugdata);
 
 
-% --- Executes during object creation, after setting all properties.
 function slider_frame_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to slider_frame (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
 
 
 function edit_set_Hbgthresh_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_set_Hbgthresh (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.mindwing_high=str2double(get(hObject,'String'));
@@ -347,30 +318,15 @@ set(handles.slider_set_Hbgthresh,'Value',wing_params.mindwing_high);
 set(handles.slider_set_Lbgthresh,'Value',min(get(handles.slider_set_Lbgthresh,'Value'),wing_params.mindwing_high),'Max',wing_params.mindwing_high);
 set(handles.edit_set_Lbgthresh,'String',num2str(min(str2double(get(handles.edit_set_Lbgthresh,'String')),wing_params.mindwing_high)));
 set(handles.uipanel_set,'UserData',wing_params);
-        
-
-% Hints: get(hObject,'String') returns contents of edit_set_Hbgthresh as text
-%        str2double(get(hObject,'String')) returns contents of edit_set_Hbgthresh as a double
 
 
-% --- Executes during object creation, after setting all properties.
 function edit_set_Hbgthresh_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_set_Hbgthresh (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
 
 
-
 function edit_set_Lbgthresh_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_set_Lbgthresh (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.mindwing_low=str2double(get(hObject,'String'));
@@ -398,38 +354,27 @@ set(handles.slider_set_Lbgthresh,'Value',wing_params.mindwing_low);
 set(handles.uipanel_set,'UserData',wing_params);
 
 
-% --- Executes during object creation, after setting all properties.
 function edit_set_Lbgthresh_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_set_Lbgthresh (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
 
 
-% --- Executes when user attempts to close cbtrackGUI_ROI.
 function cbtrackGUI_ROI_CloseRequestFcn(hObject, eventdata, handles)
-% hObject    handle to cbtrackGUI_ROI (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 msg_cancel=myquestdlg(14,'Helvetica','Cancel current project? All setup options will be lost','Cancel','Yes','No','No'); 
 if isempty(msg_cancel)
     msg_cancel='No';
 end
 if strcmp('Yes',msg_cancel)
-    cancelar
+    setappdata(0,'iscancel',true)
+    uiresume(handles.cbtrackGUI_ROI)
+    if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+        delete(handles.cbtrackGUI_ROI)
+    end
 end
 
 
-% --- Executes on slider movement.
 function slider_set_Hbgthresh_Callback(hObject, eventdata, handles)
-% hObject    handle to slider_set_Hbgthresh (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.mindwing_high=get(hObject,'Value');
@@ -452,26 +397,13 @@ set(handles.slider_set_Lbgthresh,'Value',min(get(handles.slider_set_Lbgthresh,'V
 set(handles.edit_set_Lbgthresh,'String',num2str(min(str2double(get(handles.edit_set_Lbgthresh,'String')),wing_params.mindwing_high),'%.2f'));
 
 
-
-
-
-% --- Executes during object creation, after setting all properties.
 function slider_set_Hbgthresh_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to slider_set_Hbgthresh (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
 
 
-% --- Executes on slider movement.
 function slider_set_Lbgthresh_Callback(hObject, eventdata, handles)
-% hObject    handle to slider_set_Lbgthresh (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.mindwing_low=get(hObject,'Value');
@@ -492,24 +424,13 @@ set(handles.edit_set_Lbgthresh,'String',num2str(wing_params.mindwing_low,'%.2f')
 set(handles.uipanel_set,'UserData',wing_params);
 
 
-
-% --- Executes during object creation, after setting all properties.
 function slider_set_Lbgthresh_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to slider_set_Lbgthresh (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
 
 
-% --- Executes on selection change in popupmenu_vis.
 function popupmenu_vis_Callback(hObject, eventdata, handles)
-% hObject    handle to popupmenu_vis (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 debugdata=get(handles.axes_wingtracker,'UserData');
 wing_params=get(handles.uipanel_set,'UserData');
 debugdata.vis=get(hObject,'Value');
@@ -541,32 +462,16 @@ end
 set(handles.axes_wingtracker,'UserData',debugdata)
 
 
-
-% --- Executes during object creation, after setting all properties.
 function popupmenu_vis_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to popupmenu_vis (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
 
 
-% --- Executes on button press in pushbutton_advanced.
 function pushbutton_advanced_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_advanced (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% --- Executes on button press in pushbutton_BG.
+
 function pushbutton_BG_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_BG (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 %Save size
 GUIscale=getappdata(0,'GUIscale');
 new_pos=get(handles.cbtrackGUI_ROI,'position'); 
@@ -576,17 +481,16 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-delete(handles.cbtrackGUI_ROI)
+setappdata(0,'iscancel',false)
+uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
+
 cbtrackGUI_BG
 
 
-
-% --- Executes on button press in pushbutton_ROIs.
 function pushbutton_ROIs_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_ROIs (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 %Save size
 GUIscale=getappdata(0,'GUIscale');
 new_pos=get(handles.cbtrackGUI_ROI,'position'); 
@@ -596,23 +500,19 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-delete(handles.cbtrackGUI_ROI)
+setappdata(0,'iscancel',false)
+uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
+
 cbtrackGUI_ROI
 
 
-% --- Executes on button press in pushbutton_WT.
 function pushbutton_WT_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_WT (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 
-% --- Executes on button press in pushbutton_debuger.
 function pushbutton_debuger_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_debuger (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 %Save size
 GUIscale=getappdata(0,'GUIscale');
 new_pos=get(handles.cbtrackGUI_ROI,'position'); 
@@ -622,7 +522,11 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-delete(handles.cbtrackGUI_ROI)
+setappdata(0,'iscancel',false)
+uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
 
 P_stage=getappdata(0,'P_stage');
 if strcmp(P_stage,'track2')
@@ -634,10 +538,6 @@ if strcmp(P_stage,'track2')
         end
         return
     end
-    CourtshipBowlMakeResultsMovie_GUI
-    pffdata = CourtshipBowlComputePerFrameFeatures_GUI(1);
-    setappdata(0,'pffdata',pffdata)
-    cancelar
 elseif strcmp(P_stage,'track1')
     cbtrackGUI_tracker_video
 end
@@ -645,9 +545,6 @@ end
 
 
 function edit_set_minbody_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_set_minbody (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.mindbody=str2double(get(hObject,'String'));
@@ -674,24 +571,14 @@ set(handles.axes_wingtracker,'UserData',debugdata);
 set(handles.slider_set_minbody,'Value',wing_params.mindbody);
 set(handles.uipanel_set,'UserData',wing_params);
 
-% --- Executes during object creation, after setting all properties.
-function edit_set_minbody_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_set_minbody (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
+function edit_set_minbody_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
 
 
-% --- Executes on slider movement.
 function slider_set_minbody_Callback(hObject, eventdata, handles)
-% hObject    handle to slider_set_minbody (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.mindbody=get(hObject,'Value');
@@ -712,23 +599,13 @@ set(handles.edit_set_minbody,'String',num2str(wing_params.mindbody,'%.2f'));
 set(handles.uipanel_set,'UserData',wing_params);
 
 
-% --- Executes during object creation, after setting all properties.
 function slider_set_minbody_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to slider_set_minbody (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
 
 
-
 function edit_set_minwing_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_set_minwing (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.min_single_wing_area=str2double(get(hObject,'String'));
@@ -756,24 +633,13 @@ set(handles.slider_set_minwing,'Value',wing_params.min_single_wing_area);
 set(handles.uipanel_set,'UserData',wing_params);
 
 
-% --- Executes during object creation, after setting all properties.
 function edit_set_minwing_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_set_minwing (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
 
 
-% --- Executes on slider movement.
 function slider_set_minwing_Callback(hObject, eventdata, handles)
-% hObject    handle to slider_set_minwing (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.min_single_wing_area=get(hObject,'Value');
@@ -794,23 +660,13 @@ set(handles.edit_set_minwing,'String',num2str(wing_params.min_single_wing_area,'
 set(handles.uipanel_set,'UserData',wing_params);
 
 
-% --- Executes during object creation, after setting all properties.
 function slider_set_minwing_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to slider_set_minwing (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
 
 
-
 function edit_set_wingin_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_set_wingin (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.wing_peak_min_frac_factor=str2double(get(hObject,'String'));
@@ -838,24 +694,13 @@ set(handles.slider_set_wingin,'Value',wing_params.wing_peak_min_frac_factor);
 set(handles.uipanel_set,'UserData',wing_params);
 
 
-% --- Executes during object creation, after setting all properties.
 function edit_set_wingin_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_set_wingin (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
 
 
-% --- Executes on slider movement.
 function slider_set_wingin_Callback(hObject, eventdata, handles)
-% hObject    handle to slider_set_wingin (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.wing_peak_min_frac_factor=get(hObject,'Value');
@@ -876,23 +721,13 @@ set(handles.edit_set_wingin,'String',num2str(wing_params.wing_peak_min_frac_fact
 set(handles.uipanel_set,'UserData',wing_params);
 
 
-% --- Executes during object creation, after setting all properties.
 function slider_set_wingin_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to slider_set_wingin (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
 
 
-% --- Executes on button press in pushbutton_tracker_setup.
 function pushbutton_tracker_setup_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_tracker_setup (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 GUIscale=getappdata(0,'GUIscale');
 new_pos=get(handles.cbtrackGUI_ROI,'position'); 
 old_pos=GUIscale.original_position;
@@ -901,5 +736,10 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-delete(handles.cbtrackGUI_ROI)
+setappdata(0,'iscancel',false)
+uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
+
 cbtrackGUI_tracker

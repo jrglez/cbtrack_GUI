@@ -156,7 +156,7 @@ setappdata(0,'twing',t);
     debugdata.im = im;
   end
   if debugdata.DEBUG
-      set(handles.text_info,'String',['Tracking wings: frame ',num2str(t),' (',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),', ',num2str(debugdata.nframestracked*100/(debugdata.nframestrack),'%.1f'),'%).'])
+      set(handles.text_info,'String',{['Experiment ',experiment];['Tracking wings: frame ',num2str(t),' (',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),', ',num2str(debugdata.nframestracked*100/(debugdata.nframestrack),'%.1f'),'%).']})
   else
       waitbar(debugdata.nframestracked/debugdata.nframestrack,debugdata.hwait,{['Experiment ',experiment];['Tracking wings: frame ',num2str(t),' (',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),')']});
   end
@@ -190,7 +190,9 @@ setappdata(0,'twing',t);
     trackdata.perframedata = perframedata;
     trackdata.perframeunits = units;
     trackdata.twing = t;
-    save(out.temp_full,'trackdata','-append')
+    if cbparams.track.dosave
+        save(out.temp_full,'trackdata','-append')
+    end
   end
 end
 if isfield(debugdata,'hwait')

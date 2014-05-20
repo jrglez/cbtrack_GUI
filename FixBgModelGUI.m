@@ -2,7 +2,7 @@ function [bgmed,bgfixdata] = FixBgModelGUI(bgmed,moviefile,tracking_params,handl
 hax=handles.axes_BG;
 hroi = [];
 
-hplayfmf = playfmf_GUI('moviefile',moviefile);
+hplayfmf = playfmf_GUI;
 set(hplayfmf,'Visible','off')
 
 [readframe,nframes,fidfix] = get_readframe_fcn(moviefile); %#ok<ASGLU>
@@ -61,7 +61,7 @@ while true,
     tmp = readframe(f);
     buffer(:,i) = tmp(inroi);
   end
-  bgmedcurr = uint8(median(single(buffer),2));
+  bgmedcurr = median(single(buffer),2);
 
   bgmed(inroi) = bgmedcurr;
   

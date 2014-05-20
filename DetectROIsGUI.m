@@ -15,8 +15,7 @@ out=getappdata(0,'out');
 logfid=open_log('roi_log',cbparams,out.folder);
 
 %% reformat roimus
-roidata.params = cbparams;
-roidata.params.detect_rois=params;
+roidata.params=params;
 
 %% detect circles
 fprintf(logfid,'Detecting ROIs for experiment %s at %s...\n',experiment,timestamp);
@@ -66,10 +65,6 @@ if nrois>1 && roidata.nrois>numel(fieldnames(params.roirows))
   dtheta = modrange(thetas-thetas(1),-pi,pi);
   meantheta = modrange(thetas(1) + mean(dtheta),-pi,pi);
   
-  waitfor(mymsgbox(50,190,14,'Helvetica',['Based on ROI centroids, we want to rotate by ',...
-      num2str(meantheta*180/pi),' deg (std = ',num2str(std(dtheta,1)*180/pi),', mn = ',...
-      num2str(modrange(thetas(1) + min(dtheta),-pi,pi)*180/pi),', max = ',...
-      num2str(modrange(thetas(1) + max(dtheta),-pi,pi)*180/pi),')'],'Warning','warn'))
   fprintf(logfid,'Based on ROI centroids, we want to rotate by %f deg (std = %f, min = %f, max = %f)\n',...
     meantheta*180/pi,std(dtheta,1)*180/pi,modrange(thetas(1) + min(dtheta),-pi,pi)*180/pi,...
     modrange(thetas(1) + max(dtheta),-pi,pi)*180/pi);
@@ -111,17 +106,19 @@ roidata.inrois_all=(idxroi~=0);
 roidata.isall=false;
 
 %% plot results
-colors = jet(nrois)*.7;
-axes(handles.axes_ROI)
-hold on
-handles.hroisT=nan(nrois,1);
-for i = 1:nrois,
-    ROIpos=[roidata.centerx(i)-roidata.radii(i),roidata.centery(i)-roidata.radii(i),2*roidata.radii(i),2*roidata.radii(i)];
-    handles.hrois(i,1)=imellipse(handles.axes_ROI,ROIpos);
-    handles.hrois(i,1).setFixedAspectRatioMode(1);
-    handles.hrois(i,1).setColor(colors(i,:));
-    handles.hroisT(i,1)=text(roidata.centerx(i),roidata.centery(i),['ROI: ',num2str(i)],...
-      'Color',colors(i,:),'HorizontalAlignment','center','VerticalAlignment','middle','Clipping','on');
+if params.dosetROI
+    colors = jet(nrois)*.7;
+    axes(handles.axes_ROI)
+    hold on
+    handles.hroisT=nan(nrois,1);
+    for i = 1:nrois,
+        ROIpos=[roidata.centerx(i)-roidata.radii(i),roidata.centery(i)-roidata.radii(i),2*roidata.radii(i),2*roidata.radii(i)];
+        handles.hrois(i,1)=imellipse(handles.axes_ROI,ROIpos);
+        handles.hrois(i,1).setFixedAspectRatioMode(1);
+        handles.hrois(i,1).setColor(colors(i,:));
+        handles.hroisT(i,1)=text(roidata.centerx(i),roidata.centery(i),['ROI: ',num2str(i)],...
+          'Color',colors(i,:),'HorizontalAlignment','center','VerticalAlignment','middle','Clipping','on');
+    end
 end
 
 fprintf(logfid,'Finished detecting ROIs at %s for experiment %s.\n',datestr(now,'yyyymmddTHHMMSS'),experiment);

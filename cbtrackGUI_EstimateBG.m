@@ -58,7 +58,11 @@ for i = 1:tracking_params.bg_nframes,
 end
 delete(hwait)
 hwait=waitbar(0,['Computing background model for experiment ''',experiment,'''']);
-bgmed = uint8(median(single(buffer),3));
+bgmed = median(single(buffer),3);
+if isa(readframe(1),'uint8')
+    bgmed=uint8(bgmed);
+end
+
 waitbar(1,hwait);
 bgdata.bgmed=bgmed;
 delete(hwait)

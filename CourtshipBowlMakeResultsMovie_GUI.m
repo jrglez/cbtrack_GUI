@@ -88,6 +88,9 @@ firstframes = start_frame + firstframes_off;
 
 fprintf(logfid,'Setting parameters...\n');
 
+[readframe,~,fid] = get_readframe_fcn(moviefile);
+im = readframe(1);
+[nr,nc,~] = size(im);
 if ischar(resultsmovie_params.nzoomr) || ischar(resultsmovie_params.nzoomc),
     
   if isnumeric(resultsmovie_params.nzoomr),
@@ -104,9 +107,6 @@ if ischar(resultsmovie_params.nzoomr) || ischar(resultsmovie_params.nzoomc),
   resultsmovie_params.nzoomc = nzoomc;
   
   if iscell(resultsmovie_params.figpos),  
-    [readframe,~,fid] = get_readframe_fcn(moviefile);
-    im = readframe(1);
-    [nr,nc,~] = size(im);
     
     rowszoom = floor(nr/nzoomr);
     imsize = [nr,nc+rowszoom*nzoomc];

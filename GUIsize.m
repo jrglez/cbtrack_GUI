@@ -15,8 +15,9 @@ if ~isempty(GUIscale)
                     old_pos=cell2mat(old_pos);
                 end
                 if ~isprop(obj_handle,'xTick') %not a figure
-                    new_pos(:,[1,3])=old_pos(:,[1,3])*rescalex;
-                    new_pos(:,[2,4])=old_pos(:,[2,4])*rescaley;
+                    new_pos=old_pos;
+                    new_pos(:,1:2:end)=old_pos(:,1:2:end)*rescalex;
+                    new_pos(:,2:2:end)=old_pos(:,2:2:end)*rescaley;
                     for j=1:size(new_pos,1)
                         set(obj_handle(j),'position',new_pos(j,:))
                     end

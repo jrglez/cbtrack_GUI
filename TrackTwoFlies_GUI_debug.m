@@ -7,6 +7,7 @@ timestamp = datestr(now,TimestampFormat);
 
 experiment=getappdata(0,'experiment');
 out=getappdata(0,'out');
+cbparams=getappdata(0,'cbparams');
 [restart] = myparse(varargin,'restart',''); 
 
 dorestart = false;
@@ -145,6 +146,7 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
       % plot
 
       if params.DEBUG,
+         hold on
         set(handles.video_img,'CData',im);
         isnewplot = false;
         title(num2str(t));
@@ -169,7 +171,7 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
             end
           end
         end
-      set(handles.text_info,'String',['Tracking: frame ',num2str(t),' (',num2str(iframe),' of ',num2str(nframes_track),', ',num2str(iframe*100/nframes_track,'%.1f'),'%).'])  
+      set(handles.text_info,'String',{['Experiment ',experiment];['Tracking: frame ',num2str(t),' (',num2str(iframe),' of ',num2str(nframes_track),', ',num2str(iframe*100/nframes_track,'%.1f'),'%).']})  
       else
         waitbar(iframe/nframes_track,hwait,{['Experiment ',experiment];['Tracking: frame ',num2str(t),' (',num2str(iframe),' of ',num2str(nframes_track),')']});  
       end    
@@ -193,7 +195,9 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
             trackdata.trxpriors=trxpriors;
             trackdata.headerinfo=headerinfo;
             trackdata.stage=stage;
-            save(out.temp_full,'trackdata','-append')
+            if cbparams.track.dosave
+                save(out.temp_full,'trackdata','-append')
+            end
             fprintf(logfid,'Saving temporary file after %i frames at %s...\n',iframe,datestr(now,'yyyymmddTHHMMSS'));
       end
       setappdata(0,'t',t);
@@ -216,7 +220,9 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
     trackdata.trxpriors=trxpriors;
     trackdata.headerinfo=headerinfo;
     trackdata.stage=stage;
-    save(out.temp_full,'trackdata','-append')
+    if cbparams.track.dosave
+        save(out.temp_full,'trackdata','-append')
+    end
 end
 
 %% clean up

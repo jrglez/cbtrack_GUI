@@ -1,4 +1,4 @@
-function varargout = cbtrackGUI_BG(varargin)
+function cbtrackGUI_BG(varargin)
 % CBTRACKGUI_BG MATLAB code for cbtrackGUI_BG.fig
 %      CBTRACKGUI_BG, by itself, creates a new CBTRACKGUI_BG or raises the existing
 %      singleton*.
@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_BG(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_BG
 
-% Last Modified by GUIDE v2.5 21-Feb-2014 11:23:16
+% Last Modified by GUIDE v2.5 14-May-2014 09:10:14
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -46,17 +46,11 @@ end
 
 % --- Executes just before cbtrackGUI_BG is made visible.
 function cbtrackGUI_BG_OpeningFcn(hObject, eventdata, handles, varargin)
-% This function has no output args, see OutputFcn.
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% varargin   command line arguments to cbtrackGUI_BG (see VARARGIN)
-
-% Choose default command line output for cbtrackGUI_BG
 handles.output = hObject;
 
 GUIsize(handles,hObject)
 
+experiment=getappdata(0,'experiment');
 cbparams=getappdata(0,'cbparams');
 tracking_params=cbparams.track;
 BG.expdir=getappdata(0,'expdir');
@@ -65,47 +59,83 @@ BG.analysis_protocol=getappdata(0,'analysis_protocol');
 out=getappdata(0,'out');
 loadfile=fullfile(out.folder,cbparams.dataloc.bgmat.filestr);
 
-
-fidBG=getappdata(0,'fidBG'); %#ok<NASGU>
-
 P_stages={'BG','ROIs','params','wing_params','track1','track2'};
 P_curr_stage='BG';
 P_stage=getappdata(0,'P_stage');
 if find(strcmp(P_stage,P_stages))>find(strcmp(P_curr_stage,P_stages))
     BG.data=getappdata(0,'BG');
-    set(handles.pushbutton_ROIs,'Enable','on')
-    if find(strcmp(P_stage,P_stages))>=find(strcmp('params',P_stages))
+    if cbparams.detect_rois.dosetROI
+        set(handles.pushbutton_ROIs,'Enable','on')
+    end
+    if find(strcmp(P_stage,P_stages))>=find(strcmp('params',P_stages)) && cbparams.track.dosettrack
         set(handles.pushbutton_tracker_setup,'Enable','on')
     end
-    if find(strcmp(P_stage,P_stages))>=find(strcmp('wing_params',P_stages))
+    if find(strcmp(P_stage,P_stages))>=find(strcmp('wing_params',P_stages)) && cbparams.wingtrack.dosetwingtrack
         set(handles.pushbutton_WT,'Enable','on')
     end
-    if find(strcmp(P_stage,P_stages))>=find(strcmp('track1',P_stages)) && cbparams.track.DEBUG==1
+    if find(strcmp(P_stage,P_stages))>=find(strcmp('track1',P_stages)) && cbparams.track.DEBUG==1 && getappdata(0,'singleexp')
         set(handles.pushbutton_debuger,'Enable','on')
     end
 else
-    if exist(loadfile,'file')
-        msg_load=myquestdlg(14,'Helvetica','There is a file that contains backgound data. Would you like to load it?','Existing BG data','Yes','No','No');  
-    end
+    if getappdata(0,'usefiles') && exist(loadfile,'file')
+        try
+            BG.data=load(loadfile);
+            BG.data.isnew=true;
+            isempty(BG.data.bgmed);
+            tracking_params=BG.data.params;
+            tracking_params.DEBUG=cbparams.track.DEBUG;
+            tracking_params.dosetBG=cbparams.track.dosetBG;
+            tracking_params.dosettrack=cbparams.track.dosettrack;
+            tracking_params.dotrack=cbparams.track.dotrack;
+            tracking_params.dotrackwings=cbparams.track.dotrackwings;
 
-    if exist('msg_load','var') && strcmp(msg_load,'Yes')
-        BG.data=load(loadfile);
-        BG.data.isnew=true;
-        tracking_params=BG.data.params;
-        
-        logfid=open_log('bg_log',cbparams,out.folder);
-        fprintf(logfid,'Loading background data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
-        if logfid > 1,
-          fclose(logfid);
-        end
-    else
+
+            logfid=open_log('bg_log',cbparams,out.folder);
+            fprintf(logfid,'Loading background data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
+            if logfid > 1,
+              fclose(logfid);
+            end
+        catch
+            logfid=open_log('bg_log',cbparams,out.folder);
+            fprintf(logfid,'File %s could not be loaded.',loadfile);
+            if logfid > 1,
+              fclose(logfid);
+            end
+            waitfor(mymsgbox(50,190,14,'Helvetica',{['File ', loadfile,' could not be loaded.'];'Trying to compute the background automatically'},'Warning','warn','modal'))
+            BG.data=cbtrackGUI_EstimateBG(BG.expdir,BG.moviefile,tracking_params,'analysis_protocol',BG.analysis_protocol);
+        end            
+    elseif tracking_params.computeBG
         BG.data=cbtrackGUI_EstimateBG(BG.expdir,BG.moviefile,tracking_params,'analysis_protocol',BG.analysis_protocol);
+    else
+        [readframe,~,fid,~] = get_readframe_fcn(getappdata(0,'moviefile')); %#ok<*NASGU>
+        im = readframe(1);
+        BG.data.cbestimatebg_version='Not computed';
+        BG.data.cbestimatebg_timestamp=datestr(now,TimestampFormat);
+        BG.data.analysis_protocol=getappdata(0,'analysis_protocol');
+        BG.data.bgmed=255*ones(size(im));
+        if isa(im,'uint8')
+            BG.data.bgmed=uint8(BG.data.bgmed);
+        end
+        BG.data.isnew=true;
+        if fid > 1,
+            fclose(fid);
+        end
+        set(handles.text_Nframes,'Enable','off')
+        set(handles.edit_Nframes,'Enable','off')
+        set(handles.text_Lframe,'Enable','off')
+        set(handles.edit_Lframe,'Enable','off')
+        set(handles.pushbutton_recalc,'Enable','off')
+        set(handles.pushbutton_manual,'Enable','off')
+        set(handles.pushbutton_auto,'Enable','off')
+        set(handles.text_load,'Enable','off')
+        set(handles.pushbutton_load,'Enable','off')
     end
 end
 
 % Set parameters in the GUI
 set(handles.edit_Nframes,'String',num2str(tracking_params.bg_nframes))
 set(handles.edit_Lframe,'String',num2str(tracking_params.bg_lastframe))
+set(handles.checkbox_BG,'Value',tracking_params.computeBG)
 bgmodes={'LIGHTBKGD';'DARKBKGD';'OTHERBKGD'};
 bgmode=find(strcmp(tracking_params.bgmode,bgmodes));
 if isempty(bgmode)
@@ -139,120 +169,57 @@ else
     imagesc(bgmed);
     set(handles.axes_BG,'XTick',[],'YTick',[])
     axis equal
-    
+
+    handles.textexp=text(250,450,'','FontSize',24,'Color',[1 0 0],'HorizontalAlignment','center','units','pixels','String',experiment);
+
     % Update handles structure
     guidata(hObject, handles);
     set(hObject,'UserData',BG);
     set(handles.pushbutton_recalc,'UserData',tracking_params)
+    
+    uiwait(handles.cbtrackGUI_BG);
 end
 
 
-% UIWAIT makes cbtrackGUI_BG wait for user response (see UIRESUME)
-% uiwait(handles.cbtrackGUI_BG);
-
-
-% --- Outputs from this function are returned to the command line.
-function varargout = cbtrackGUI_BG_OutputFcn(hObject, eventdata, handles) 
-% varargout  cell array for returning output args (see VARARGOUT);
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
+function varargout = cbtrackGUI_BG_OutputFcn(hObject, eventdata, handles) %#ok<STOUT>
 % Get default command line output from handles structure
-varargout{1} = handles;
 
 
-% --- Executes during object creation, after setting all properties.
 function axes_BG_CreateFcn(hObject, eventdata, handles) %#ok<*INUSD,*DEFNU>
-% hObject    handle to axes_BG (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
 
 
-% Hint: place code in OpeningFcn to populate axes_BG
-
-
-% --- Executes on selection change in popupmenu_BGtype.
 function popupmenu_BGtype_Callback(hObject, eventdata, handles)
-% hObject    handle to popupmenu_BGtype (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_BGtype contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from popupmenu_BGtype
 
 
-% --- Executes during object creation, after setting all properties.
 function popupmenu_BGtype_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to popupmenu_BGtype (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 
 function edit_Nframes_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_Nframes (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit_Nframes as text
-%        str2double(get(hObject,'String')) returns contents of edit_Nframes as a double
 
 
-% --- Executes during object creation, after setting all properties.
 function edit_Nframes_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_Nframes (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 
 function edit_Lframe_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_Lframe (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit_Lframe as text
-%        str2double(get(hObject,'String')) returns contents of edit_Lframe as a double
 
 
-% --- Executes during object creation, after setting all properties.
 function edit_Lframe_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_Lframe (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
 
 
-% --- Executes on button press in pushbutton_cancel.
 function pushbutton_cancel_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_cancel (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 close(handles.cbtrackGUI_BG)
 
 
-% --- Executes on button press in pushbutton_recalc.
 function pushbutton_recalc_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_recalc (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 bg_nframes=str2double(get(handles.edit_Nframes,'String'));
 bg_lastframe=str2double(get(handles.edit_Lframe,'String'));
 if isnan(bg_nframes) || bg_nframes<1
@@ -277,16 +244,7 @@ else
 end
 
 
-
-
-
-% --- Executes on button press in pushbutton_manual.
 function pushbutton_manual_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_manual (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% rect=getrect(handles.axes_BG);
-% rectangle('position',rect);
 cbparams=getappdata(0,'cbparams');
 BG=get(handles.cbtrackGUI_BG,'UserData');
 bgmed=BG.data.bgmed;
@@ -306,13 +264,7 @@ if logfid > 1,
 end
 
 
-
-% --- Executes on button press in pushbutton_accept.
 function pushbutton_accept_Callback(hObject, eventdata, handles) %#ok<*INUSL>
-% hObject    handle to pushbutton_accept (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 %Save size
 GUIscale=getappdata(0,'GUIscale');
 new_pos=get(handles.cbtrackGUI_BG,'position'); 
@@ -321,7 +273,6 @@ GUIscale.rescalex=new_pos(3)/old_pos(3);
 GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
-
 
 BG=get(handles.cbtrackGUI_BG,'UserData');
 
@@ -333,10 +284,17 @@ if ~strcmp(cbparams.track.bgmode,bgmode)
     cbparams.track.bgmode=bgmode;
 end
 
+computeBG=get(handles.checkbox_BG,'Value');
+if computeBG~=cbparams.track.computeBG
+    BG.data.isnew=true;
+    cbparams.track.computeBG=computeBG;
+end
+isnew=BG.data.isnew;
+
 restart='';
 setappdata(0,'restart',restart)
 
-if BG.data.isnew
+if isnew
     if isappdata(0,'roidata')
         rmappdata(0,'roidata')
     end
@@ -356,63 +314,121 @@ if BG.data.isnew
         rmappdata(0,'twing')
     end
     BG.data.isnew=false;
-    setappdata(0,'BG',BG.data)
+    tracking_params=get(handles.pushbutton_recalc,'UserData');
+    cbparams.track=tracking_params;
+    if ~computeBG
+        [readframe,~,fid,~] = get_readframe_fcn(getappdata(0,'moviefile')); %#ok<*NASGU>
+        BG.data.cbestimatebg_version='Not computed';
+        BG.data.cbestimatebg_timestamp=datestr(now,TimestampFormat);
+        BG.data.analysis_protocol=getappdata(0,'analysis_protocol');
+        BG.data.bgmed=255*ones(size(BG.data.bgmed));
+        if isa(readframe(1),'uint8')
+            BG.data.bgmed=uint8(BG.data.bgmed);
+        end
+        if fid>1
+            fclose(fid);
+        end
+        cbparams.track.bg_nframes=nan;
+        cbparams.track.bg_lastframe=nan;
+    elseif computeBG && all(all(BG.data.bgmed==255))
+        BG.data=cbtrackGUI_EstimateBG(BG.expdir,BG.moviefile,tracking_params,'analysis_protocol',BG.analysis_protocol);
+    end
+    cbparams.track.computeBG=computeBG;
     bgmed=BG.data.bgmed;
-    cbparams=getappdata(0,'cbparams');
-    cbparams.track=get(handles.pushbutton_recalc,'UserData');
+    setappdata(0,'BG',BG.data)
     setappdata(0,'cbparams',cbparams)
-    setappdata(0,'P_stage','ROIs');
     
     % Save BG data
     out=getappdata(0,'out');
     logfid=open_log('bg_log',cbparams,out.folder);
-    cbestimatebg_version=BG.data.cbestimatebg_version; %#ok<NASGU>
-    cbestimatebg_timestamp=BG.data.cbestimatebg_timestamp; %#ok<NASGU>
-    params=cbparams.track; %#ok<NASGU>    
+    cbestimatebg_version=BG.data.cbestimatebg_version; 
+    cbestimatebg_timestamp=BG.data.cbestimatebg_timestamp; 
+    params=cbparams.track;  
     savefile = fullfile(out.folder,cbparams.dataloc.bgmat.filestr);
     fprintf(logfid,'Saving background model to file %s...\n',savefile);
     if exist(savefile,'file'),
       delete(savefile);
     end
     save(savefile,'bgmed','cbestimatebg_version','cbestimatebg_timestamp','params');
-    savetemp
-
+    if cbparams.track.dosave
+        savetemp({'BG'})
+    end
+    
     bgimagefile = fullfile(out.folder,cbparams.dataloc.bgimage.filestr); 
     fprintf(logfid,'Saving image of background model to file %s...\n\n***\n',bgimagefile);
     imwrite(bgmed,bgimagefile,'png');
+    if logfid > 1,
+        fclose(logfid);
+    end
 end
 
 % Clean up
+fidBG=getappdata(0,'fidBG');
+if exist('fidBG','var') && ~isempty(fidBG)&&  fidBG > 0,
+    try
+        fclose(fidBG);
+    catch ME,
+        mymsgbox(50,190,14,'Helvetica',['Could not close movie file: ',getReport(ME)],'Warning','warn')
+    end
+end
+
+setappdata(0,'iscancel',false)
+uiresume(handles.cbtrackGUI_BG)
 if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
     delete(handles.cbtrackGUI_BG)
 end
-fidBG=getappdata(0,'fidBG');
-if exist('fidBG','var') && ~isempty(fidBG)&&  fidBG > 0,
-    try
-        fclose(fidBG);
-    catch ME,
-        mymsgbox(50,190,14,'Helvetica',['Could not close movie file: ',getReport(ME)],'Warning','warn')
+
+if cbparams.detect_rois.dosetROI
+    if isnew
+        setappdata(0,'P_stage','ROIs');
+    end
+    cbtrackGUI_ROI
+elseif cbparams.track.dosettrack
+    if isnew
+        cbtrackNOGUI_ROI
+    end
+    cbtrackGUI_tracker
+else
+    if isnew
+        cbtrackNOGUI_ROI
+        cbtrackNOGUI_tracker
+    end
+    if cbparams.wingtrack.dosetwingtrack
+        cbtrackGUI_WingTracker
+    elseif getappdata(0,'singleexp') && cbparams.track.dotrack
+        if ~cbparams.track.DEBUG
+            WriteParams
+            setappdata(0,'P_stage','track1');
+            cbtrackGUI_tracker_NOvideo
+        else
+            if isnew
+                WriteParams
+                setappdata(0,'P_stage','track1');
+                cbtrackGUI_tracker_video
+            else
+                P_stage=getappdata(0,'P_stage');       
+                if strcmp(P_stage,'track2')
+                    CourtshipBowlTrack_GUI2
+                    iscancel=getappdata(0,'iscancel');
+                    if iscancel
+                        if iscancel==1
+                            cancelar
+                        end
+                        return
+                    end
+                elseif strcmp(P_stage,'track1')
+                    cbtrackGUI_tracker_video
+                end
+            end        
+        end
     end
 end
-if logfid > 1,
-  fclose(logfid);
-end
-
-cbtrackGUI_ROI
 
 
-% --- Executes on button press in pushbutton_BG.
 function pushbutton_BG_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_BG (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 
-% --- Executes on button press in pushbutton_ROIs.
 function pushbutton_ROIs_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_ROIs (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 fidBG=getappdata(0,'fidBG');
 if exist('fidBG','var') && ~isempty(fidBG)&&  fidBG > 0,
     try
@@ -431,16 +447,17 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-delete(handles.cbtrackGUI_BG)
+setappdata(0,'iscancel',false)
+uiresume(handles.cbtrackGUI_BG)
+if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
+    delete(handles.cbtrackGUI_BG)
+end
+
 cbtrackGUI_ROI
 
 
 
-% --- Executes on button press in pushbutton_tracker_setup.
 function pushbutton_tracker_setup_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_tracker_setup (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 fidBG=getappdata(0,'fidBG');
 if exist('fidBG','var') && ~isempty(fidBG)&&  fidBG > 0,
     try
@@ -459,14 +476,16 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-delete(handles.cbtrackGUI_BG)
+setappdata(0,'iscancel',false)
+uiresume(handles.cbtrackGUI_BG)
+if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
+    delete(handles.cbtrackGUI_BG)
+end
+
 cbtrackGUI_tracker
 
-% --- Executes on button press in pushbutton_debuger.
+
 function pushbutton_debuger_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_debuger (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 fidBG=getappdata(0,'fidBG');
 if exist('fidBG','var') && ~isempty(fidBG)&&  fidBG > 0,
     try
@@ -485,7 +504,11 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-delete(handles.cbtrackGUI_BG)
+setappdata(0,'iscancel',false)
+uiresume(handles.cbtrackGUI_BG)
+if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
+    delete(handles.cbtrackGUI_BG)
+end
 
 P_stage=getappdata(0,'P_stage');
 if strcmp(P_stage,'track2')
@@ -497,67 +520,38 @@ if strcmp(P_stage,'track2')
         end
         return
     end
-    CourtshipBowlMakeResultsMovie_GUI
-    pffdata = CourtshipBowlComputePerFrameFeatures_GUI(1);
-    setappdata(0,'pffdata',pffdata)
-    cancelar
 elseif strcmp(P_stage,'track1')
     cbtrackGUI_tracker_video
 end
 
 
-
-% --- If Enable == 'on', executes on mouse press in 5 pixel border.
-% --- Otherwise, executes on mouse press in 5 pixel border or over pushbutton_manual.
 function pushbutton_manual_ButtonDownFcn(hObject, eventdata, handles)
-% hObject    handle to pushbutton_manual (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 mymsgbox(50,190,14,'Helvetica','Please, select the regions you wish to correct. Press ''Correct'' when you are done.','Correct','help')
-%Display explanation when "correct" is pushed
 
 
-
-
-
-% --- Executes when cbtrackGUI_BG is resized.
 function cbtrackGUI_BG_ResizeFcn(hObject, eventdata, handles)
-% hObject    handle to cbtrackGUI_BG (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 GUIresize(handles,hObject)
 
 
-% --- Executes on key press with focus on pushbutton_manual and none of its controls.
 function pushbutton_manual_KeyPressFcn(hObject, eventdata, handles)
-% hObject    handle to pushbutton_manual (see GCBO)
-% eventdata  structure with the following fields (see UICONTROL)
-%	Key: name of the key that was pressed, in lower case
-%	Character: character interpretation of the key(s) that was pressed
-%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
-% handles    structure with handles and user data (see GUIDATA)
 
 
-% --- Executes when user attempts to close cbtrackGUI_BG.
 function cbtrackGUI_BG_CloseRequestFcn(hObject, eventdata, handles)
-% hObject    handle to cbtrackGUI_BG (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 msg_cancel=myquestdlg(14,'Helvetica','Cancel current project? All setup options will be lost','Cancel','Yes','No','No'); 
 if isempty(msg_cancel)
     msg_cancel='No';
 end
-fidBG=getappdata(0,'fidBG'); %#ok<NASGU>
+fidBG=getappdata(0,'fidBG'); 
 if strcmp('Yes',msg_cancel)
-    cancelar
+    setappdata(0,'iscancel',true)
+    uiresume(handles.cbtrackGUI_BG)
+    if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
+        delete(handles.cbtrackGUI_BG)
+    end
 end
 
 
-% --- Executes on button press in pushbutton_auto.
 function pushbutton_auto_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_auto (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 BG=get(handles.cbtrackGUI_BG,'UserData');
 bgmed=BG.data.bgmed;
 [bgmed,bgfixdata] = FixBgModel_auto_GUI(bgmed,handles);
@@ -574,21 +568,10 @@ if logfid > 1,
 end
 
  
-
-
-% --- Executes during object deletion, before destroying properties.
 function pushbutton_ROIs_DeleteFcn(hObject, eventdata, handles)
-% hObject    handle to pushbutton_ROIs (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 
-
-% --- Executes on button press in pushbutton_load.
 function pushbutton_load_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_load (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 [file_BG, folder_BG]=open_files2('mat');
 if ~file_BG{1}==0
     loadfile=fullfile(folder_BG,file_BG{1});
@@ -619,11 +602,7 @@ if ~file_BG{1}==0
 end
 
 
-% --- Executes on button press in pushbutton_WT.
 function pushbutton_WT_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_WT (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 fidBG=getappdata(0,'fidBG');
 if exist('fidBG','var') && ~isempty(fidBG)&&  fidBG > 0,
     try
@@ -642,5 +621,34 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-delete(handles.cbtrackGUI_BG)
+setappdata(0,'iscancel',false)
+uiresume(handles.cbtrackGUI_BG)
+if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
+    delete(handles.cbtrackGUI_BG)
+end
+
 cbtrackGUI_WingTracker
+
+
+function checkbox_BG_Callback(hObject, eventdata, handles)
+if get(hObject,'Value')
+    set(handles.text_Nframes,'Enable','on')
+    set(handles.edit_Nframes,'Enable','on')
+    set(handles.text_Lframe,'Enable','on')
+    set(handles.edit_Lframe,'Enable','on')
+    set(handles.pushbutton_recalc,'Enable','on')
+    set(handles.pushbutton_manual,'Enable','on')
+    set(handles.pushbutton_auto,'Enable','on')
+    set(handles.text_load,'Enable','on')
+    set(handles.pushbutton_load,'Enable','on')
+else
+    set(handles.text_Nframes,'Enable','off')
+    set(handles.edit_Nframes,'Enable','off')
+    set(handles.text_Lframe,'Enable','off')
+    set(handles.edit_Lframe,'Enable','off')
+    set(handles.pushbutton_recalc,'Enable','off')
+    set(handles.pushbutton_manual,'Enable','off')
+    set(handles.pushbutton_auto,'Enable','off')
+    set(handles.text_load,'Enable','off')
+    set(handles.pushbutton_load,'Enable','off')
+end
