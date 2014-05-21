@@ -36,7 +36,7 @@ for j = 1:nrois,
     dbkgdbb(~roidata.inrois{j}) = 0;
     isforebb(~roidata.inrois{j}) = false;
     pred.isfirstframe=1;
-    [trx{j},~] = TrackTwoFliesOneFrameOneROI(isforebb,dbkgdbb,pred,trxcurr(j),nflies_per_roi(j),tracking_params);
+    [trx{j},~] = TrackTwoFliesOneFrameOneROI_GUI(isforebb,dbkgdbb,pred,trxcurr(j),nflies_per_roi(j),tracking_params);
     trx{j}.x=trx{j}.x+roibb(1)-1;
     trx{j}.y=trx{j}.y+roibb(3)-1;
 end

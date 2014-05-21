@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_pff_all(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_pff_all
 
-% Last Modified by GUIDE v2.5 05-Dec-2013 16:36:59
+% Last Modified by GUIDE v2.5 21-May-2014 14:43:09
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -121,4 +121,3 @@ pff_on=num2cell(cellfun(@(x) logical(x),get(handles.checkbox_all,'Value')));
 [pff_all(:).on]=deal(pff_on{:});
 setappdata(0,'pff_all',pff_all)
 delete(handles.figure1)
-

@@ -1,5 +1,5 @@
 function [trxcurr,pred] = ...
-  TrackTwoFliesOneFrameOneROI(isforebb,dbkgdbb,pred,trxprev,nflies_per_roi,params)
+  TrackTwoFliesOneFrameOneROI_GUI(isforebb,dbkgdbb,pred,trxprev,nflies_per_roi,params)
 
 % initialize
 trxcurr = trxprev;
@@ -78,7 +78,7 @@ else
     trxcurr.istouching = 0;
 
   elseif cc.NumObjects == 0,
-%     warning('No flies detected in ROI');
+    warning('No flies detected in ROI');
     
   else
     
@@ -194,3 +194,4 @@ pred.mix.centres = [pred.x,pred.y];
 pred.mix.covars = axes2cov(trxcurr.a,trxcurr.b,pred.theta);
 
 pred.isfirstframe = false;
+trxcurr.priors=trxpriors(order);

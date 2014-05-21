@@ -289,7 +289,7 @@ if isnew
             end
             f=get(handles.slider_frame,'Value');
             if visdata.plot==6 && isempty(visdata.trx{1,f})
-                visdata.trx(:,f)=fit_to_ellipse(roidata,count.nflies_per_roi, visdata.dbkgd{1}, visdata.isfore{1},tracking_params);    
+                visdata.trx(:,f)=fit_to_ellipse_GUI(roidata,count.nflies_per_roi, visdata.dbkgd{1}, visdata.isfore{1},tracking_params);    
             end
 
             plot_vis(handles,visdata,1)
@@ -420,7 +420,7 @@ elseif visdata.plot==6 && isempty(visdata.trx{1,f})
     tracking_params=get(handles.edit_set_bgthresh,'UserData');
     roidata=getappdata(0,'roidata');
     count=get(handles.pushbutton_set_count,'UserData');
-    visdata.trx(:,f)=fit_to_ellipse(roidata,count.nflies_per_roi, visdata.dbkgd{f}, visdata.isfore{f},tracking_params);
+    visdata.trx(:,f)=fit_to_ellipse_GUI(roidata,count.nflies_per_roi, visdata.dbkgd{f}, visdata.isfore{f},tracking_params);
 end
 
 plot_vis(handles,visdata,f)
@@ -655,7 +655,7 @@ if isempty(visdata.isfore{1,f}) && visdata.plot~=1 && visdata.plot~=2
     [visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] = ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
 elseif visdata.plot==6 && isempty(visdata.trx{1,f})
     count=get(handles.pushbutton_set_count,'UserData');
-    visdata.trx(:,f)=fit_to_ellipse(roidata,count.nflies_per_roi, visdata.dbkgd{f}, visdata.isfore{f},tracking_params);
+    visdata.trx(:,f)=fit_to_ellipse_GUI(roidata,count.nflies_per_roi, visdata.dbkgd{f}, visdata.isfore{f},tracking_params);
 end
 
 plot_vis(handles,visdata,f)

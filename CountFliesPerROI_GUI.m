@@ -59,7 +59,7 @@ if dosetwingtrack
     hwait=waitbar(0,{['Experiment ',experiment];['Computing positions: Analazing frame 0 of ', num2str(roiparams.nframessample)]});
     for i=1:roiparams.nframessample,
         waitbar(i/roiparams.nframessample,hwait,{['Experiment ',experiment];['Computing positions: Analazing frame ',num2str(i),' of ', num2str(roiparams.nframessample)]});
-        trx(:,i)=fit_to_ellipse(roidata,nflies_per_roi, dbkgd{i}, isfore_in{i},tracking_params);
+        trx(:,i)=fit_to_ellipse_GUI(roidata,nflies_per_roi, dbkgd{i}, isfore_in{i},tracking_params);
     end
     close (hwait);
 end
