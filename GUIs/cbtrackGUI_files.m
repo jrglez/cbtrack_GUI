@@ -47,6 +47,11 @@ end
 function cbtrackGUI_files_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for cbtrackGUI_files
 handles.output = hObject;
+
+funpath=fileparts(which('cbtrackGUI_files'));
+cbtrack_path=genpath(funpath(1:end-4));
+addpath(cbtrack_path);
+
 % Update handles structure
 guidata(hObject, handles);
 
