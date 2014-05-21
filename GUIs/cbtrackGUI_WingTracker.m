@@ -91,7 +91,7 @@ if ~cbparams.track.dosettrack
     set(handles.pushbutton_tracker_setup,'Enable','off')
 end
 
-handles.textexp=text(250,450,'','FontSize',24,'Color',[1 0 0],'HorizontalAlignment','center','units','pixels','String',experiment);
+set(handles.text_exp,'FontSize',24,'HorizontalAlignment','center','units','pixels','FontUnits','pixels','String',experiment);
 
 set(handles.edit_set_Hbgthresh,'String',num2str(wing_params.mindwing_high));
 set(handles.slider_set_Hbgthresh,'Value',wing_params.mindwing_high,'Min',0,'Max',255);

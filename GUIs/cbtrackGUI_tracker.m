@@ -209,7 +209,7 @@ end
  handles.text2=text2;
  handles.edit1=edit1;
 
- handles.textexp=text(250,450,'','FontSize',24,'Color',[1 0 0],'HorizontalAlignment','center','units','pixels','String',experiment);
+ set(handles.text_exp,'FontSize',24,'HorizontalAlignment','center','units','pixels','FontUnits','pixels','String',experiment);
  
  % Set slider
 nframessample=roi_params.nframessample;

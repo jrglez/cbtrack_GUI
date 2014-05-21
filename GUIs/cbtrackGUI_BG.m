@@ -170,7 +170,7 @@ else
     set(handles.axes_BG,'XTick',[],'YTick',[])
     axis equal
 
-    handles.textexp=text(250,450,'','FontSize',24,'Color',[1 0 0],'HorizontalAlignment','center','units','pixels','String',experiment);
+    set(handles.text_exp,'FontSize',24,'HorizontalAlignment','center','units','pixels','FontUnits','pixels','String',experiment);
 
     % Update handles structure
     guidata(hObject, handles);

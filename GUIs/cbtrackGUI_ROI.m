@@ -83,7 +83,7 @@ manual.pos_h=cell(0);
 manual.on=0;
 manual.delete=0;
 handles.texth=text(255,420,'','FontSize',20,'Color',[1 0 0],'HorizontalAlignment','center','units','pixels');    
-handles.textexp=text(250,445,'','FontSize',24,'Color',[1 0 0],'HorizontalAlignment','center','units','pixels','String',experiment);
+set(handles.text_exp,'FontSize',24,'HorizontalAlignment','center','units','pixels','FontUnits','pixels','String',experiment);
 list.text=cell(0); %list of selected points to display at listbox_manual
 list.ind=cell(0);
 list.ind_mat=[]; %(ROI,point) index matrix

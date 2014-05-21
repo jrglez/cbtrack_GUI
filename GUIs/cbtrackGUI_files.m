@@ -303,6 +303,7 @@ else
             setappdata(0,'analysis_protocol',analysis_protocol);
             setappdata(0,'out',out{i});
             setappdata(0,'cbparams',cbparams)
+            setappdata(0,'P_stage','BG')
 
             if get(handles.checkbox_doAcI,'Value')
                 logfid=open_log('automaticchecks_incoming_log',cbparams,out{i}.folder);
@@ -326,7 +327,7 @@ else
                 end
             end
             if cbparams.track.dosave
-                savetemp({'out','expdir','moviefile','experiment','analysis_protocol'});
+                savetemp({'out','expdir','moviefile','experiment','analysis_protocol','P_stage'});
             end
         end
         delete(hwait);
