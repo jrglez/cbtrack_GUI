@@ -363,6 +363,7 @@ if isnew
     end
 end
 
+%
 setappdata(0,'iscancel',false)
 uiresume(handles.cbtrackGUI_BG)
 if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)

@@ -33,7 +33,6 @@ bgdata.analysis_protocol = real_analysis_protocol;
 fprintf(logfid,'Opening movie file %s...\n',moviefile);
 [readframe,nframes,fid,headerinfo] = get_readframe_fcn(moviefile); %#ok<*NASGU>
 im = readframe(1);
-setappdata(0,'fidBG',fid)
 
 %% estimate the background model
 
@@ -71,4 +70,12 @@ bgdata.isnew=true;
 fprintf(logfid,'Finished computting the Background at %s.\n***\n',datestr(now,'yyyymmddTHHMMSS'));
 if logfid > 1,
   fclose(logfid);
+end
+
+if exist('fid','var') && ~isempty(fid)&&  fid > 0,
+    try
+        fclose(fid);
+    catch ME,
+        mymsgbox(50,190,14,'Helvetica',['Could not close movie file: ',getReport(ME)],'Warning','warn')
+    end
 end

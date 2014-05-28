@@ -1,4 +1,4 @@
-appdatalist={'cancel_hwait','expdir','experiment','moviefile','out','analysis_protocol','P_stage','cbparams','restart','GUIscale','startframe','endframe','BG','fidBG','roidata','visdata','debugdata_WT','pff_all','t','trackdata','iscancel','twing'};
+appdatalist={'cancel_hwait','expdir','experiment','moviefile','out','analysis_protocol','P_stage','cbparams','restart','GUIscale','startframe','endframe','BG','roidata','visdata','debugdata_WT','pff_all','t','trackdata','iscancel','twing'};
 out=getappdata(0,'out');
 experiment=getappdata(0,'experiment');
 if ~isempty(out)

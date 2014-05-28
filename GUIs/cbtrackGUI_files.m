@@ -106,7 +106,7 @@ if get(handles.checkbox_restart,'Value')
         load(restart);
         logfid=open_log('track_log',cbparams,out.folder); %#ok<NODEF>
         fprintf(logfid,'\n\n***\nRestarting experiment %s from %s at %s\n',experiment,restart,datestr(now,'yyyymmddTHHMMSS')); %#ok<NODEF>
-        appdatalist={'cancel_hwait','expdir','experiment','moviefile','out','analysis_protocol','P_stage','cbparams','restart','GUIscale','startframe','endframe','BG','fidBG','roidata','visdata','pff_all','t','trackdata','debugdata_WT'};
+        appdatalist={'cancel_hwait','expdir','experiment','moviefile','out','analysis_protocol','P_stage','cbparams','restart','GUIscale','startframe','endframe','BG','roidata','visdata','pff_all','t','trackdata','debugdata_WT'};
         for i=1:length(appdatalist)
             if exist(appdatalist{i},'var')
                 setappdata(0,appdatalist{i},eval(appdatalist{i}))
