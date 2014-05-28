@@ -23,7 +23,7 @@ if getappdata(0,'usefiles') && exist(loadfile,'file')
         waitfor(mymsgbox(50,190,14,'Helvetica',{['File ', loadfile,' could not be loaded.'];'Trying to detect ROIs automatically'},'Warning','warn','modal'))
         BG=getappdata(0,'BG');
         params=cbparams.detect_rois;
-        if isempty(params.roimus)
+        if isempty(params.roimus.x) || isempty(params.roimus.y) || ~cbparams.track.computeBG
             roidata=AllROI(BG.bgmed);
         else
             roimus=params.roimus;
@@ -36,7 +36,7 @@ if getappdata(0,'usefiles') && exist(loadfile,'file')
 else
     BG=getappdata(0,'BG');
     params=cbparams.detect_rois;
-    if isempty(params.roimus)
+    if isempty(params.roimus.x) || isempty(params.roimus.y) || ~cbparams.track.computeBG
         roidata=AllROI(BG.bgmed);
     else
         roimus=params.roimus;

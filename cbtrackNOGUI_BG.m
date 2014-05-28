@@ -29,13 +29,43 @@ if getappdata(0,'usefiles') && exist(loadfile,'file')
         expdir=getappdata(0,'expdir');
         moviefile=getappdata(0,'moviefile');
         analysis_protocol=getappdata(0,'analysis_protocol');
-        BG_data=cbtrackGUI_EstimateBG(expdir,moviefile,cbparams.track,'analysis_protocol',analysis_protocol);
+        if cbparams.track.computeBG
+            BG_data=cbtrackGUI_EstimateBG(expdir,moviefile,cbparams.track,'analysis_protocol',analysis_protocol);
+        else
+            [readframe,~,fid,~] = get_readframe_fcn(getappdata(0,'moviefile')); %#ok<*NASGU>
+            im = readframe(1);
+            BG_data.cbestimatebg_version='Not computed';
+            BG_data.cbestimatebg_timestamp=datestr(now,TimestampFormat);
+            BG_data.analysis_protocol=getappdata(0,'analysis_protocol');
+            BG_data.bgmed=255*ones(size(im));
+            if isa(im,'uint8')
+                BG_data.bgmed=uint8(BG_data.bgmed);
+            end
+            if fid > 1,
+                fclose(fid);
+            end
+        end
     end
 else
     expdir=getappdata(0,'expdir');
     moviefile=getappdata(0,'moviefile');
     analysis_protocol=getappdata(0,'analysis_protocol');
-    BG_data=cbtrackGUI_EstimateBG(expdir,moviefile,cbparams.track,'analysis_protocol',analysis_protocol);    
+    if cbparams.track.computeBG
+        BG_data=cbtrackGUI_EstimateBG(expdir,moviefile,cbparams.track,'analysis_protocol',analysis_protocol);
+    else
+        [readframe,~,fid,~] = get_readframe_fcn(getappdata(0,'moviefile')); %#ok<*NASGU>
+        im = readframe(1);
+        BG_data.cbestimatebg_version='Not computed';
+        BG_data.cbestimatebg_timestamp=datestr(now,TimestampFormat);
+        BG_data.analysis_protocol=getappdata(0,'analysis_protocol');
+        BG_data.bgmed=255*ones(size(im));
+        if isa(im,'uint8')
+            BG_data.bgmed=uint8(BG_data.bgmed);
+        end
+        if fid > 1,
+            fclose(fid);
+        end
+    end
 end
 BG_data.isnew=true;
 setappdata(0,'BG',BG_data);

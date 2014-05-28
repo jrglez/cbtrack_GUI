@@ -104,7 +104,7 @@ fcn_slider_Lbgthresh = get(handles.slider_set_Lbgthresh,'Callback');
 hlisten_Lbgthresh=addlistener(handles.slider_set_Lbgthresh,'ContinuousValueChange',fcn_slider_Lbgthresh); %#ok<NASGU>
 
 set(handles.edit_set_minbody,'String',num2str(wing_params.mindbody));
-set(handles.slider_set_minbody,'Value',wing_params.mindbody,'Min',0,'Max',200);
+set(handles.slider_set_minbody,'Value',wing_params.mindbody,'Min',0,'Max',255);
 fcn_slider_minbody = get(handles.slider_set_minbody,'Callback');
 hlisten_minbody=addlistener(handles.slider_set_minbody,'ContinuousValueChange',fcn_slider_minbody); %#ok<NASGU>
 
@@ -235,6 +235,9 @@ if getappdata(0,'singleexp')
         end
     else
         setappdata(0,'P_stage','track1')
+        if cbparams.track.dosave
+           savetemp({'P_stage'})
+        end
         if debugdata.isnew
             WriteParams
         end

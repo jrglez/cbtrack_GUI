@@ -9,7 +9,7 @@ if cbparams.wingtrack.dosetwingtrack || ~isfield(roidata,'nflies_per_roi') || ~g
     [readframe,nframes,fid,~] = get_readframe_fcn(moviefile);
     [visdata.frames,visdata.dbkgd]=...
         compute_dbkgd(readframe,nframes,roi_params.nframessample,...
-        tracking_params.bgmode,BG.bgmed,roidata.inrois_all);
+        tracking_params,BG.bgmed,roidata.inrois_all);
     [nflies_per_roi,~,~,~,trx] = ...
         CountFliesPerROI_GUI(visdata.dbkgd,roidata,roi_params,tracking_params,cbparams.wingtrack.dosetwingtrack);
     if cbparams.wingtrack.dosetwingtrack
@@ -39,6 +39,7 @@ if cbparams.wingtrack.dosetwingtrack || ~isfield(roidata,'nflies_per_roi') || ~g
             mymsgbox(50,190,14,'Helvetica',['Could not close movie file: ',getReport(ME)],'Warning','warn')
         end
     end
+    setappdata(0,'P_stage','wing_params')
     if cbparams.track.dosave
         savetemp({'roidata','visdata'})
     end
@@ -50,6 +51,6 @@ else
     if logfid > 1,
       fclose(logfid);
     end
+    setappdata(0,'P_stage','wing_params')
 end
-setappdata(0,'P_stage','wing_params')
 

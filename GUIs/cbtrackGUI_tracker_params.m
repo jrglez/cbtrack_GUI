@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_tracker_params(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_tracker_params
 
-% Last Modified by GUIDE v2.5 08-Dec-2013 11:21:01
+% Last Modified by GUIDE v2.5 28-May-2014 13:39:55
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -44,14 +44,7 @@ end
 % End initialization code - DO NOT EDIT
 
 
-% --- Executes just before cbtrackGUI_tracker_params is made visible.
 function cbtrackGUI_tracker_params_OpeningFcn(hObject, eventdata, handles, varargin)
-% This function has no output args, see OutputFcn.
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% varargin   command line arguments to cbtrackGUI_tracker_params (see VARARGIN)
-
 % Set parameters in the gui
 temp_Tparams=varargin{1};
 set(handles.checkbox_debug,'Value',temp_Tparams.DEBUG)
@@ -76,91 +69,39 @@ handles.output = hObject;
 guidata(hObject, handles);
 uiwait(handles.figure1);
 
-% UIWAIT makes cbtrackGUI_tracker_params wait for user response (see UIRESUME)
-% uiwait(handles.figure1);
 
-
-% --- Outputs from this function are returned to the command line.
 function varargout = cbtrackGUI_tracker_params_OutputFcn(hObject, eventdata, handles) 
-% varargout  cell array for returning output args (see VARARGOUT);
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Get default command line output from handles structure
 varargout{1} = get(handles.figure1,'UserData');
 if isfield(handles,'figure1') && ishandle(handles.figure1)
     delete(handles.figure1)
 end
 
 
-
-
-
 function edit_duration_initial_Callback(hObject, eventdata, handles) %#ok<*INUSD,*DEFNU>
-% hObject    handle to edit_duration_initial (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit_duration_initial as text
-%        str2double(get(hObject,'String')) returns contents of edit_duration_initial as a double
 
 
-% --- Executes during object creation, after setting all properties.
 function edit_duration_initial_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_duration_initial (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 
 function edit_duration_final_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_duration_final (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit_duration_final as text
-%        str2double(get(hObject,'String')) returns contents of edit_duration_final as a double
 
 
-% --- Executes during object creation, after setting all properties.
 function edit_duration_final_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_duration_final (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
 
 
-% --- Executes on button press in pushbutton_ID_advanced.
-function pushbutton_ID_advanced_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_ID_advanced (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+function pushbutton_advanced_Callback(hObject, eventdata, handles)
+temp_Tparams=get(handles.figure1,'UserData');
+temp_Tparams=advanced_track(temp_Tparams);
+set(handles.figure1,'UserData',temp_Tparams)
 
 
-% --- Executes on button press in pushbutton_orient_advanced.
-function pushbutton_orient_advanced_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_orient_advanced (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --- Executes on button press in checkbox_wings.
 function checkbox_wings_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox_wings (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 dotrackwings=get(hObject,'Value');
 if dotrackwings
     set(handles.radiobutton_ID_wings,'Enable','on')
@@ -170,22 +111,12 @@ else
     uipanel_ID_SelectionChangeFcn(handles.uipanel_ID, handles)
 end
 
-% Hint: get(hObject,'Value') returns toggle state of checkbox_wings
 
-
-% --- Executes on button press in pushbutton_cancel.
 function pushbutton_cancel_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_cancel (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 close(handles.figure1)
 
 
-% --- Executes on button press in pushbutton_accept.
 function pushbutton_accept_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_accept (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 temp_Tparams=get(handles.figure1,'UserData');
 temp_Tparams.DEBUG=get(handles.checkbox_debug, 'Value');
 ID=get(handles.uipanel_ID,'SelectedObject');
@@ -223,28 +154,11 @@ set(handles.figure1,'UserData',temp_Tparams);
 uiresume(handles.figure1)
 
 
-% --- Executes when selected object is changed in uipanel_ID.
 function uipanel_ID_SelectionChangeFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in uipanel_ID 
-% eventdata  structure with the following fields (see UIBUTTONGROUP)
-%	EventName: string 'SelectionChanged' (read only)
-%	OldValue: handle of the previously selected object or empty if none was selected
-%	NewValue: handle of the currently selected object
-% handles    structure with handles and user data (see GUIDATA)
 
-% --- Executes when user attempts to close figure1.
+
 function figure1_CloseRequestFcn(hObject, eventdata, handles)
-% hObject    handle to figure1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: delete(hObject) closes the figure
 uiresume(handles.figure1);
 
-% --- Executes on button press in checkbox_debug.
-function checkbox_debug_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox_debug (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of checkbox_debug
+function checkbox_debug_Callback(hObject, eventdata, handles)

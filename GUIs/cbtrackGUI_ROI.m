@@ -178,7 +178,7 @@ else
             end
             waitfor(mymsgbox(50,190,14,'Helvetica',{['File ', loadfile,' could not be loaded.'];'Trying to detect ROIs automatically'},'Warning','warn','modal'))
             params=cbparams.detect_rois;
-            if isempty(params.roimus)
+            if isempty(params.roimus.x) || isempty(params.roimus.y) || ~cbparams.track.computeBG
                 roidata=AllROI(BG.bgmed);
             else
                 params.roimus=[params.roimus.x',params.roimus.y'];
@@ -188,7 +188,7 @@ else
         end
     else
         params=cbparams.detect_rois;
-        if isempty(params.roimus) || ~cbparams.track.computeBG
+        if isempty(params.roimus.x) || isempty(params.roimus.y) || ~cbparams.track.computeBG
             roidata=AllROI(BG.bgmed);
         else
             params.roimus=[params.roimus.x',params.roimus.y'];
@@ -318,6 +318,7 @@ if isnew
     copyobj(handles.axes_ROI,hfig)
     save2png(imsavename,hfig);
     close(hfig)
+    setappdata(0,'P_stage','params')
     if cbparams.track.dosave
         savetemp({'roidata'})
     end
@@ -330,9 +331,6 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
 end
 
 if cbparams.track.dosettrack
-    if isnew
-        setappdata(0,'P_stage','params')
-    end
     cbtrackGUI_tracker
 else
     if isnew

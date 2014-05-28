@@ -56,10 +56,12 @@ function playfmf_GUI_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 
 %GUI original sieze
+vid=get(handles.figure1,'Userdata');
 vid.old_pos=get(hObject,'position');
+vid.h=struct2array(handles);
+
 set(handles.figure1,'UserData',vid)
 
-set(hObject,'Visible','off')
 
 % set up path
 if isempty(which('myparse')),
@@ -378,17 +380,16 @@ function figure1_ResizeFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 vid=get(handles.figure1,'UserData');
-if ~isfield(vid,'old_pos')
-    vid.old_pos=get(hObject,'position');
-end
-vid.new_pos=get(hObject,'position');
-rescalex=vid.new_pos(3)/vid.old_pos(3);
-rescaley=vid.new_pos(4)/vid.old_pos(4) ;
-h=fieldnames(handles);
-    
-for i=2:length(h)
-    obj_handle=handles.(h{i});
-    if ~strcmp(h{i},'output')
+if isfield(vid,'doresize')
+    if ~isfield(vid,'old_pos')
+        vid.old_pos=get(hObject,'position');
+    end
+    vid.new_pos=get(hObject,'position');
+    rescalex=vid.new_pos(3)/vid.old_pos(3);
+    rescaley=vid.new_pos(4)/vid.old_pos(4) ;
+    h=vid.h;
+    for i=2:length(h)
+        obj_handle=h(i);
         if isprop(obj_handle,'position') && isempty(strfind(h{i},'menu'))        
             old_pos=get(obj_handle,'position');
             if ~isprop(obj_handle,'xTick') %not a figure
@@ -409,8 +410,8 @@ for i=2:length(h)
             set(obj_handle,'FontSize',new_fontsize)
         end
     end
+    vid.old_pos=vid.new_pos;
 end
-vid.old_pos=vid.new_pos;
 set(hObject,'UserData',vid)
 
 

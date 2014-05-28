@@ -175,7 +175,7 @@ else
             [expdirs{1},moviefile{1},ext]=fileparts(fullfilein);
             movie_name=moviefile;
             exps{1}=splitdir(expdirs{1},'last');
-            moviefile=strcat(moviefile{1},ext); moviefile=fullfile(expdirs,moviefile);
+            moviefile=strcat(moviefile{1},ext); moviefile={fullfile(expdirs{1},moviefile)};
             analysis_protocol=splitdir(expdirs{1},'last');
             paramsfile=fullfile(expdirs{1},'params.xml');
             success=true;
@@ -315,7 +315,7 @@ else
                 try
                   fprintf(logfid,'AutomaticChecks_Incoming for experiment %s...\n',experiment);
                   waitbar(i/numel(expdirs),hwait,['Checking incomings for experiment ',experiment]);
-                  [success(i),msgs,iserror] = CourtshipBowlAutomaticChecks_Incoming(expdirs{i},'analysis_protocol',analysis_protocol); %#ok<*NASGU>
+                  [success(i),msgs,iserror] = CourtshipBowlAutomaticChecks_Incoming_GUI(expdirs{i},'analysis_protocol',analysis_protocol); %#ok<*NASGU>
                   if ~success(i),
                     waitfor(mymsgbox(50,190,14,'Helvetica',sprintf('AutomaticChecks_Incoming failed for experiment %s (experiment will be ignored):\n',experiment),'Warning','warn','modal'))
                     fprintf(logfid,'AutomaticChecks_Incoming failed for experiment %s (experiment will be ignored):\n',experiment);

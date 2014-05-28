@@ -1,4 +1,4 @@
-function [success,msgs,iserror] = CourtshipBowlAutomaticChecks_Incoming(expdir,varargin)
+function [success,msgs,iserror] = CourtshipBowlAutomaticChecks_Incoming_GUI(expdir,varargin)
 
 version = '0.1.1';
 timestamp = datestr(now,TimestampFormat);
@@ -27,7 +27,7 @@ try
 
 
 metadatafile = fullfile(expdir,cbparams.dataloc.metadata.filestr);
-moviefile = fullfile(expdir,cbparams.dataloc.movie.filestr);
+moviefile = getappdata(0,'moviefile');
 temperaturefile = fullfile(expdir,cbparams.dataloc.temperature.filestr); %#ok<NASGU>
 outfile = fullfile(out.folder,cbparams.dataloc.automaticchecksincomingresults.filestr);
 
@@ -121,32 +121,29 @@ end
 
 %% check video length
 
-if ~exist(moviefile,'file'),
-  success = false;
-  msgs{end+1} = 'Missing movie file.';
-  iserror(category2idx.missing_capture_files) = true;
-else
-  try
-    headerinfo = ufmf_read_header(fullfile(expdir,cbparams.dataloc.movie.filestr));
-    nframes = headerinfo.nframes;
+try
+headerinfo = all_read_header(moviefile);
+nframes = headerinfo.nframes;
+if headerinfo.fid>0
     fclose(headerinfo.fid);
-    if nframes < check_params.min_ufmf_nframes,
-      success = false;
-      msgs{end+1} = sprintf('Video contains %d < %d frames.',nframes,check_params.min_ufmf_nframes);
-      iserror(category2idx.short_video) = true;
-    end
-  catch ME,
-    success = false;
-    msgs{end+1} = sprintf('Error reading movie filefile: %s',getReport(ME));
-    iserror(category2idx.incoming_checks_other) = true;
-  end
 end
+if nframes < check_params.min_ufmf_nframes,
+  success = false;
+  msgs{end+1} = sprintf('Video contains %d < %d frames.',nframes,check_params.min_ufmf_nframes);
+  iserror(category2idx.short_video) = true;
+end
+catch ME,
+success = false;
+msgs{end+1} = sprintf('Error reading movie filefile: %s',getReport(ME));
+iserror(category2idx.incoming_checks_other) = true;
+end
+
 
 
 %% check for missing files
 
 % movie file
-fn = cbparams.dataloc.movie.filestr;
+fn = moviefile;
 isfile = exist(fullfile(expdir,fn),'file');
 if ~isfile,
   iserror(category2idx.missing_video) = true;

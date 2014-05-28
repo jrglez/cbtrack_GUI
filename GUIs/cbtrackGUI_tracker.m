@@ -93,7 +93,7 @@ P_curr_stage='params';
 P_stage=getappdata(0,'P_stage');
 if find(strcmp(P_stage,P_stages))>find(strcmp(P_curr_stage,P_stages))
     visdata=getappdata(0,'visdata');
-    if isstruct(visdata.trx) && numel(visdata.trx.x)==sum(roidata.nframes_per_roi)
+    if isstruct(visdata.trx) && numel(visdata.trx.x)==sum(roidata.nflies_per_roi)
         trx=struct('x',[],'y',[],'a',[],'b',[],'theta',[]);
         trx=repmat({trx},[roidata.nrois,roi_params.nframessample]);
         f=0;
@@ -258,7 +258,6 @@ cbparams=getappdata(0,'cbparams');
 roi_params=get(handles.edit_set_nframessample,'UserData');
 tracking_params=get(handles.edit_set_bgthresh,'UserData');
 roidata=getappdata(0,'roidata'); 
-isnew=roidata.isnew;
 count=get(handles.pushbutton_set_count,'UserData');
 visdata=get(handles.popupmenu_vis,'UserData');
 
@@ -272,6 +271,7 @@ if any(isnan(count.nflies_per_roi)) || all([cbparams.wingtrack.dosetwingtrack,an
     roidata.nflies_per_roi=count.nflies_per_roi;
     roidata.isnew=3;
 end
+isnew=roidata.isnew;
 
 if isnew
     if isnew==2
@@ -356,6 +356,7 @@ if isnew
       delete(savefile);
     end
     save(savefile,'-struct','roidata');
+    setappdata(0,'P_stage','wing_params')
     if cbparams.track.dosave
         savetemp({'roidata','visdata'})
     end
@@ -368,7 +369,6 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
 end
 
 if cbparams.wingtrack.dosetwingtrack
-    setappdata(0,'P_stage','wing_params')
     cbtrackGUI_WingTracker
 elseif getappdata(0,'singleexp') && cbparams.track.dotrack
     if ~cbparams.track.DEBUG

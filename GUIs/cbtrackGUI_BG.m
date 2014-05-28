@@ -350,6 +350,7 @@ if isnew
       delete(savefile);
     end
     save(savefile,'bgmed','cbestimatebg_version','cbestimatebg_timestamp','params');
+    setappdata(0,'P_stage','ROIs');
     if cbparams.track.dosave
         savetemp({'BG'})
     end
@@ -379,9 +380,6 @@ if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
 end
 
 if cbparams.detect_rois.dosetROI
-    if isnew
-        setappdata(0,'P_stage','ROIs');
-    end
     cbtrackGUI_ROI
 elseif cbparams.track.dosettrack
     if isnew
