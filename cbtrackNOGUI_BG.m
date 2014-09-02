@@ -6,22 +6,23 @@ if getappdata(0,'usefiles') && exist(loadfile,'file')
     try
         BG_data=load(loadfile);
         BG_data.isnew=true;
-        isempty(BG_data.bgmed)
+        isempty(BG_data.bgmed);
         BG_data.params.DEBUG=cbparams.track.DEBUG;
         BG_data.params.dosetBG=cbparams.track.dosetBG;
         BG_data.params.dosettrack=cbparams.track.dosettrack;
         BG_data.params.dotrack=cbparams.track.dotrack;
         BG_data.params.dotrackwings=cbparams.track.dotrackwings;
         cbparams.track=BG_data.params;
-        logfid=open_log('bg_log',cbparams,out.folder);
-        fprintf(logfid,'Loading background data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
+        logfid=open_log('bg_log');
+        s=sprintf('Loading background data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
+        write_log(logfid,getappdata(0,'experiment'),s)
         if logfid > 1,
           fclose(logfid);
         end
         setappdata(0,'cbparams',cbparams);
     catch
-        logfid=open_log('bg_log',cbparams,out.folder);
-        fprintf(logfid,'File %s could not be loaded.',loadfile);
+        logfid=open_log('bg_log');
+        s=sprintf('File %s could not be loaded.',loadfile);
         if logfid > 1,
           fclose(logfid);
         end
@@ -30,7 +31,11 @@ if getappdata(0,'usefiles') && exist(loadfile,'file')
         moviefile=getappdata(0,'moviefile');
         analysis_protocol=getappdata(0,'analysis_protocol');
         if cbparams.track.computeBG
+            setappdata(0,'allow_stop',false);
             BG_data=cbtrackGUI_EstimateBG(expdir,moviefile,cbparams.track,'analysis_protocol',analysis_protocol);
+            if getappdata(0,'iscancel') || getappdata(0,'isskip')
+                return
+            end
         else
             [readframe,~,fid,~] = get_readframe_fcn(getappdata(0,'moviefile')); %#ok<*NASGU>
             im = readframe(1);
@@ -51,7 +56,11 @@ else
     moviefile=getappdata(0,'moviefile');
     analysis_protocol=getappdata(0,'analysis_protocol');
     if cbparams.track.computeBG
+        setappdata(0,'allow_stop',false)
         BG_data=cbtrackGUI_EstimateBG(expdir,moviefile,cbparams.track,'analysis_protocol',analysis_protocol);
+        if getappdata(0,'iscancel') || getappdata(0,'isskip')
+            return
+        end
     else
         [readframe,~,fid,~] = get_readframe_fcn(getappdata(0,'moviefile')); %#ok<*NASGU>
         im = readframe(1);

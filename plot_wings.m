@@ -30,6 +30,7 @@ debugdata.htext = [];
 debugdata.hwing = [];
 debugdata.htrough = [];
 
+hold on
 for dfly = 1:nflies,
   if isempty(trx(dfly).x),
     continue;
@@ -55,6 +56,7 @@ for dfly = 1:nflies,
   s = sprintf('%d',dfly);
   debugdata.htext = [debugdata.htext,text(x,y,s,'HorizontalAlignment','center','VerticalAlignment','middle','Clipping','on','Color','w','Parent',debugdata.haxes)];
 end
+hold off
 
 set(get(debugdata.haxes,'Parent'),'HandleVisibility',hvis)
 if debugdata.play==1

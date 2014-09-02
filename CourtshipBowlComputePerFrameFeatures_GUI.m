@@ -17,22 +17,24 @@ perframe_params = cbparams.compute_perframe_features;
 pffdata.perframe_params = perframe_params;
 pffdata.forcecompute = forcecompute;
 %% log file
-logfid=open_log('perframefeature_log',cbparams,out.folder);
-fprintf(logfid,'\n\n***\nRunning CourtshipBowlComputePerFrameFeatures version %s experiment %s at %s\n',version,experiment,timestamp);
+logfid=open_log('perframefeature_log');
+s=sprintf('\n\n***\nRunning CourtshipBowlComputePerFrameFeatures version %s experiment %s at %s\n',version,experiment,timestamp);
+write_log(logfid,experiment,s)
 pffdata.analysis_protocol = analysis_protocol;
 pffdata.experiment=experiment;
 
 %% load the trx
 
-fprintf(logfid,'Initializing trx...\n');
-
+s=sprintf('Initializing trx...\n');
+write_log(logfid,experiment,s)
 % uses the Trx code in JAABA
 trx = Trx('trxfilestr',cbparams.dataloc.trx.filestr,...
   'perframedir',cbparams.dataloc.perframedir.filestr,...
   'moviefilestr',cbparams.dataloc.movie.filestr,...
   'perframe_params',perframe_params);
 
-fprintf(logfid,'Loading trajectories for %s...\n',experiment);
+s=sprintf('Loading trajectories for %s...\n',experiment);
+write_log(logfid,experiment,s)
 
 trx.AddExpDir(out.folder,'openmovie',false);
 
@@ -43,16 +45,18 @@ if isempty(perframefns),
 end
 nfns = numel(perframefns);
 
-fprintf(logfid,'Computing %d per-frame features:\n',nfns);
-fprintf(logfid,'%s\n',perframefns{:});
+s={sprintf('Computing %d per-frame features:\n',nfns);...
+    sprintf('%s\n',perframefns{:})};
+write_log(logfid,experiment,s)
 
 % clean this data to force computation
 if forcecompute,
   
   tmp = dir(fullfile(out.folder,cbparams.dataloc.perframedir.filestr,'*.mat'));
   if ~isempty(tmp),
-    fprintf(logfid,'Deleting %d per-frame feature mat files:\n',numel(tmp));
-    fprintf(logfid,'%s\n',tmp.name);
+    s={sprintf('Deleting %d per-frame feature mat files:\n',numel(tmp));...
+        sprintf('%s\n',tmp.name)};
+    write_log(logfid,experiment,s)
   end  
   %deletefns = setdiff(perframefns,Trx.TrajectoryFieldNames());
   trx.CleanPerFrameData();
@@ -62,17 +66,24 @@ end
 tmp = dir(fullfile(out.folder,cbparams.dataloc.perframedir.filestr,'*.mat'));
 pffdata.existing_pffs = regexprep({tmp.name},'\.mat','');
 if ~isempty(pffdata.existing_pffs),
-  fprintf(logfid,'%d per-frame features exist already:\n',numel(pffdata.existing_pffs));
-  fprintf(logfid,'%s\n',tmp.name);
+  s={sprintf('%d per-frame features exist already:\n',numel(pffdata.existing_pffs));...
+      sprintf('%s\n',tmp.name)};
+  write_log(logfid,experiment,s)
 end
 
 % compute each
 set(0,'DefaultTextInterpreter','none')
-hwait=waitbar(0,{['Experiment ',experiment];'Computing Perframe Features'},'CreateCancelBtn','setappdata(0,''cancel_hwait'',1)');
+setappdata(0,'allow_stop',false)
+hwait=waitbar(0,{['Experiment ',experiment];'Computing Perframe Features'},'CreateCancelBtn','cancel_waitbar');
 for i = 1:nfns,
+  if getappdata(0,'iscancel') || getappdata(0,'isskip')
+      pffdata=[];
+      return
+  end
   waitbar(i/nfns,hwait,{['Experiment ',experiment];['Computing ',perframefns{i}]});
   fn = perframefns{i};
-  fprintf(logfid,'Computing %s...\n',fn);
+  s=sprintf('Computing %s...\n',fn);
+  write_log(logfid,experiment,s)
   trx.(fn); 
 end
 if ishandle(hwait)
@@ -82,7 +93,8 @@ pffdata.perframefns = perframefns;
 
 %% save to info file
 filename = fullfile(out.folder,cbparams.dataloc.perframefeaturedatamat.filestr);
-fprintf(logfid,'Saving info to mat file %s...\n',filename);
+s=sprintf('Saving info to mat file %s...\n',filename);
+write_log(logfid,experiment,s)
 if exist(filename,'file'),
   delete(filename);
 end
@@ -90,8 +102,8 @@ save(filename,'-struct','pffdata');
 
 %% close log
 
-fprintf(logfid,'Finished running CourtshipBowlComputePerFrameFeatures for experiment %s at %s.\n',experiment,datestr(now,'yyyymmddTHHMMSS'));
-
+s=sprintf('Finished running CourtshipBowlComputePerFrameFeatures for experiment %s at %s.\n',experiment,datestr(now,'yyyymmddTHHMMSS'));
+write_log(logfid,experiment,s)
 if logfid > 1,
   fclose(logfid);
 end

@@ -14,7 +14,8 @@ for i = 1:numel(fns),
   for n = ns,
     filename = obj.GetPerFrameFile(fn,n);
     if exist(filename,'file'),
-      fprintf('Deleting per-frame data file %s\n',filename);
+      s=sprintf('Deleting per-frame data file %s\n',filename);
+      write_log(1,getappdata(0,'experiment'),s)
       delete(filename);
     end
     

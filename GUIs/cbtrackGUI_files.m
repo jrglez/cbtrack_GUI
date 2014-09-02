@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_files(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_files
 
-% Last Modified by GUIDE v2.5 20-May-2014 15:32:53
+% Last Modified by GUIDE v2.5 18-Jun-2014 17:24:10
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -100,34 +100,38 @@ end
 
 
 function pushbutton_accept_Callback(hObject, eventdata, handles)
+setappdata(0,'grayscale',true) % Remove if I want to open color videos
 if get(handles.checkbox_restart,'Value')
     restart=get(handles.edit_restart,'String');
     if exist(restart,'file')
         load(restart);
-        logfid=open_log('track_log',cbparams,out.folder); %#ok<NODEF>
-        fprintf(logfid,'\n\n***\nRestarting experiment %s from %s at %s\n',experiment,restart,datestr(now,'yyyymmddTHHMMSS')); %#ok<NODEF>
-        appdatalist={'cancel_hwait','expdir','experiment','moviefile','out','analysis_protocol','P_stage','cbparams','restart','GUIscale','startframe','endframe','BG','roidata','visdata','pff_all','t','trackdata','debugdata_WT'};
+        appdatalist={'text_log','h_log','expdir','experiment','moviefile','out',...
+    'analysis_protocol','P_stage','cbparams','restart','GUIscale',...
+    'startframe','endframe','BG','roidata','visdata','debugdata_WT',...
+    'pff_all','t','trackdata','iscancel','isskip','allow_stop','isstop','twing'};
         for i=1:length(appdatalist)
             if exist(appdatalist{i},'var')
                 setappdata(0,appdatalist{i},eval(appdatalist{i}))
             end
         end
+        logfid=open_log('main_log'); 
+        s=sprintf('\n\n***\nRestarting experiment %s from %s at %s\n',experiment,restart,datestr(now,'yyyymmddTHHMMSS')); %#ok<NODEF>
+        write_log(logfid,experiment,s)
+        if logfid > 1,
+          fclose(logfid);
+        end
         setappdata(0,'singleexp',true)
+        setappdata(0,'iscancel',false)
+        setappdata(0,'isskip',false)
+        setappdata(0,'isstop',false)
         if ishandle(handles.figure1)
             delete(handles.figure1)
         end
         if strcmp(P_stage,'track2') 
             CourtshipBowlTrack_GUI2
-            iscancel=getappdata(0,'iscancel');
-            if iscancel
-                if iscancel==1
-                    cancelar
-                end
-                return
-            end
         elseif strcmp(P_stage,'track1')
 %             if isfield(roidata,'nflies_per_roi') %#ok<NODEF>
-            if cbparams.track.DEBUG 
+            if cbparams.track.DEBUG %#ok<NODEF>
                 cbtrackGUI_tracker_video
             elseif ~cbparams.track.DEBUG
                 cbtrackGUI_tracker_NOvideo
@@ -144,11 +148,26 @@ if get(handles.checkbox_restart,'Value')
         elseif strcmp(P_stage,'BG')
             cbtrackGUI_BG
         end 
+        if getappdata(0,'iscancel')
+            cancelar
+            return
+        elseif getappdata(0,'isskip')
+            clear_all
+            return
+        end
            % Reuslts movie 
         if cbparams.results_movie.dovideo
             try
                 CourtshipBowlMakeResultsMovie_GUI
-            catch
+            catch ME
+                experiment=getappdata(0,'experiment');
+                experiment(experiment=='_')=' ';
+                logfid2=open_log('resultsmovie_log');
+                s=sprintf('Results movie could not be created for experiment %s: %s\n',getappdata(0,'experiment'),ME.message);
+                write_log(logfid2,experiment,s)
+                if logfid2>1
+                    flcose(logfid2)
+                end
                 waitfor(mymsgbox(50,190,14,'Helvetica',['Results movie could not be created for the following experiments:',sprintf('\n\t- %s',getappdata(0,'experiment'))],'Warning','warn','modal'))
             end
         end
@@ -157,7 +176,22 @@ if get(handles.checkbox_restart,'Value')
         if cbparams.compute_perframe_features.dopff
             try
                 [~] = CourtshipBowlComputePerFrameFeatures_GUI(1);
-            catch
+                if getappdata(0,'iscancel')
+                    cancelar
+                    return
+                elseif getappdata(0,'isskip')
+                    clear_all
+                    return
+                end
+            catch ME
+                experiment=getappdata(0,'experiment');
+                experiment(experiment=='_')=' ';
+                logfid2=open_log('perframefeature_log');
+                s=sprintf('Perframe features could not be computed for the following experiment %s: %s\n',getappdata(0,'experiment'),ME.message);
+                write_log(logfid2,experiment,s)
+                if logfid2>1
+                    flcose(logfid2)
+                end
                 waitfor(mymsgbox(50,190,14,'Helvetica',['Perframe features could not be computed for the following experiments:',sprintf('\n\t- %s',getappdata(0,'experiment'))],'Warning','warn','modal'))
             end
         end
@@ -270,6 +304,7 @@ else
         if ~get(handles.checkbox_log,'Value')
             cbparams.dataloc.ufmf_log.filestr=[];
             cbparams.dataloc.fbdc_log.filestr=[];
+            cbparams.dataloc.main_log.filestr=[];
             cbparams.dataloc.automaticchecks_incoming_log.filestr=[];
             cbparams.dataloc.bg_log.filestr=[];
             cbparams.dataloc.roi_log.filestr=[];
@@ -277,6 +312,9 @@ else
             cbparams.dataloc.perframefeature_log.filestr=[];
             cbparams.dataloc.resultsmovie_log.filestr=[];
             cbparams.dataloc.automaticchecks_complete_log.filestr=[];
+            setappdata(0,'text_log',false)
+        else
+            setappdata(0,'text_log',true)
         end
         cbparams.track.dosave=get(handles.checkbox_savetemp,'Value');
         cbparams.track.dosetBG=get(handles.checkbox_dosetBG,'Value');
@@ -289,7 +327,7 @@ else
         cbparams.track.dotrackwings=get(handles.checkbox_dotrackwings,'Value');
         cbparams.compute_perframe_features.dopff=get(handles.checkbox_dopff,'Value');
         cbparams.results_movie.dovideo=get(handles.checkbox_domovie,'Value');
-
+                
         % Autmatic check incomings for all experiments
         out=cell(numel(expdirs),1);
         hwait=waitbar(0,'Checking incomings');
@@ -311,28 +349,37 @@ else
             setappdata(0,'P_stage','BG')
 
             if get(handles.checkbox_doAcI,'Value')
-                logfid=open_log('automaticchecks_incoming_log',cbparams,out{i}.folder);
+                logfid=open_log('automaticchecks_incoming_log');
                 try
-                  fprintf(logfid,'AutomaticChecks_Incoming for experiment %s...\n',experiment);
+                  s=sprintf('AutomaticChecks_Incoming for experiment %s...\n',experiment);
+                  write_log(logfid,experiment,s)
                   waitbar(i/numel(expdirs),hwait,['Checking incomings for experiment ',experiment]);
                   [success(i),msgs,iserror] = CourtshipBowlAutomaticChecks_Incoming_GUI(expdirs{i},'analysis_protocol',analysis_protocol); %#ok<*NASGU>
                   if ~success(i),
                     waitfor(mymsgbox(50,190,14,'Helvetica',sprintf('AutomaticChecks_Incoming failed for experiment %s (experiment will be ignored):\n',experiment),'Warning','warn','modal'))
-                    fprintf(logfid,'AutomaticChecks_Incoming failed for experiment %s (experiment will be ignored):\n',experiment);
-                    fprintf(logfid,'%s\n',msgs{:});
+                    s={sprintf('AutomaticChecks_Incoming failed for experiment %s (experiment will be ignored):\n',experiment);...
+                        sprintf('%s\n',msgs{:})};
+                    write_log(logfid,experiment,s)
+                    if logfid>1
+                      flcose(logfid)
+                    end
                     continue;
                   end      
                 catch ME,
                   success(i)=false;
                   msgs = {sprintf('Error running AutomaticChecks_Incoming:\n%s',getReport(ME))};
                   waitfor(mymsgbox(50,190,14,'Helvetica',sprintf('AutomaticChecks_Incoming failed for experiment %s (experiment will be ignored):\n',experiment),'Warning','warn','modal'))
-                  fprintf(logfid,'AutomaticChecks_Incoming failed for experiment %s (experiment will be ignored):\n',experiment);
-                  fprintf(logfid,'%s\n',msgs{:});
+                  s={sprintf('AutomaticChecks_Incoming failed for experiment %s (experiment will be ignored):\n',experiment);...
+                  sprintf('%s\n',msgs{:})};
+                  write_log(logfid,experiment,s)
+                  if logfid>1
+                      flcose(logfid)
+                  end
                   continue;
                 end
             end
             if cbparams.track.dosave
-                savetemp({'out','expdir','moviefile','experiment','analysis_protocol','P_stage'});
+                savetemp({'text_log','out','expdir','moviefile','experiment','analysis_protocol','P_stage'});
             end
         end
         delete(hwait);
@@ -344,6 +391,15 @@ else
         success(~success)=[];
 
         % Compute background and ROIs for all the experiments
+        if ~getappdata(0,'text_log')
+            logfid=open_log('main_log');
+            s=sprintf('\n\n***\n*** SETUP STARTED AT %s ***\n',datestr(now,'yyyymmddTHHMMSS')); 
+            write_log(logfid,'',s)
+            if logfid > 1,
+              fclose(logfid);
+            end
+        end
+        
         BG=cell(numel(expdirs),1);
         roidata=cell(numel(expdirs),1);
         expparams=cell(numel(expdirs),1);
@@ -361,26 +417,71 @@ else
             setappdata(0,'P_stage','BG');
             setappdata(0,'restart','');
             setappdata(0,'usefiles',get(handles.checkbox_usefiles,'Value'));
+            setappdata(0,'iscancel',false);
+            setappdata(0,'isskip',false);
+            setappdata(0,'isstop',false);
 
             try
                 if cbparams.track.dosetBG
                     cbtrackGUI_BG;
                 elseif cbparams.detect_rois.dosetROI
                     cbtrackNOGUI_BG
+                    if getappdata(0,'iscancel')
+                        cancelar
+                        return
+                    elseif getappdata(0,'isskip')
+                        success(i)=false;
+                        continue
+                    end
                     cbtrackGUI_ROI
                 elseif cbparams.track.dosettrack
                     cbtrackNOGUI_BG
+                    if getappdata(0,'iscancel')
+                        cancelar
+                        return
+                    elseif getappdata(0,'isskip')
+                        success(i)=false;
+                        continue
+                    end
                     cbtrackNOGUI_ROI
                     cbtrackGUI_tracker
                 elseif cbparams.wingtrack.dosetwingtrack
                     cbtrackNOGUI_BG
+                    if getappdata(0,'iscancel')
+                        cancelar
+                        return
+                    elseif getappdata(0,'isskip')
+                        success(i)=false;
+                        continue
+                    end
                     cbtrackNOGUI_ROI
                     cbtrackNOGUI_tracker
+                    if getappdata(0,'iscancel')
+                        cancelar
+                        return
+                    elseif getappdata(0,'isskip')
+                        success(i)=false;
+                        continue
+                    end
                     cbtrackGUI_WingTracker
                 else
                     cbtrackNOGUI_BG
+                    if getappdata(0,'iscancel')
+                        cancelar
+                        return
+                    elseif getappdata(0,'isskip')
+                        success(i)=false;
+                        continue
+                    end
                     cbtrackNOGUI_ROI
                     cbtrackNOGUI_tracker
+                    if getappdata(0,'iscancel')
+                        cancelar
+                        return
+                    elseif getappdata(0,'isskip')
+                        success(i)=false;
+                        continue
+                    end
                     WriteParams
                     if cbparams.track.DEBUG && cbparams.track.dotrack && getappdata(0,'singleexp')
                         cbtrackGUI_tracker_video
@@ -391,17 +492,70 @@ else
                 if getappdata(0,'iscancel')
                     cancelar
                     return
+                elseif getappdata(0,'isskip')
+                    success(i)=false;
+                    continue
                 end
 
                 BG{i}=getappdata(0,'BG');
                 expparams{i}=getappdata(0,'cbparams');
                 roidata{i}=getappdata(0,'roidata');
             catch ME
+                stage_error=getappdata(0,'P_stage');
+                switch stage_error
+                    case 'BG'
+                        logfid2=open_log('bg_log');
+                        s=sprintf('Backgroud computation failed for experiment %s: %s\n',experiment,ME.message);
+                        write_log(logfid2,experiment,s)
+                        if logfid2>1
+                            flcose(logfid2)
+                        end
+                        waitfor(mymsgbox(50,190,14,'Helvetica',['Backgroud computation failed for ', experiment,' and will be ommited'],'Warning','warn','modal'))
+                    case 'ROIs'
+                        logfid2=open_log('roi_log');
+                        s=sprintf('ROI detection failed for experiment %s: %s\n',experiment,ME.message);
+                        write_log(logfid2,experiment,s)
+                        if logfid2>1
+                            flcose(logfid2)
+                        end
+                        waitfor(mymsgbox(50,190,14,'Helvetica',['ROI detection failed for ', experiment,' and will be ommited'],'Warning','warn','modal'))                        
+                    case 'params'
+                        logfid2=open_log('track_log');
+                        s=sprintf('Body tracking parameters setup failed for experiment %s: %s\n',experiment,ME.message);
+                        write_log(logfid2,experiment,s)
+                        if logfid2>1
+                            flcose(logfid2)
+                        end
+                        waitfor(mymsgbox(50,190,14,'Helvetica',['Body tracking parameters setup failed for ', experiment,' and will be ommited'],'Warning','warn','modal'))
+                    case 'wings_params'
+                        logfid2=open_log('track_log');
+                        s=sprintf('Wing tracking parameters setup failed for experiment %s: %s\n',experiment,ME.message);
+                        write_log(logfid2,experiment,s)
+                        if logfid2>1
+                            flcose(logfid2)
+                        end
+                        waitfor(mymsgbox(50,190,14,'Helvetica',['Wing tracking parameters setup failed for ', experiment,' and will be ommited'],'Warning','warn','modal'))
+                    case 'track1'
+                        logfid2=open_log('track_log');
+                        s=sprintf('Body tracking failed for experiment %s: %s\n',experiment,ME.message);
+                        write_log(logfid2,experiment,s)
+                        if logfid2>1
+                            flcose(logfid2)
+                        end
+                        waitfor(mymsgbox(50,190,14,'Helvetica',['Body tracking failed for ', experiment,' and will be ommited'],'Warning','warn','modal'))
+                    case 'track2'
+                        logfid2=open_log('track_log');
+                        s=sprintf('Wing Tracking failed for experiment %s: %s\n',experiment,ME.message);
+                        write_log(logfid2,experiment,s)
+                        if logfid2>1
+                            flcose(logfid2)
+                        end
+                        waitfor(mymsgbox(50,190,14,'Helvetica',['Wing tracking failed for ', experiment,' and will be ommited'],'Warning','warn','modal'))
+                end
                 success(i)=false;
-                waitfor(mymsgbox(50,190,14,'Helvetica',['The setup failed for ', experiment,' and will be ommited'],'Warning','warn','modal'))
                 continue
             end
-            if ~getappdata(0,'singleexp')
+            if ~getappdata(0,'singleexp') || ~cbparams.track.dotrack
                 WriteParams
             end
         end
@@ -410,17 +564,30 @@ else
         exps(~success)=[];
         expdirs(~success)=[];
         movie_name(~success)=[];
+        out(~success)=[];
         expparams(~success)=[];
         BG(~success)=[];
         roidata(~success)=[];
         success(~success)=[];
 
         if isempty(success)
+            mymsgbox(50,190,14,'Helvetica','Tracking Done','Done','help','modal')
             return
         end    
 
         % Track
+        if ~getappdata(0,'text_log')
+            logfid=open_log('main_log');
+            s=sprintf('\n\n***\n*** TRACK STARTED AT %s ***\n',datestr(now,'yyyymmddTHHMMSS'));
+            write_log(logfid,'',s)
+            if logfid > 1,
+              fclose(logfid);
+            end
+        end
+        
         trackdata=cell(numel(expdirs),1);
+        stage_error=cell(numel(expdirs),1);
+        error_msg=cell(numel(expdirs),1);
         if cbparams.track.dotrack && ~getappdata(0,'singleexp')
             for i=1:numel(expdirs)
                 experiment=exps{i};
@@ -435,12 +602,22 @@ else
                 setappdata(0,'BG',BG{i});
                 setappdata(0,'roidata',roidata{i});
                 setappdata(0,'P_stage','track1');
+                setappdata(0,'iscancel',false);
+                setappdata(0,'isskip',false);
+                setappdata(0,'isstop',false);
 
                 try
                     if expparams{i}.track.DEBUG
                         cbtrackGUI_tracker_video
                     else
                         cbtrackGUI_tracker_NOvideo
+                    end
+                    if getappdata(0,'iscancel')
+                        cancelar
+                        return
+                    elseif getappdata(0,'isskip')
+                        success(i)=false;
+                        continue
                     end
 
                     trackdata{i}=getappdata(0,'trackdata');
@@ -458,6 +635,8 @@ else
                     end
 
                 catch ME
+                    stage_error{i}=getappdata(0,'P_stage');
+                    error_msg{i}=ME.message;
                     success(i)=false;
                     continue
                 end  
@@ -465,75 +644,164 @@ else
 
             omitedexp=exps(~success);
             omitedexp_all=[omitedexp_all,omitedexp];
+            if ~isempty(omitedexp)
+                idomited=find(~success);
+                for k=1:numel(omitedexp)
+                    setappdata(0,'out',out{idomited(k)});
+                    setappdata(0,'cbparams',expparams{idomited(k)});
+                    experiment=exps{idomited(k)};
+                    experiment(experiment=='_')=' ';
+                    logfid2=open_log('track_log');
+                    switch stage_error{idomited(k)}
+                        case 'track1'
+                            s=sprintf('Body tracking failed for experiment %s: %s\n',experiment,error_msg{idomited(k)});
+                        case 'track2'
+                            s=sprintf('Wing tracking failed for experiment %s: %s\n',experiment,error_msg{idomited(k)});
+                    end
+                    write_log(logfid2,experiment,s)
+                    if logfid2>1
+                        flcose(logfid2)
+                    end
+                end
+                mymsgbox(50,190,14,'Helvetica',['Tracking failed or was skipped for the following experiments:',sprintf('\n\t- %s',omitedexp{:})],'Warning','warn');
+            end
             exps(~success)=[];
             expdirs(~success)=[];
             movie_name(~success)=[];
+            out(~success)=[];
+            expparams(~success)=[];
             success(~success)=[];
-            if ~isempty(omitedexp)
-                waitfor(mymsgbox(50,190,14,'Helvetica',['Tracking failed for the following experiments:',sprintf('\n\t- %s',omitedexp{:})],'Warning','warn','modal'))
-            end
         else
             try
                 trackdata{1}=getappdata(0,'trackdata');
-            catch
+            catch ME
                 success=false;
-                waitfor(mymsgbox(50,190,14,'Helvetica',['An error curres while saving data from following experiments:',sprintf('\n\t- %s',experiment)],'Warning','warn','modal'))
+                mymsgbox(50,190,14,'Helvetica',['An error occurred while saving data from following experiments:',sprintf('\n\t- %s',experiment)],'Warning','warn');
             end
         end
 
         % Reuslts movie 
         if cbparams.results_movie.dovideo
+            if ~getappdata(0,'text_log')
+                logfid=open_log('main_log');
+                s=sprintf('\n\n***\n*** RESULTS MOIVIES STARTED AT %s ***\n',datestr(now,'yyyymmddTHHMMSS'));
+                write_log(logfid,'',s)
+                if logfid > 1,
+                  fclose(logfid);
+                end
+            end
+            
+            stage_error=cell(numel(expdirs),1);
+            error_msg=cell(numel(expdirs),1);
             for i=1:numel(expdirs)
                 try
+                    experiment=exps{i};
+                    experiment(experiment=='_')=' ';
                     setappdata(0,'expdir',expdirs{i});
                     setappdata(0,'experiment',experiment);
                     setappdata(0,'out',out{i});
                     setappdata(0,'analysis_protocol',analysis_protocol);
-                    setappdata(0,'cbparams',expparams{i}) ;   
+                    setappdata(0,'cbparams',expparams{i});
                     CourtshipBowlMakeResultsMovie_GUI
-                catch
+                catch ME
+                    stage_error{i}=getappdata(0,'P_stage');
+                    error_msg{i}=ME.message;
                     success(i)=false;
                     continue
                 end
             end
             omitedexp=exps(~success);
             omitedexp_all=[omitedexp_all,omitedexp];
+            if ~isempty(omitedexp)
+                idomited=find(~success);
+                for k=1:numel(omitedexp)
+                    setappdata(0,'out',out{idomited(k)});
+                    setappdata(0,'cbparams',expparams{idomited(k)});
+                    experiment=exps{idomited(k)};
+                    experiment(experiment=='_')=' ';
+                    logfid2=open_log('resultsmovie_log');
+                    s=sprintf('Results movie could not be created for experiment %s: %s\n',experiment,error_msg{idomited(k)});
+                    writelog(logfid2,experiment,s)
+                    if logfid2>1
+                        flcose(logfid2)
+                    end
+                end
+                mymsgbox(50,190,14,'Helvetica',['Results movie could not be created for the following experiments:',sprintf('\n\t- %s',omitedexp{:})],'Warning','warn')
+            end
             exps(~success)=[];
             expdirs(~success)=[];
             movie_name(~success)=[];
+            out(~success)=[];
+            expparams(~success)=[];
             success(~success)=[];
-            if ~isempty(omitedexp)
-                waitfor(mymsgbox(50,190,14,'Helvetica',['Results movie could not be created for the following experiments:',sprintf('\n\t- %s',omitedexp{:})],'Warning','warn','modal'))
-            end
         end
 
         %PFF
         if cbparams.compute_perframe_features.dopff
+            if ~getappdata(0,'text_log')
+                logfid=open_log('main_log');
+                s=sprintf('\n\n***\n*** PFF COMPUTATION STARTED AT %s ***\n',datestr(now,'yyyymmddTHHMMSS'));
+                write_log(logfid,'',s)
+                if logfid > 1,
+                  fclose(logfid);
+                end
+            end
+            
+            stage_error=cell(numel(expdirs),1);
+            error_msg=cell(numel(expdirs),1);
             for i=1:numel(expdirs)
                 try
+                    experiment=exps{i};
+                    experiment(experiment=='_')=' ';
                     setappdata(0,'experiment',experiment);
                     setappdata(0,'out',out{i});
                     setappdata(0,'analysis_protocol',analysis_protocol);
                     setappdata(0,'cbparams',expparams{i}) ;   
                     [~] = CourtshipBowlComputePerFrameFeatures_GUI(1);
-                catch
+                    if getappdata(0,'iscancel')
+                        cancelar
+                        return
+                    elseif getappdata(0,'isskip')
+                        success(i)=false;
+                        continue
+                    end
+                catch ME
+                    stage_error{i}=getappdata(0,'P_stage');
+                    error_msg{i}=ME.message;
                     success(i)=false;
                     continue
                 end
             end
             omitedexp=exps(~success);
             omitedexp_all=[omitedexp_all,omitedexp];
+            if ~isempty(omitedexp)
+                idomited=find(~success);
+                for k=1:numel(omitedexp)
+                    setappdata(0,'out',out{idomited(k)});
+                    setappdata(0,'cbparams',expparams{idomited(k)});
+                    experiment=exps{idomited(k)};
+                    experiment(experiment=='_')=' ';
+                    logfid2=open_log('perframefeature_log');
+                    s=sprintf('Perframe features could not be computed for experiment %s: %s\n',experiment,error_msg{idomited(k)});
+                    write_log(logfid2,experiment,s)
+                    if logfid2>1
+                        flcose(logfid2)
+                    end
+                end
+                mymsgbox(50,190,14,'Helvetica',['Perframe features could not be computed for the following experiments:',sprintf('\n\t- %s',omitedexp{:})],'Warning','warn');
+            end
             exps(~success)=[];
             expdirs(~success)=[];
             movie_name(~success)=[];
+            out(~success)=[];
+            expparams(~success)=[];
             success(~success)=[];
-            if ~isempty(omitedexp)
-                waitfor(mymsgbox(50,190,14,'Helvetica',['Perframe features could not be computed for the following experiments:',sprintf('\n\t- %s',omitedexp{:})],'Warning','warn','modal'))
-            end
         end
     end
 end 
-cancelar
+clear_all
+mymsgbox(50,190,14,'Helvetica','Tracking Done','Done','help','modal')
+% cancelar
 
 function pushbutton_cancel_Callback(hObject, eventdata, handles)
 close(handles.figure1)
@@ -655,3 +923,6 @@ function checkbox_dopff_Callback(hObject, eventdata, handles)
 
 
 function checkbox_savetemp_Callback(hObject, eventdata, handles)
+
+
+function checkbox_log_Callback(hObject, eventdata, handles)

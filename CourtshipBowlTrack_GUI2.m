@@ -14,7 +14,7 @@ params=cbparams.track;
 metadatafile = fullfile(expdir,cbparams.dataloc.metadata.filestr);
 metadata = ReadMetadataFile(metadatafile);
 
-logfid=open_log('bg_log',cbparams,out.folder);
+logfid=open_log('track_log');
 
 SetBackgroundTypes;
 if ischar(params.bgmode) && isfield(bgtypes,params.bgmode),
@@ -25,7 +25,6 @@ restart = getappdata(0,'restart');
 if ~isfield(params,'DEBUG'),
   params.DEBUG = 0;
 end
-params.dotrackwings=1;
 if params.dotrackwings || strcmp(params.assignidsby,'wingsize'),
   params.wingtracking_params = cbparams.wingtrack;
 end
@@ -38,10 +37,10 @@ bgmed=BG.bgmed;
 roidata=getappdata(0,'roidata');
 
 %% Secondary tracking
-fprintf(logfid,'Starting secondary tracking at %s for experiment %s.\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
+s=sprintf('Starting secondary tracking at %s for experiment %s.\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
+write_log(logfid,experiment,s)
 trackdata=TrackTwoFlies_GUI_debug2(moviefile,bgmed,roidata,params,'restart',restart);
-iscancel=getappdata(0,'iscancel');
-if iscancel
+if getappdata(0,'iscancel') || getappdata(0,'isskip')
     return
 end
 trackdata.courtshipbowltrack_version = version;
@@ -54,7 +53,8 @@ timestamps = trackdata.timestamps; %#ok<NASGU>
 
 % trx
 outfilename = fullfile(out.folder,cbparams.dataloc.trx.filestr);
-fprintf(logfid,'Saving final traking results to file %s...\n',outfilename);
+s=sprintf('Saving final traking results to file %s...\n',outfilename);
+write_log(logfid,experiment,s)
 if exist(outfilename,'file'),
   delete(outfilename);
 end
@@ -62,20 +62,23 @@ save(outfilename,'trx','timestamps');
 
 % perframe data
 perframedir = fullfile(out.folder,cbparams.dataloc.perframedir.filestr);
-fprintf(logfid,'Saving a bit of per-frame data to directory %s...\n',perframedir);
-if ~exist(perframedir,'dir'),
-  mkdir(perframedir);
-end
-perframefns = fieldnames(trackdata.perframedata);
-for i = 1:numel(perframefns),
-  perframefn = perframefns{i};
-  filename = fullfile(perframedir,[perframefn,'.mat']);
-  if exist(filename,'file'),
-    delete(filename);
-  end
-  data = trackdata.perframedata.(perframefn); %#ok<NASGU>
-  units = trackdata.perframeunits.(perframefn); %#ok<NASGU>
-  save(filename,'data','units');
+if isfield(trackdata,'perframedata')
+    s=sprintf('Saving a bit of per-frame data to directory %s...\n',perframedir);
+    write_log(logfid,experiment,s)
+    if ~exist(perframedir,'dir'),
+      mkdir(perframedir);
+    end
+    perframefns = fieldnames(trackdata.perframedata);
+    for i = 1:numel(perframefns),
+      perframefn = perframefns{i};
+      filename = fullfile(perframedir,[perframefn,'.mat']);
+      if exist(filename,'file'),
+        delete(filename);
+      end
+      data = trackdata.perframedata.(perframefn); %#ok<NASGU>
+      units = trackdata.perframeunits.(perframefn); %#ok<NASGU>
+      save(filename,'data','units');
+    end
 end
 % also save sex
 perframefns = {'sex','x_mm','y_mm','a_mm','b_mm','theta_mm','x','y','a','b','theta','timestamps','dt'};
@@ -93,7 +96,7 @@ for i = 1:numel(perframefns),
       data{fly} = repmat(gender,[1,trackdata.trx(fly).nframes]);
     end
     units = parseunits('unit'); %#ok<NASGU>
-  elseif ~isfield(trackdata.trx,perframefn) || ~isfield(trackdata.perframeunits,perframefn),
+  elseif ~isfield(trackdata.trx,perframefn) || ~isfield(trackdata,'perframeunits') || ~isfield(trackdata.perframeunits,perframefn),
     continue;
   else
     data = {trackdata.trx.(perframefn)}; %#ok<NASGU>
@@ -113,7 +116,8 @@ save(outfilename,'-struct','trackdata');
 setappdata(0,'trackdata',trackdata)
 %% close log file
 
-fprintf(logfid,'Finished secondary tracking at %s for experiment %s.\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
+s=sprintf('Finished secondary tracking at %s for experiment %s.\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
+write_log(logfid,experiment,s)
 if logfid > 1,
   fclose(logfid);
 end

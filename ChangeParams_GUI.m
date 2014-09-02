@@ -22,6 +22,12 @@ isfore = dbkgd >= tracking_params.bgthresh;
 isfore_in=isfore; isfore_in(~roidata.inrois_all)=1;
 
 for j = 1:nrois,
+    if any(roidata.ignore==j),
+        cc_ind{j} = [];
+        flies_ind{j} = [];
+        trx{j} = [];
+        continue;
+    end
     roibb = roidata.roibbs(j,:);
     isforebb = isfore(roibb(3):roibb(4),roibb(1):roibb(2));
     isforebb(~roidata.inrois{j}) = false;

@@ -28,5 +28,8 @@ roidata=getappdata(0,'roidata');
 %% main function
 
 trackdata = TrackTwoFlies_GUI_debug(handles,moviefile,bgmed,roidata,params,'restart',restart);
+if getappdata(0,'iscancel') || getappdata(0,'isskip')
+  return
+end
 setappdata(0,'trackdata',trackdata)
 

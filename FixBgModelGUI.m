@@ -45,6 +45,14 @@ while true,
   waitfor(hplayfmf,'Visible','off')
   startframe=getappdata(0,'startframe');
   endframe=getappdata(0,'endframe');
+  if startframe==0 && endframe==0
+      bgfixdata=[];
+      if ishandle(hroi(end)),
+        delete(hroi(end));
+        hroi(end) = []; %#ok<NASGU>
+      end
+      return
+  end
   hwait=waitbar(0,'Recomputing background model');
   inroi = inpolygon(XGRID,YGRID,x,y);
   if endframe - startframe + 1 <= tracking_params.bg_nframes,

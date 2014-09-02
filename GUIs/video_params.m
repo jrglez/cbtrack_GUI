@@ -22,7 +22,7 @@ function varargout = video_params(varargin)
 
 % Edit the above text to modify the response to help video_params
 
-% Last Modified by GUIDE v2.5 20-May-2014 15:36:19
+% Last Modified by GUIDE v2.5 16-Jun-2014 16:45:56
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -55,20 +55,38 @@ ymar2=100;
 
 moviefile=getappdata(0,'moviefile');
 cbparams=getappdata(0,'cbparams');
-visdata=getappdata(0,'visdata');
 BG=getappdata(0,'BG');
 roidata=getappdata(0,'roidata');
 
+%%% Detect flies
 f=cbparams.track.firstframetrack;
-trx=visdata.trx(:,f);
+[readframe] = get_readframe_fcn(moviefile);
+[im,dbkgd]=compute_dbkgd(readframe,1,1,cbparams.track.bgmode,BG.bgmed,roidata.inrois_all);
+im=im{1};
+dbkgd=dbkgd{1};
+[~,~,~,trx] = ChangeParams_GUI(readframe(1),BG.bgmed,dbkgd,roidata,cbparams.detect_rois.nflies_per_roi,cbparams.detect_rois,cbparams.track);
+trx2=struct('x',[],'y',[],'a',[],'b',[],'theta',[]);
+trx2=repmat(trx2,[sum(cbparams.detect_rois.nflies_per_roi),1]);
+k=1;
+for iroi = 1:size(trx,1),
+    for fly=1:cbparams.detect_rois.nflies_per_roi(iroi)
+        trx2(k).x = trx{iroi}.x(fly);
+        trx2(k).y = trx{iroi}.y(fly);
+        trx2(k).a = trx{iroi}.a(fly)/2;
+        trx2(k).b = trx{iroi}.b(fly)/2;
+        trx2(k).theta = trx{iroi}.theta(fly);           
+        k=k+1;
+    end
+end
+trx=trx2;
 nflies=length(trx);
+
+%%% Setup video
 scr_size=get(0,'ScreenSize');
 scrw=scr_size(3);
 scrh=scr_size(4);
 maxaxesw=scrw-2*xmar0-xmar1-xmar2;
 maxaxesh=scrh-2*ymar0-ymar1-ymar2;
-[readframe] = get_readframe_fcn(moviefile);
-im=uint8(readframe(f));
 [imh,imw]=size(im);
 
 movie_params=cbparams.results_movie;
@@ -112,6 +130,7 @@ guiw=axesw+xmar1+xmar2;
 guih=maxaxesh+ymar1+ymar2;
 guix=xmar0;
 guiy=ymar0;
+vidscale.position=[guix,guiy,guiw,guih];
 
 set(hObject,'Units','pixels','Position',[guix,guiy,guiw,guih])
 handles.axes_vid=axes('Parent',hObject,'Units','pixels');
@@ -187,7 +206,7 @@ for i = 1:nzoomr,
                 handles.hzoomwing(i,j) = plot(xwing,ywing,'.-','color',colors(fly,:));
             end
             handles.hzoom(i,j) = drawflyo(x,y,theta,a,b);
-            handles.htextzoom(i,j) = text((x0(j)+x1(j))/2,.80*y0(i)+.20*y1(i),s,...
+            handles.htextzoom(i,j) = text((x0(j)+x1(j))/2,.95*y0(i)+.05*y1(i),s,...
                 'color',colors(fly,:),'horizontalalignment','center',...
                 'verticalalignment','bottom','fontweight','bold','Clipping','on');
             set(handles.hzoom(i,j),'color',colors(fly,:));
@@ -216,7 +235,7 @@ for fly = 1:nflies,
 end
 
 
-% Create uiobjects
+%%% Create uiobjects
 handles.text_resc=uicontrol('Style','text','Units','Pixels',...
     'Position',[xmar1,guih-ymar2,axesw,ymar2/2],'FontUnits','Pixels',...
     'FontSize',18,'HorizontalAlignment','center');
@@ -255,47 +274,51 @@ uiset_name={'checkbox_dovideo';'text_FPS';'edit_FPS';'text_nzoom';'text_nr';...
     'edit_nr';'text_nc';'edit_nc';'text_zoom';'slider_zoom';'edit_zoom';...
     'text_tailL';'edit_tailL';'text_nframes';'text_nframesI';...
     'edit_nframesI';'text_nframesM';'edit_nframesM';'text_nframesF';...
-    'edit_nframesF';'text_size';'text_vidw';'edit_vidw';'text_vidh';'edit_vidh'};
+    'edit_nframesF';'text_size';'text_vidw';'edit_vidw';'text_vidh';'edit_vidh';...
+    'manual';'manual_start';'manual_back';'manual_cancel'};
 uiset_style={'checkbox';'text';'edit';'text';'text';'edit';'text';'edit';...
     'text';'slider';'edit';'text';'edit';'text';'text';'edit';'text';...
-    'edit';'text';'edit';'text';'text';'edit';'text';'edit'};
+    'edit';'text';'edit';'text';'text';'edit';'text';'edit';...
+    'text';'pushbutton';'pushbutton';'pushbutton'};
 uiset_string={'Make resutls video';'Frames per second';num2str(movie_params.fps);...
     'Number of zoomed flies';'Rows';num2str(nzoomr);...
     'Columns';num2str(nzoomc);'Zoom';'';num2str(scalefactor,'%.2f');...
     'Tail lenght';num2str(movie_params.taillength);...
     'Number of frames';'Initial';num2str(movie_params.nframes(1));...
     'Middle';num2str(movie_params.nframes(2));'End';num2str(movie_params.nframes(3));...
-    'Video size';'Width';num2str(set_vidw);'Height';num2str(set_vidh)};
+    'Video size';'Width';num2str(set_vidw);'Height';num2str(set_vidh);...
+    'Manual fly selection';'Start';'Back';'Cancel'};
 uiset_value={movie_params.dovideo;[];[];[];[];[];[];[];[];scalefactor;[];[];...
-    [];[];[];[];[];[];[];[];[];[];[];[];[]};
-uiset_x=[15;25;175;25;30;55;130;155;25;25;175;25;175;25;30;30;95;95;160;160;25;30;55;130;155];
+    [];[];[];[];[];[];[];[];[];[];[];[];[];[];[];[];[]};
+uiset_x=[15;25;175;25;30;55;130;155;25;25;175;25;175;25;30;30;95;95;160;160;25;30;55;130;155;25;25;90;155];
 uiset_y=[guih-ymar2-35;guih-ymar2-70;guih-ymar2-65;guih-ymar2-110;...
     guih-ymar2-130;guih-ymar2-150;guih-ymar2-130;guih-ymar2-150;...
     guih-ymar2-195;guih-ymar2-220;guih-ymar2-190;guih-ymar2-260;...
     guih-ymar2-255;guih-ymar2-295;guih-ymar2-315;guih-ymar2-335;...
     guih-ymar2-315;guih-ymar2-335;guih-ymar2-315;guih-ymar2-335;...
     guih-ymar2-380;guih-ymar2-400;guih-ymar2-420;guih-ymar2-400;...
-    guih-ymar2-420];
+    guih-ymar2-420;guih-ymar2-465;guih-ymar2-495;guih-ymar2-495;...
+    guih-ymar2-495];
 if uiset_y(1)-uiset_y(end)>maxaxesh-50
     uiset_y_new=uiset_y*(axesh-50)/(uiset_y(1)-uiset_y(end)); uiset_y=uiset_y_new+uiset_y(1)-uiset_y_new(1);
 end
-uiset_w=[175;150;50;175;100;50;100;50;100;200;50;100;50;150;50;50;50;50;50;50;150;100;50;100;50];
-uiset_h=[25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;25];
+uiset_w=[175;150;50;175;100;50;100;50;100;200;50;100;50;150;50;50;50;50;50;50;150;100;50;100;50;150;65;65;65];
+uiset_h=[25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;25;35;35;35];
 uiset_pos=[uiset_x uiset_y uiset_w uiset_h];
 uiset_alignment={'left','left','center','left','center','center','center',...
     'center','left','center','center','left','center','left',...
     'center','center','center','center','center','center','left','center',...
-    'center','center','center'};
+    'center','center','center','left','center','center','center','center'};
 uiset_fs=repmat(14,[numel(uiset_name),1]); uiset_fs(1)=16;
 uiset_BG=repmat([0.929 0.929 0.929],[numel(uiset_name),1]); uiset_BG(strcmp(uiset_style,'edit'),:)=1;
 if movie_params.dovideo
     uiset_enable={'on';'on';'on';'on';'on';'on';'on';'on';'on';'on';'on';...
         'on';'on';'on';'on';'on';'on';'on';'on';'on';'on';'on';'on';'on';...
-        'on'};
+        'on';'off';'off';'off';'off'};
 else
     uiset_enable={'on';'off';'off';'off';'off';'off';'off';'off';'off';'off';...
         'off';'off';'off';'off';'off';'off';'off';'off';'off';'off';'off';...
-        'off';'off';'off';'off'};
+        'off';'off';'off';'off';'off';'off';'off';'off'};
 end
 uiset_callback={@checkbox_dovideo_Callback;@text_FPS_Callback;...
     @edit_FPS_Callback;@text_zoom_Callback;@text_nr_Callback;...
@@ -306,7 +329,8 @@ uiset_callback={@checkbox_dovideo_Callback;@text_FPS_Callback;...
     @text_nframesM_Callback;@edit_nframesM_Callback;...
     @text_nframesF_Callback;@edit_nframesF_Callback;...
     @text_size_Callback;@text_vidw_Callback;@edit_vidw_Callback;...
-    @text_vidh_Callback;@edit_vidh_Callback};
+    @text_vidh_Callback;@edit_vidh_Callback;@text_manual;...
+    @pushbutton_manual_start;@pushbutton_manual_back;@pushbutton_manual_candcel};
 for i=1:numel(uiset_style)
     handles.(uiset_name{i})=uicontrol('Style',uiset_style{i},'Units','pixels',...
     'String',uiset_string{i},'Value',uiset_value{i},...
@@ -319,8 +343,6 @@ end
 set(handles.slider_zoom,'Min',1e-6,'Max',max_scalefactor)
 fcn_slider_zoom= get(handles.slider_zoom,'Callback');
 hlisten_frame=addlistener(handles.slider_zoom,'ContinuousValueChange',fcn_slider_zoom); %#ok<NASGU>
-
-
 
 handles.output = hObject;
 % Update handles structure
@@ -344,6 +366,7 @@ vid.y0=y0;
 vid.doplotwings=doplotwings;
 set(handles.panel_set,'UserData',movie_params);
 set(handles.axes_vid,'UserData',vid);
+set(handles.figure1,'UserData',vidscale);
 
 function varargout = video_params_OutputFcn(hObject, eventdata, handles) 
 % Get default command line output from handles structure
@@ -831,3 +854,33 @@ function edit_nframesM_Callback(hObject, eventdata)
 
 
 function edit_nframesF_Callback(hObject, eventdata)
+
+
+function figure1_ResizeFcn(hObject, eventdata, handles)
+handles=guidata(hObject);
+if isfield(handles,'axes_vid')
+    movie_params=get(handles.panel_set,'UserData');
+    vidscale=get(handles.figure1,'UserData');
+    GUIresize(handles,hObject,vidscale)
+
+    figpos=movie_params.figpos;
+    position=get(handles.axes_vid,'Position');
+    if figpos(3)>position(3) || figpos(4)>position(4)
+        rescw=position(3)/figpos(3);
+        resch=position(4)/figpos(4);
+        resc=min(rescw,resch);
+        resc_s=textwrap({['The final video will be ',num2str(1/resc,'%.2f'),' times bigger']},handles.text_resc);
+    else
+        pos_panel=get(handles.panel_set,'Position');
+        axesx=position(1);
+        axesy=pos_panel(2)+(pos_panel(4)-figpos(4))/2;
+        axesw=figpos(3);
+        axesh=figpos(4);
+        set(handles.axes_vid,'Position',[axesx,axesy,axesw,axesh])
+        resc_s={''};
+    end
+    set(handles.text_resc,'String',resc_s);
+
+    vidscale.position=get(handles.figure1,'Position');
+    set(handles.figure1,'UserData',vidscale);
+end

@@ -23,9 +23,10 @@ roidata.idxroi=ones(nr,nc);
 roidata.ignore=[];
 roidata.rotateby=0;
 roidata.scores=[];
+roidata.pxpermm=nan;
 
-cbparams.roidiameter_mm=NaN;
-roidata.roidiameter_mm = cbparams.roidiameter_mm;
-roidata.params=cbparams;
+cbparams.detect_rois.roidiameter_mm=NaN;
+roidata.roidiameter_mm = cbparams.detect_rois.roidiameter_mm;
+roidata.params=cbparams.detect_rois;
 
 setappdata(0,'cbparams',cbparams)

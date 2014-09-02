@@ -18,7 +18,7 @@ else
     restartstage = '';
 end
 
-logfid=open_log('track_log',getappdata(0,'cbparams'),out.folder);
+logfid=open_log('track_log');
 
 SetBackgroundTypes;
 flycolors = {'r','b'};
@@ -26,7 +26,7 @@ stages = {'maintracking','reformat','chooseorientations','trackwings1','assignid
 
 %% open movie
 
-fprintf(logfid,'Opening movie...\n');
+write_log(logfid,getappdata(0,'experiment'),sprintf('Opening movie...\n'));
 [readframe,nframes,fid,headerinfo] = get_readframe_fcn(moviefile);
 
 %% initialize
@@ -35,7 +35,7 @@ nrois = roidata.nrois;
 nframes_track = min(params.lastframetrack,nframes)-params.firstframetrack+1;
 
 if ~dorestart && any([~ISPAUSE,~isfield(trackdata,'trxx')]),
-  fprintf(logfid,'Allocating...\n');
+  write_log(logfid,getappdata(0,'experiment'),sprintf('Allocating...\n'));
   trackdata = struct;
   trxx = nan(2,nrois,nframes_track);
   trxy = nan(2,nrois,nframes_track);
@@ -98,19 +98,20 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
     end
     ISPAUSE=false;
 
-    fprintf(logfid,'Starting main tracking from frame %i at %s...\n',startframe,datestr(now,'yyyymmddTHHMMSS'));
+    write_log(logfid,getappdata(0,'experiment'),sprintf('Starting main tracking from frame %i at %s...\n',startframe,datestr(now,'yyyymmddTHHMMSS')));
     if ~params.DEBUG
-      hwait=waitbar(0,{['Experiment ',experiment];['Tracking: frame ',num2str(startframe),'(0 of ',num2str(nframes_track),')']},'CreateCancelBtn','setappdata(0,''cancel_hwait'',1)');
+      setappdata(0,'allow_stop',false)
+      hwait=waitbar(0,{['Experiment ',experiment];['Tracking: frame ',num2str(startframe),'(0 of ',num2str(nframes_track),')']},'CreateCancelBtn','cancel_waitbar');
     end
     for t = startframe:min(params.lastframetrack,nframes),
       if ISPAUSE
-          fprintf(logfid,'Main tracking paused at frame %i at %s...\n',t,datestr(now,'yyyymmddTHHMMSS')); %#ok<UNRCH>
+          write_log(logfid,getappdata(0,'experiment'),sprintf('Main tracking paused at frame %i at %s...\n',t,datestr(now,'yyyymmddTHHMMSS'))); %#ok<UNRCH>
           break; 
       end
       iframe = t - params.firstframetrack + 1;
 
       if mod(iframe,1000) == 0,
-        fprintf(logfid,'Frame %d / %d\n',iframe,nframes_track);
+        write_log(logfid,getappdata(0,'experiment'),sprintf('Frame %d / %d\n',iframe,nframes_track));
       end
 
       % read in frame
@@ -173,6 +174,10 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
         end
       set(handles.text_info,'String',{['Experiment ',experiment];['Tracking: frame ',num2str(t),' (',num2str(iframe),' of ',num2str(nframes_track),', ',num2str(iframe*100/nframes_track,'%.1f'),'%).']})  
       else
+        if getappdata(0,'iscancel') || getappdata(0,'isskip') || getappdata(0,'isstop')  
+          trackdata=[];
+          return
+        end
         waitbar(iframe/nframes_track,hwait,{['Experiment ',experiment];['Tracking: frame ',num2str(t),' (',num2str(iframe),' of ',num2str(nframes_track),')']});  
       end    
 
@@ -198,7 +203,7 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
             if cbparams.track.dosave
                 save(out.temp_full,'trackdata','-append')
             end
-            fprintf(logfid,'Saving temporary file after %i frames at %s...\n',iframe,datestr(now,'yyyymmddTHHMMSS'));
+            write_log(logfid,getappdata(0,'experiment'),sprintf('Saving temporary file after %i frames at %s...\n',iframe,datestr(now,'yyyymmddTHHMMSS')));
       end
       setappdata(0,'t',t);
     end
@@ -220,15 +225,12 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
     trackdata.trxpriors=trxpriors;
     trackdata.headerinfo=headerinfo;
     trackdata.stage=stage;
-    if cbparams.track.dosave
-        save(out.temp_full,'trackdata','-append')
-    end
 end
 
 %% clean up
 
-% fprintf(logfid,'Clean up...\n');
-if params.DEBUG
+% write_log(logfid,getappdata(0,'experiment'),sprintf('Clean up...\n');
+if params.DEBUG && ishandle(handles.cbtrackGUI_ROI)
     guidata(handles.cbtrackGUI_ROI,handles)
 end
 

@@ -18,7 +18,8 @@ anglerange2 = modrange(anglerange(2),anglerange(1),anglerange(1)+2*pi);
 
 for i1 = 1:nflies,
   fly1 = flies(i1);
-  fprintf('fly1 = %d\n',fly1);
+  s=sprintf('fly1 = %d\n',fly1);
+  write_log(1,getappdata(0,'experiment'),s)
 
   flies2 = flies(trx.roi(fly1)==trx.roi(flies));
   

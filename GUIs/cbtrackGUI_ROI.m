@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_ROI(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_ROI_temp
 
-% Last Modified by GUIDE v2.5 21-Feb-2014 12:10:29
+% Last Modified by GUIDE v2.5 16-Jun-2014 08:30:43
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -144,8 +144,9 @@ else
     if getappdata(0,'usefiles') && exist(loadfile,'file')
         try
             roidata=load(loadfile);
-            logfid=open_log('roi_log',cbparams,out.folder);
-            fprintf(logfid,'Loading ROI data data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
+            logfid=open_log('roi_log');
+            s=sprintf('Loading ROI data data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
+            write_log(logfid,experiment,s)
             if logfid > 1,
               fclose(logfid);
             end
@@ -171,8 +172,9 @@ else
                 end
             end
         catch
-            logfid=open_log('roi_log',cbparams,out.folder);
-            fprintf(logfid,'File %s could not be loaded.',loadfile);
+            logfid=open_log('roi_log');
+            s=sprintf('File %s could not be loaded.',loadfile);
+            write_log(logfid,experiment,s)
             if logfid > 1,
               fclose(logfid);
             end
@@ -250,7 +252,8 @@ params=get(handles.uipanel_settings,'UserData');
 if isempty(roidata) || size(fieldnames(roidata),1)==0 || isempty(roidata.centerx)
     BG=getappdata(0,'BG');    
     roidata=AllROI(BG.bgmed);
-    params.roimus=[];
+    params.roimus.x=[];
+    params.roimus.y=[];
 else
     new_nrois=length(handles.hrois);
     new_position=nan(4,new_nrois);
@@ -301,15 +304,20 @@ if isnew
     setappdata(0,'cbparams',cbparams)
     
     out=getappdata(0,'out');
-    logfid=open_log('roi_log',cbparams,out.folder);
+    logfid=open_log('roi_log');
     savefile = fullfile(out.folder,cbparams.dataloc.roidatamat.filestr);
-    fprintf(logfid,'Saving ROI data to file %s...\n',savefile);
+    s=sprintf('Saving ROI data to file %s...\n',savefile);
+    write_log(logfid,getappdata(0,'experiment'),s)
     if exist(savefile,'file'),
       delete(savefile);
     end
     save(savefile,'-struct','roidata');
     imsavename = fullfile(out.folder,cbparams.dataloc.roiimage.filestr);
-    fprintf(logfid,'Outputting visualization of results to %s...\n\n***\n',imsavename);
+    s=sprintf('Outputting visualization of results to %s...\n\n***\n',imsavename);
+    write_log(logfid,getappdata(0,'experiment'),s)
+    if logfid>1
+        fclose(logfid);
+    end
     if exist(imsavename,'file'),
       delete(imsavename);
     end
@@ -325,6 +333,7 @@ if isnew
 end
 
 setappdata(0,'iscancel',false)
+setappdata(0,'isskip',false)
 uiresume(handles.cbtrackGUI_ROI)
 if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
@@ -335,6 +344,9 @@ if cbparams.track.dosettrack
 else
     if isnew
         cbtrackNOGUI_tracker
+        if getappdata(0,'iscancel') || getappdata(0,'isskip')
+            return
+        end
     end
     if cbparams.wingtrack.dosetwingtrack
         cbtrackGUI_WingTracker
@@ -352,11 +364,7 @@ else
                 P_stage=getappdata(0,'P_stage');       
                 if strcmp(P_stage,'track2')
                     CourtshipBowlTrack_GUI2
-                    iscancel=getappdata(0,'iscancel');
-                    if iscancel
-                        if iscancel==1
-                            cancelar
-                        end
+                    if getappdata(0,'iscancel') || getappdata(0,'isskip')
                         return
                     end
                 elseif strcmp(P_stage,'track1')
@@ -369,7 +377,8 @@ end
 
 
 function cbtrackGUI_ROI_ResizeFcn(hObject, eventdata, handles)
-GUIresize(handles,hObject);
+GUIscale=getappdata(0,'GUIscale');
+GUIresize(handles,hObject,GUIscale);
 
 
 function text_load_Callback(hObject, eventdata, handles)
@@ -620,6 +629,15 @@ else
         end
         params.roimus.x=xc;
         params.roimus.y=yc;
+        if isempty(params.meanroiradius)
+            params.meanroiradius=mean(radius);
+        end
+        if isempty(params.maxdcenter)
+            params.maxdcenter=ceil(params.meanroiradius/20);
+        end
+        if isempty(params.maxdradius)
+            params.maxdradius=ceil(params.meanroiradius/20);
+        end
         manual.detected=1;
         params.roimus=[xc,yc];
         BG=getappdata(0,'BG');
@@ -942,6 +960,9 @@ end
 
 
 function pushbutton_advanced_Callback(hObject, eventdata, handles)
+temp_ROIparams=get(handles.uipanel_settings,'UserData');
+[new_ROIparams]=advanced_ROI(temp_ROIparams);
+set(handles.uipanel_settings,'UserData',new_ROIparams);
 
 
 function edit_set_nROI_Callback(hObject, eventdata, handles)
@@ -960,6 +981,7 @@ if isempty(msg_cancel)
 end
 if strcmp('Yes',msg_cancel)
     setappdata(0,'iscancel',true)
+    setappdata(0,'isskip',true)
     uiresume(handles.cbtrackGUI_ROI)
     if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
         delete(handles.cbtrackGUI_ROI)
@@ -1027,11 +1049,7 @@ end
 P_stage=getappdata(0,'P_stage');
 if strcmp(P_stage,'track2')
     CourtshipBowlTrack_GUI2
-    iscancel=getappdata(0,'iscancel');
-    if iscancel
-        if iscancel==1
-            cancelar
-        end
+    if getappdata(0,'iscancel') || getappdata(0,'isskip')
         return
     end
 elseif strcmp(P_stage,'track1')
@@ -1075,3 +1093,12 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
 end
 
 cbtrackGUI_WingTracker
+
+
+function pushbutton_skip_Callback(hObject, eventdata, handles)
+setappdata(0,'iscancel',false)
+setappdata(0,'isskip',true)
+uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end

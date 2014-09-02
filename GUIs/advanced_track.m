@@ -255,9 +255,9 @@ if any(isnan(value_edits))
 end
 tags_edits=get(handles_edits,'Tag');
 tags_edits=cellfun(@(x) x(6:end),tags_edits,'UniformOutput',false);
-common=intersect(tags_edits,params_fields);
+[common,iedits]=intersect(tags_edits,params_fields);
 for i=1:numel(tags_edits);
-    temp_Tparams.(common{i})=value_edits(i);
+    temp_Tparams.(common{i})=value_edits(iedits(i));
 end
 set(handles.figure1,'UserData',temp_Tparams)
 

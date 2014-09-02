@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_WingTracker_video(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_ROI_temp
 
-% Last Modified by GUIDE v2.5 13-May-2014 15:48:19
+% Last Modified by GUIDE v2.5 16-Jun-2014 08:35:15
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -114,6 +114,7 @@ trackdata=getappdata(0,'trackdata');
 if isfield(trackdata,'twing')
     debugdata=getappdata(0,'debugdata_WT');
     set(handles.pushbutton_start,'String','CONTINUE')
+    set(handles.pushbutton_accept,'Enable','on')
     %set slider
     t=trackdata.twing;
     set(handles.slider_frame,'Value',debugdata.nframestracked,'Max',debugdata.nframestracked,'SliderStep',[.01,.1],'Enable','on')
@@ -140,6 +141,17 @@ else
     debugdata.play=false;
 end
     
+hslider=unique(findobj('Style','slider'));
+mins=get(hslider,'Min');
+maxs=get(hslider,'Max');
+if ~isa(mins,'cell')
+    mins=num2cell(mins);
+    maxs=num2cell(maxs);
+end
+for i=1:numel(hslider)
+    set(hslider(i),'SliderStep',[1/(maxs{i}-mins{i}),10/(maxs{i}-mins{i})])
+end
+
 % Initialize debugdata
  
  GUI.old_pos=get(hObject,'position');
@@ -173,8 +185,6 @@ function axes_wingtracker_video_CreateFcn(hObject, eventdata, handles) %#ok<*INU
 
 
 function pushbutton_cancel_Callback(hObject, eventdata, handles)
-global ISPAUSE
-ISPAUSE=true;
 close(handles.cbtrackGUI_ROI)
 
 
@@ -201,9 +211,10 @@ if debugdata.nframestrack~=debugdata.nframestracked
         return
     end
 end
-logfid=open_log('track_log',cbparams,out.folder);
+logfid=open_log('track_log');
 iframe=debugdata.nframestracked;
-fprintf(logfid,'Saving tracking results up to frame %i at %s...\n',debugdata.framestracked(iframe),datestr(now,'yyyymmddTHHMMSS'));
+s=sprintf('Saving tracking results up to frame %i at %s...\n',debugdata.framestracked(iframe),datestr(now,'yyyymmddTHHMMSS'));
+write_log(logfid,getappdata(0,'experiment'),s)
 [trackdata,debugdata]=delete_partial_wing(iframe,trackdata,debugdata);
 setappdata(0,'trackdata',trackdata)
 setappdata(0,'debugdata_WT',debugdata);
@@ -212,6 +223,7 @@ if logfid > 1,
 end
 
 setappdata(0,'iscancel',false)
+setappdata(0,'isskip',false)
 uiresume(handles.cbtrackGUI_ROI)
 if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
@@ -219,7 +231,8 @@ end
 
 
 function cbtrackGUI_ROI_ResizeFcn(hObject, eventdata, handles)
-GUIresize(handles,hObject);
+GUIscale=getappdata(0,'GUIscale');
+GUIresize(handles,hObject,GUIscale);
 
 
 function slider_frame_Callback(hObject, eventdata, handles)
@@ -252,6 +265,7 @@ if isempty(msg_cancel)
 end
 if strcmp('Yes',msg_cancel)
     setappdata(0,'iscancel',true)
+    setappdata(0,'isskip',true)
     uiresume(handles.cbtrackGUI_ROI)
     if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
         delete(handles.cbtrackGUI_ROI)
@@ -269,7 +283,9 @@ elseif ISPAUSE
     set(handles.pushbutton_save,'Enable','off')
     set(handles.pushbutton_clear,'Enable','off')
     set(handles.pushbutton_accept,'Enable','off')
+    set(handles.pushbutton_cancel,'Enable','off')
     set(handles.pushbutton_play,'Enable','off')
+    set(handles.pushbutton_skip,'Enable','off');
     set(handles.slider_frame,'Enable','off')
     
     trackdata=getappdata(0,'trackdata');
@@ -295,17 +311,19 @@ elseif ISPAUSE
     set(handles.pushbutton_save,'Enable','on')
     set(handles.pushbutton_clear,'Enable','on')
     set(handles.pushbutton_accept,'Enable','on')
+    set(handles.pushbutton_cancel,'Enable','on')
     set(handles.pushbutton_play,'Enable','on')
+    set(handles.pushbutton_skip,'Enable','on');
     %set slider
     t=getappdata(0,'twing');
-    set(handles.slider_frame,'Value',debugdata.nframestracked,'Max',debugdata.nframestracked,'SliderStep',[.01,.1],'Enable','on')
+    set(handles.slider_frame,'Value',debugdata.nframestracked,'Max',debugdata.nframestracked,'SliderStep',[1/debugdata.nframestracked,10/debugdata.nframestracked],'Enable','on')
     set(handles.text_info,'String',{['Experiment ',experiment];['Displaying frame ',num2str(t-1),'. ',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),' (',num2str(debugdata.nframestracked*100/debugdata.nframestrack,'%.1f'),'%) tracked.']})  
     
     if ~ISPAUSE
         out=getappdata(0,'out');
-        logfid=open_log('track_log',cbparams,out.folder);
-        fprintf(logfid,'Wing tracking finished at %s for experiment %s...\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
-        
+        logfid=open_log('track_log');
+        s=sprintf('Wing tracking finished at %s for experiment %s...\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
+        write_log(logfid,getappdata(0,'experiment'),s)
         if logfid > 1,
             fclose(logfid);
         end
@@ -333,6 +351,7 @@ elseif ~ISPLAYING
     set(handles.pushbutton_save,'Enable','off');
     set(handles.pushbutton_start,'Enable','off');
     set(handles.pushbutton_accept,'Enable','off');
+    set(handles.pushbutton_skip,'Enable','off');
     iframe=get(handles.slider_frame,'Value');
     experiment=getappdata(0,'experiment');
     debugdata=getappdata(0,'debugdata_WT');
@@ -357,6 +376,7 @@ elseif ~ISPLAYING
     set(handles.pushbutton_save,'Enable','on');
     set(handles.pushbutton_start,'Enable','on');
     set(handles.pushbutton_accept,'Enable','on');
+    set(handles.pushbutton_skip,'Enable','on');
     setappdata(0,'debugdata_WT',debugdata)
 end
 
@@ -364,7 +384,7 @@ end
 function pushbutton_clear_Callback(hObject, eventdata, handles)
 msg_clear=myquestdlg(14,'Helvetica',{'Which data would you like to delete?';'- All: Delete all the tracked frames';'- Current: Delete from the displayed frame'},'Cancel','All','Current','Cancel','Cancel'); 
 out=getappdata(0,'out');
-logfid=open_log('track_log',getappdata(0,'cbparams'),out.folder);
+logfid=open_log('track_log');
 experiment=getappdata(0,'experiment');
 debugdata=getappdata(0,'debugdata_WT');
 trackdata=getappdata(0,'trackdata');
@@ -392,15 +412,17 @@ if strcmp(msg_clear,'All')
     set(handles.pushbutton_clear,'Enable','off')
     set(handles.pushbutton_accept,'Enable','off')
     set(handles.pushbutton_play,'Enable','off')
-    set(handles.slider_frame,'Value',1,'Min',1,'Max',2,'SliderStep',[.01,.1],'Enable','off')
+    set(handles.slider_frame,'Value',1,'Min',1,'Max',2,'SliderStep',[1/2,10/2],'Enable','off')
     set(handles.text_info,'String',{['Experiment ',experiment];'Tracking wings: No frames trackedNo frames tracked'})
-    fprintf(logfid,'All wing tracking data cleared at %s.\n',datestr(now,'yyyymmddTHHMMSS')');
+    s=sprintf('All wing tracking data cleared at %s.\n',datestr(now,'yyyymmddTHHMMSS')');
+    write_log(logfid,getappdata(0,'experiment'),s)
 elseif strcmp(msg_clear,'Current')
     iframe=get(handles.slider_frame,'Value');
     [trackdata,debugdata]=clear_partial_wing(iframe,trackdata,debugdata);
-    set(handles.slider_frame,'Max',iframe);
+    set(handles.slider_frame,'Max',iframe,'SliderStep',[1/iframe,10/iframe]);
     set(handles.text_info,'String',{['Experiment ',experiment];['Displaying frame ',num2str(debugdata.framestracked(iframe)),'. ',num2str(debugdata.nframestracked),' of ',num2str(debugdata.nframestrack),' (',num2str(debugdata.nframestracked*100/debugdata.nframestrack,'%.1f'),'%) tracked.']})  
-    fprintf(logfid,'Tracking data cleared from frame %i at %s.\n',iframe,datestr(now,'yyyymmddTHHMMSS'));
+    s=sprintf('Tracking data cleared from frame %i at %s.\n',iframe,datestr(now,'yyyymmddTHHMMSS'));
+    write_log(logfid,getappdata(0,'experiment'),s)
 end
 if logfid > 1,
     fclose(logfid);
@@ -413,11 +435,12 @@ function pushbutton_save_Callback(hObject, eventdata, handles)
 [tempfile,tempdir]=uiputfile('.mat');
 out=getappdata(0,'out');
 cbparams=getappdata(0,'cbparams');
-logfid=open_log('track_log',cbparams,out.folder);
+logfid=open_log('track_log');
 t=getappdata(0,'t');
 trackdata=getappdata(0,'trackdata'); %#ok<*NASGU>
 tempfile = fullfile(tempdir,tempfile);
-fprintf(logfid,'Saving temporary file after %i frames at %s...\n',t,datestr(now,'yyyymmddTHHMMSS'));
+s=sprintf('Saving temporary file after %i frames at %s...\n',t,datestr(now,'yyyymmddTHHMMSS'));
+write_log(logfid,getappdata(0,'experiment'),s)
 copyfile(out.temp_full,tempfile);
 save(tempfile,'trackdata','-append')
 if logfid > 1,
@@ -435,7 +458,6 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-setappdata(0,'iscancel',2)
 uiresume(handles.cbtrackGUI_ROI)
 if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
@@ -454,7 +476,6 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-setappdata(0,'iscancel',2)
 uiresume(handles.cbtrackGUI_ROI)
 if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
@@ -473,7 +494,6 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-setappdata(0,'iscancel',2)
 uiresume(handles.cbtrackGUI_ROI)
 if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
@@ -498,10 +518,18 @@ GUIscale.rescaley=new_pos(4)/old_pos(4);
 GUIscale.position=new_pos;
 setappdata(0,'GUIscale',GUIscale)
 
-setappdata(0,'iscancel',2)
 uiresume(handles.cbtrackGUI_ROI)
 if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
 cbtrackGUI_WingTracker
+
+
+function pushbutton_skip_Callback(hObject, eventdata, handles)
+setappdata(0,'iscancel',false)
+setappdata(0,'isskip',true)
+uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end

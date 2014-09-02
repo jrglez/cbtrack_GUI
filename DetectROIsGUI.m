@@ -8,28 +8,30 @@ roidata.cbdetectrois_version = version;
 roidata.cbdetectrois_timestamp = timestamp;
 
 experiment=getappdata(0,'experiment');
-out=getappdata(0,'out');
 
 %% open log file
 
-logfid=open_log('roi_log',cbparams,out.folder);
+logfid=open_log('roi_log');
 
 %% reformat roimus
 roidata.params=params;
 
 %% detect circles
-fprintf(logfid,'Detecting ROIs for experiment %s at %s...\n',experiment,timestamp);
+s=sprintf('Detecting ROIs for experiment %s at %s...\n',experiment,timestamp);
+write_log(logfid,experiment,s)
 [roidata.centerx,roidata.centery,roidata.radii,roidata.scores] = DetectCourtshipBowlROIs(bgmed,params);
 nrois = numel(roidata.centerx);
 roidata.nrois=nrois;
-fprintf(logfid,'Detected %d ROIs with mean radius %f (std = %f, min = %f, max = %f)\n',...
+s=sprintf('Detected %d ROIs with mean radius %f (std = %f, min = %f, max = %f)\n',...
   nrois,mean(roidata.radii),std(roidata.radii,1),min(roidata.radii),max(roidata.radii));
+write_log(logfid,experiment,s)
 
 %% compute image to real-world transform
 
 roidata.roidiameter_mm = params.roidiameter_mm;
 roidata.pxpermm = nanmean(roidata.radii) / (roidata.roidiameter_mm/2);
-fprintf(logfid,'Computed pxpermm = %f\n',roidata.pxpermm);
+s=sprintf('Computed pxpermm = %f\n',roidata.pxpermm);
+write_log(logfid,experiment,s)
 
 % find rotations
 [yc_s,yc_s_in]=sort(roidata.centery); yc_s=yc_s'; yc_s_in=yc_s_in';
@@ -65,21 +67,25 @@ if nrois>1 && roidata.nrois>numel(fieldnames(params.roirows))
   dtheta = modrange(thetas-thetas(1),-pi,pi);
   meantheta = modrange(thetas(1) + mean(dtheta),-pi,pi);
   
-  fprintf(logfid,'Based on ROI centroids, we want to rotate by %f deg (std = %f, min = %f, max = %f)\n',...
+  s=sprintf('Based on ROI centroids, we want to rotate by %f deg (std = %f, min = %f, max = %f)\n',...
     meantheta*180/pi,std(dtheta,1)*180/pi,modrange(thetas(1) + min(dtheta),-pi,pi)*180/pi,...
     modrange(thetas(1) + max(dtheta),-pi,pi)*180/pi);
+  write_log(logfid,experiment,s)
   
   if isfield(params,'baserotateby'),
     meantheta = modrange(-meantheta+params.baserotateby*pi/180,-pi,pi);
-    fprintf(logfid,'Adding in default baserotateby %f\n',params.baserotateby);
+    s=sprintf('Adding in default baserotateby %f\n',params.baserotateby);
+    write_log(logfid,experiment,s)
   end
   roidata.rotateby = -meantheta;
-  fprintf(logfid,'Final rotateby = %f\n',roidata.rotateby*180/pi);
+  s=sprintf('Final rotateby = %f\n',roidata.rotateby*180/pi);
+  write_log(logfid,experiment,s)
   
 end
 
 %% create masks
-fprintf(logfid,'Creating ROI masks...\n');
+s=sprintf('Creating ROI masks...\n');
+write_log(logfid,experiment,s)
 imwidth=size(bgmed,2);
 imheight=size(bgmed,1);
 [XGRID,YGRID] = meshgrid(1:imwidth,1:imheight);
@@ -121,7 +127,8 @@ if params.dosetROI
     end
 end
 
-fprintf(logfid,'Finished detecting ROIs at %s for experiment %s.\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
+s=sprintf('Finished detecting ROIs at %s for experiment %s.\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
+write_log(logfid,experiment,s)
 if logfid > 1,
   fclose(logfid);
 end

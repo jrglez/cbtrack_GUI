@@ -5,8 +5,9 @@ loadfile=fullfile(out.folder,cbparams.dataloc.roidatamat.filestr);
 if getappdata(0,'usefiles') && exist(loadfile,'file')
     try
         roidata=load(loadfile);
-        logfid=open_log('roi_log',cbparams,out.folder);
-        fprintf(logfid,'Loading ROI data data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
+        logfid=open_log('roi_log');
+        s=sprintf('Loading ROI data data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
+        write_log(logfid,getappdata(0,'experiment'),s)
         if logfid > 1,
           fclose(logfid);
         end
@@ -15,8 +16,9 @@ if getappdata(0,'usefiles') && exist(loadfile,'file')
         cbparams.detect_rois=roidata.params;
         setappdata(0,'cbparams',cbparams);
     catch
-        logfid=open_log('roi_log',cbparams,out.folder);
-        fprintf(logfid,'File %s could not be loaded.',loadfile);
+        logfid=open_log('roi_log');
+        s=sprintf('File %s could not be loaded.',loadfile);
+        write_log(logfid,getappdata(0,'experiment'),s)
         if logfid > 1,
           fclose(logfid);
         end

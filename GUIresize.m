@@ -1,5 +1,4 @@
-function GUIresize(handles,hObject)
-GUIscale=getappdata(0,'GUIscale');
+function GUIresize(handles,hObject,GUIscale)
 new_pos_GUI=get(hObject,'position');
 if isempty(GUIscale)
     old_pos_GUI=new_pos_GUI;

@@ -14,7 +14,7 @@ params.subbin_x = (-params.wing_radius_quadfit_bins:params.wing_radius_quadfit_b
 
 roidata=getappdata(0,'roidata');
 [nr,nc,~] = size(im);
-nflies = sum(roidata.nflies_per_roi);
+nflies = nansum(roidata.nflies_per_roi);
 npx = nr*nc; %#ok<NASGU>
 %% initialize debug plots
 

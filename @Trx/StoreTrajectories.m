@@ -55,7 +55,11 @@ for i = 1:numel(traj_fns),
     if ~exist(filename,'file'),
       error('Could not save to file %s',filename);
     else
-      fprintf('Could not save to file %s, but file exists, so skipping\n',filename);
+      s=sprintf('Could not save to file %s, but file exists, so skipping\n',filename);
+      write_log(logfid,getappdata(0,'experiment'),s)
+      if logfid>1
+          fclose(logfid);
+      end
     end
   end
 end

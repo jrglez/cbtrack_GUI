@@ -38,16 +38,18 @@ if ~exist(resultsmovie_params.tempdatadir,'dir'),
 end
 
 %% log file
-logfid=open_log('resultsmovie_log',cbparams,out.folder);
+logfid=open_log('resultsmovie_log');
 
-fprintf(logfid,'\n\n***\nRunning CourtshipBowlMakeResultsMovie version %s for experiment %s at %s\n',version,experiment,timestamp);
+s=sprintf('\n\n***\nRunning CourtshipBowlMakeResultsMovie version %s for experiment %s at %s\n',version,experiment,timestamp);
+write_log(logfid,experiment,s)
+
 resultsmoviedata.analysis_protocol = analysis_protocol;
 resultsmoviedata.experiment=experiment;
 
 %% location of data
 
 [~,basename] = fileparts(expdir);
-moviefile = fullfile(expdir,cbparams.dataloc.movie.filestr);
+moviefile = getappdata(0,'moviefile');
 trxfile = fullfile(out.folder,cbparams.dataloc.trx.filestr);
 avifilestr = sprintf('%s_%s',cbparams.dataloc.resultsavi.filestr,basename);
 avifile = fullfile(resultsmovie_params.tempdatadir,[avifilestr,'_temp.avi']);
@@ -55,8 +57,8 @@ xvidfile = fullfile(out.folder,[avifilestr,'.avi']);
 
 %% read start and end of cropped trajectories
 
-fprintf(logfid,'Reading in trajectories...\n');
-
+s=sprintf('Reading in trajectories...\n');
+write_log(logfid,experiment,s)
 load(trxfile,'trx');
 end_frame = max([trx.endframe]);
 start_frame = min([trx.firstframe]);
@@ -86,7 +88,8 @@ firstframes = start_frame + firstframes_off;
 
 %% option to not specify nzoomr, nzoomc
 
-fprintf(logfid,'Setting parameters...\n');
+s=sprintf('Setting parameters...\n');
+write_log(logfid,experiment,s)
 
 [readframe,~,fid] = get_readframe_fcn(moviefile);
 im = readframe(1);
@@ -128,7 +131,8 @@ boxradius=round(0.5*(floor(nr/resultsmovie_params.nzoomr)/resultsmovie_params.sc
 
 %% choose colors for each fly
 
-fprintf(logfid,'Choosing colors for each fly...\n');
+s=sprintf('Choosing colors for each fly...\n');
+write_log(logfid,experiment,s)
 
 colors = jet(nflies)*.8;
 
@@ -167,13 +171,15 @@ end
 
 %% create movie
 
-fprintf(logfid,'Calling make_ctrax_results_movie...\n');
+s=sprintf('Calling make_ctrax_results_movie...\n');
+write_log(logfid,experiment,s)
 
 if ~DEBUG && exist(avifile,'file'),
   try
     delete(avifile);
   catch ME,
-    fprintf(logfid,'Could not remove avi file %s:\n%s\n',avifile,getReport(ME));
+    s=sprintf('Could not remove avi file %s:\n%s\n',avifile,getReport(ME));
+    write_log(logfid,experiment,s)
   end
 end
 
@@ -204,26 +210,31 @@ end
 
 %% create subtitle file
 
-fprintf(logfid,'Creating subtitle file...\n');
+s=sprintf('Creating subtitle file...\n');
+write_log(logfid,experiment,s)
 
 subtitlefile = fullfile(out.folder,'subtitles.srt');
 fid = fopen(subtitlefile,'w');
 dt = [0,resultsmovie_params.nframes];
 ts = cumsum(dt);
 for i = 1:numel(dt)-1,
-  fprintf(fid,'%d\n',i);
-  fprintf(fid,'%s --> %s\n',...
+  s=sprintf('%d\n',i);
+  write_log(logfid,experiment,s)
+  s=sprintf('%s --> %s\n',...
     datestr(ts(i)/resultsmovie_params.fps/(3600*24),'HH:MM:SS,FFF'),...
     datestr((ts(i+1)-1)/resultsmovie_params.fps/(3600*24),'HH:MM:SS,FFF'));
-  fprintf(fid,'%s, fr %d-%d\n\n',basename,...
+  write_log(logfid,experiment,s)
+  s=sprintf('%s, fr %d-%d\n\n',basename,...
     firstframes_off(i)+1,...
     endframes_off(i)+1);
+  write_log(logfid,experiment,s)
 end
 fclose(fid);
 
 %% compress
 
-fprintf(logfid,'Compressing to xvid avi file...\n');
+s=sprintf('Compressing to xvid avi file...\n');
+write_log(logfid,experiment,s)
 
 tmpfile = [xvidfile,'.tmp'];
 newheight = 4*ceil(height/4);
@@ -234,27 +245,37 @@ cmd = sprintf('mencoder %s -o %s -ovc xvid -xvidencopts fixed_quant=4 -vf scale=
   avifile,tmpfile,newwidth,newheight,subtitlefile);
 status = system(cmd);
 if status ~= 0,
-  fprintf('*****\n');
+  s=sprintf('*****\n');
+  write_log(1,experiment,s)
   warning('Failed to compress avi to %s',xvidfile);
-  fprintf('Need to run:\n');
-  fprintf('%s\n',cmd);
-  cmd2 = sprintf('mencoder %s -o %s -ovc xvid -xvidencopts fixed_quant=4 -vf flip -msglevel all=2',...
+  s=sprintf('Need to run:\n');
+  write_log(1,experiment,s)
+  s=sprintf('%s\n',cmd);
+  write_log(1,experiment,s)
+  cmd2 = sprintf('mencoder %s -o %s -ovc xvid -xvidencopts fixed_quant=4 -vf flip -msglevel all=2\n',...
     tmpfile,xvidfile);
-  fprintf('then\n');
-  fprintf('%s\n',cmd2);
-  fprintf('then delete %s %s %s\n',tmpfile,avifile,subtitlefile);
-  fprintf('*****\n');
+  s=sprintf('then\n');
+  write_log(1,experiment,s)
+  write_log(1,experiment,cmd2)  
+  s=sprintf('then delete %s %s %s\n',tmpfile,avifile,subtitlefile);
+  write_log(1,experiment,s)
+  s=sprintf('*****\n');
+  write_log(1,experiment,s)
 else
-  cmd = sprintf('mencoder %s -o %s -ovc xvid -xvidencopts fixed_quant=4 -vf flip -msglevel all=2',...
+  cmd = sprintf('mencoder %s -o %s -ovc xvid -xvidencopts fixed_quant=4 -vf flip -msglevel all=2\n',...
     tmpfile,xvidfile);
   status = system(cmd);
   if status ~= 0,
-    fprintf('*****\n');
+    s=sprintf('*****\n');
+    write_log(1,experiment,s)
     warning('Failed to add subtitles to %s',xvidfile);
-    fprintf('Need to run:\n');
-    fprintf('%s\n',cmd);
-    fprintf('then delete %s %s %s\n',tmpfile,avifile,subtitlefile);
-    fprintf('*****\n');    
+    s=sprintf('Need to run:\n');
+    write_log(1,experiment,s)
+    write_log(1,experiment,cmd)
+    s=sprintf('then delete %s %s %s\n',tmpfile,avifile,subtitlefile);
+    write_log(1,experiment,s)
+    s=sprintf('*****\n');
+    write_log(1,experiment,s)
   else
     delete(tmpfile);
     delete(avifile);
@@ -268,7 +289,8 @@ resultsmoviedata.resultsmovie_params = resultsmovie_params;
 resultsmoviedata.firstframes = firstframes;
 
 filename = fullfile(out.folder,cbparams.dataloc.resultsmoviedatamat.filestr);
-fprintf(logfid,'Saving info to mat file %s...\n',filename);
+s=sprintf('Saving info to mat file %s...\n',filename);
+write_log(logfid,experiment,s)
 
 if exist(filename,'file'),
   delete(filename);
@@ -277,7 +299,8 @@ save(filename,'-struct','resultsmoviedata');
 
 %% close log
 
-fprintf(logfid,'Finished running CourtshipBowlMakeResultsMovie at %s for experiment %s.\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
+s=sprintf('Finished running CourtshipBowlMakeResultsMovie at %s for experiment %s.\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
+write_log(logfid,experiment,s)
 
 if logfid > 1,
   fclose(logfid);

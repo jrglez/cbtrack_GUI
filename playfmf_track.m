@@ -1,35 +1,35 @@
-function varargout = playfmf(varargin)
-% PLAYFMF M-file for playfmf.fig
-%      PLAYFMF, by itself, creates a new PLAYFMF or raises the existing
+function varargout = playfmf_track(varargin)
+% PLAYFMF_TRACK M-file for playfmf_track.fig
+%      PLAYFMF_TRACK, by itself, creates a new PLAYFMF_TRACK or raises the existing
 %      singleton*.
 %
-%      H = PLAYFMF returns the handle to a new PLAYFMF or the handle to
+%      H = PLAYFMF_TRACK returns the handle to a new PLAYFMF_TRACK or the handle to
 %      the existing singleton*.
 %
-%      PLAYFMF('CALLBACK',hObject,eventData,handles,...) calls the local
-%      function named CALLBACK in PLAYFMF.M with the given input arguments.
+%      PLAYFMF_TRACK('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in PLAYFMF_TRACK.M with the given input arguments.
 %
-%      PLAYFMF('Property','Value',...) creates a new PLAYFMF or raises the
+%      PLAYFMF_TRACK('Property','Value',...) creates a new PLAYFMF_TRACK or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
-%      applied to the GUI before playfmf_OpeningFcn gets called.  An
+%      applied to the GUI before playfmf_track_OpeningFcn gets called.  An
 %      unrecognized property name or invalid value makes property application
-%      stop.  All inputs are passed to playfmf_OpeningFcn via varargin.
+%      stop.  All inputs are passed to playfmf_track_OpeningFcn via varargin.
 %
 %      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
 %      instance to run (singleton)".
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Edit the above text to modify the response to help playfmf
+% Edit the above text to modify the response to help playfmf_track
 
-% Last Modified by GUIDE v2.5 25-Aug-2010 14:04:20
+% Last Modified by GUIDE v2.5 23-Jul-2014 14:14:14
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @playfmf_OpeningFcn, ...
-                   'gui_OutputFcn',  @playfmf_OutputFcn, ...
+                   'gui_OpeningFcn', @playfmf_track_OpeningFcn, ...
+                   'gui_OutputFcn',  @playfmf_track_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
@@ -44,15 +44,15 @@ end
 % End initialization code - DO NOT EDIT
 
 
-% --- Executes just before playfmf is made visible.
-function playfmf_OpeningFcn(hObject, eventdata, handles, varargin)
+% --- Executes just before playfmf_track is made visible.
+function playfmf_track_OpeningFcn(hObject, eventdata, handles, varargin)
 % This function has no output args, see OutputFcn.
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-% varargin   command line arguments to playfmf (see VARARGIN)
+% varargin   command line arguments to playfmf_track (see VARARGIN)
 
-% Choose default command line output for playfmf
+% Choose default command line output for playfmf_track
 handles.output = hObject;
 
 handles.figpos = get(handles.figure1,'Position');
@@ -125,7 +125,7 @@ handles = open_fmf(handles);
 % Update handles structure
 guidata(hObject, handles);
 
-% UIWAIT makes playfmf wait for user response (see UIRESUME)
+% UIWAIT makes playfmf_track wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
 
 function play(hObject)
@@ -143,6 +143,18 @@ for f = handles.f:handles.nframes,
   end
   handles.f = f;
   handles = update_frame(handles);
+  trx=get(handles.axes_Video,'UserData');
+  nflies=numel(trx);
+  for i=1:nflies
+      updatefly(handles.htri(i),trx,f);
+      set(handles.htrx(i),'XData',trx(i).x(max(f-30,1):f),'YData',trx(i).y(max(f-30,1):f))
+      if isfield(trx,'xwingl')
+          xwing = [trx(i).xwingl(f),trx(i).x(f),trx(i).xwingr(f)];
+          ywing = [trx(i).ywingl(f),trx(i).y(f),trx(i).ywingr(f)];
+          set(handles.hwing(i),'XData',xwing,'YData',ywing);
+      end
+  end
+
   guidata(hObject,handles);
   if handles.MaxFPS > 0,
     tmp = toc;
@@ -167,7 +179,7 @@ guidata(hObject,handles);
 set(handles.pushbutton_PlayStop,'String','Play','BackgroundColor',[0,.5,0]);
 
 % --- Outputs from this function are returned to the command line.
-function varargout = playfmf_OutputFcn(hObject, eventdata, handles) 
+function varargout = playfmf_track_OutputFcn(hObject, eventdata, handles) 
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -197,8 +209,23 @@ function slider_Frame_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 v = get(hObject,'Value');
-handles.f = round(1 + v * (handles.nframes - 1));
+f = round(1 + v * (handles.nframes - 1));
+handles.f = f;
 handles = update_frame(handles);
+% Plot track data
+trx=get(handles.axes_Video,'UserData');
+nflies=numel(trx);
+for i=1:nflies
+    updatefly(handles.htri(i),trx(i),f);
+    set(handles.htrx(i),'XData',trx(i).x(max(f-30,1):f),'YData',trx(i).y(max(f-30,1):f))
+    if isfield(trx,'xwingl')
+        xwing = [trx(i).xwingl(f),trx(i).x(f),trx(i).xwingr(f)];
+        ywing = [trx(i).ywingl(f),trx(i).y(f),trx(i).ywingr(f)];
+        set(handles.hwing(i),'XData',xwing,'YData',ywing);
+    end
+end
+
+
 guidata(hObject,handles);
 
 % --- Executes during object creation, after setting all properties.
@@ -241,7 +268,20 @@ if isnan(f),
 end
 handles.f = max(1,min(f,handles.nframes));
 handles = update_frame(handles);
+trx=get(handles.axes_Video,'UserData');
+nflies=numel(trx);
+for i=1:nflies
+    updatefly(handles.htri(i),trx,f);
+    set(handles.htrx(i),'XData',trx(i).x(max(f-30,1):f),'YData',trx(i).y(max(f-30,1):f))
+    if isfield(trx,'xwingl')
+        xwing = [trx(i).xwingl(f),trx(i).x(f),trx(i).xwingr(f)];
+        ywing = [trx(i).ywingl(f),trx(i).y(f),trx(i).ywingr(f)];
+        set(handles.hwing(i),'XData',xwing,'YData',ywing);
+    end
+end
+
 guidata(hObject,handles);
+
 
 % --- Executes during object creation, after setting all properties.
 function edit_Frame_CreateFcn(hObject, eventdata, handles)
@@ -299,12 +339,18 @@ if isfield(handles,'fileext'),
   end
 end
 
-[filename, pathname] = uigetfile(handles.filterspec, 'Choose FMF video to play',handles.filename);
+[filename, pathname] = uigetfile(handles.filterspec, 'Choose FMF video to play');
 if ~ischar(filename),
   return;
 end
 handles.filename = fullfile(pathname,filename);
 [handles.filedir,handles.filenamebase,handles.fileext] = fileparts(handles.filename);
+
+[trx_filename, trx_pathname] = uigetfile('.mat');
+if ~ischar(trx_filename),
+  return;
+end
+trxname = fullfile(trx_pathname,trx_filename);
 
 if isfield(handles,'fid') && ~isempty(fopen(handles.fid)) && handles.fid > 1,
   fclose(handles.fid);
@@ -337,6 +383,28 @@ end
 colormap(handles.axes_Video,'gray');
 axis(handles.axes_Video,'image','off');
 handles = update_frame(handles);
+hold on
+
+% Plot first frame track data
+load(trxname,'trx');
+nflies=numel(trx);
+handles.htri=nan(nflies,1);
+handles.htrx=nan(nflies,1);
+handles.hwing=nan(nflies,1);
+flycolors=lines(nflies);
+for i=1:nflies
+    handles.htri(i) = drawflyo(trx(i),1,'Color',flycolors(i,:));
+    handles.htrx(i) = plot(trx(i).x(1),trx(i).y(1),'.-','Color',flycolors(i,:));
+    if isfield(trx,'xwingl')
+        xwing = [trx(i).xwingl(1),trx(i).x(1),trx(i).xwingr(1)];
+        ywing = [trx(i).ywingl(1),trx(i).y(1),trx(i).ywingr(1)];
+        handles.hwing(i) = plot(xwing,ywing,'.-','Color',flycolors(i,:));
+    end
+end
+
+hold off
+
+set(handles.axes_Video,'UserData',trx)
 
 ISPLAYING = false;
 

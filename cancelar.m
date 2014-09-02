@@ -1,9 +1,16 @@
-appdatalist={'cancel_hwait','expdir','experiment','moviefile','out','analysis_protocol','P_stage','cbparams','restart','GUIscale','startframe','endframe','BG','roidata','visdata','debugdata_WT','pff_all','t','trackdata','iscancel','twing'};
+appdatalist={'text_log','h_log','expdir','experiment','moviefile','out',...
+    'analysis_protocol','P_stage','cbparams','restart','GUIscale',...
+    'startframe','endframe','BG','roidata','visdata','debugdata_WT',...
+    'pff_all','t','trackdata','iscancel','isskip','allow_stop','isstop','twing'};
 out=getappdata(0,'out');
 experiment=getappdata(0,'experiment');
 if ~isempty(out)
-    logfid=open_log('bg_log',getappdata(0,'cbparams'),out.folder);
-    fprintf(logfid,'\n\n*****\nCanceling experiment %s at %s.\n*****\n',experiment, datestr(now,'yyyymmddTHHMMSS'));
+    logfid=open_log('main_log');
+    s=sprintf('\n\n*****\nCanceling experiment %s at %s.\n*****\n',experiment, datestr(now,'yyyymmddTHHMMSS'));
+    write_log(logfid,experiment,s)
+    if logfid>1
+        fclose(logfid);
+    end
 end
 for i=1:length(appdatalist)
     if isappdata(0,appdatalist{i})

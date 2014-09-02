@@ -102,7 +102,7 @@ else
       % check that all went well
       if any(trxpriors <= params.gmmem_min_obsprior),
 
-        fprintf('Bad prior found, trying to reinitialize\n');
+        write_log(1,getappdata(0,'experiment'),sprintf('Bad prior found, trying to reinitialize\n'));
         trxcurr.gmm_isbadprior = true;
 
         [mu1,S1,obspriors1,post1,nll1,mixprev1] = mygmm([x,y],2,...
@@ -112,7 +112,7 @@ else
           'weights',w);
 
         if nll1 <= nll,
-          fprintf('Using results from reinitialization, which improve nll by %f\n',nll-nll1);
+          write_log(1,getappdata(0,'experiment'),sprintf('Using results from reinitialization, which improve nll by %f\n',nll-nll1));
           mu = mu1;
           S = S1;
           trxpriors = obspriors1(:)';
@@ -120,7 +120,7 @@ else
           nll = nll1;
           mixprev = mixprev1;
         else
-          fprintf('Reinitialization does not improve nll.\n');
+          write_log(1,getappdata(0,'experiment'),sprintf('Reinitialization does not improve nll.\n'));
         end
        
       end

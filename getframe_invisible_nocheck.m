@@ -14,7 +14,8 @@ hfig = gfdata.hfig;
 img = hardcopy(gfdata.hardcopy_args{:});
 set(hfig,'Units',gfdata.units,'Position',gfdata.pos);
 if numel(img) == 1,
-  fprintf('Could not grab invisible figure. Making visible temporarily.\n');
+  s=sprintf('Could not grab invisible figure. Making visible temporarily.\n');
+  write_log(1,getappdata(0,'experiment'),s)
   set(hfig,'visible','on');
   pause(.1);
   img = hardcopy(gfdata.hardcopy_args{:});
@@ -54,8 +55,9 @@ else
   lastrow0 = nr;
 end
 if lastrow ~= lastrow0 || lastcol ~= lastcol0,
-  fprintf('input width = %d, actual width = %d, input height = %d, actual height = %d\n',...
+  s=sprintf('input width = %d, actual width = %d, input height = %d, actual height = %d\n',...
     sz(2),lastcol0-firstcol+1,sz(1),lastrow0-firstrow+1);
+  write_log(1,getappdata(0,'experiment'),s)
 end
 
 img = img(firstrow:lastrow,firstcol:lastcol,:);

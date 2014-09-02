@@ -13,7 +13,8 @@ angle = cell(1,nflies);
 
 for i1 = 1:nflies,
   fly1 = flies(i1);
-  fprintf('target 1 = %d\n',fly1);
+  s=sprintf('target 1 = %d\n',fly1);
+  write_log(1,getappdata(0,'experiment'),s)
 
   flies2 = flies(trx.roi(fly1)==trx.roi(flies));
   

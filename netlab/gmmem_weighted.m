@@ -90,7 +90,8 @@ for n = 1:niters
       errlog(n) = e;
     end
     if display > 0
-      fprintf(1, 'Cycle %4d  Error %11.6f\n', n, e);
+      s=sprintf('Cycle %4d  Error %11.6f\n', n, e);
+      write_log(1,getappdata(0,'experiment'),s)
     end
     if test
       if (n > 1 & abs(e - eold) < options(3))

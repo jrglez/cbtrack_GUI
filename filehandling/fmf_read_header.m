@@ -44,7 +44,8 @@ frame_count_location = ftell(fp);
 max_n_frames = double( fread( fp, 1, 'uint64' ) );
 
 if max_n_frames <= 0,
-  fprintf('Resorting to computing number of frames from size of file.\n');
+  s=sprintf('Resorting to computing number of frames from size of file.\n');
+  write_log(1,'',s);
   pcurr = ftell(fp);
   fseek(fp,0,'eof');
   nbytestot = ftell(fp);

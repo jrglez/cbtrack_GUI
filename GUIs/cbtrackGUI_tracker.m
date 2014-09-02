@@ -27,7 +27,7 @@ function varargout = cbtrackGUI_tracker(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_ROI_temp
 
-% Last Modified by GUIDE v2.5 10-Apr-2014 15:10:30
+% Last Modified by GUIDE v2.5 11-Jun-2014 18:37:35
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -93,11 +93,15 @@ P_curr_stage='params';
 P_stage=getappdata(0,'P_stage');
 if find(strcmp(P_stage,P_stages))>find(strcmp(P_curr_stage,P_stages))
     visdata=getappdata(0,'visdata');
-    if isstruct(visdata.trx) && numel(visdata.trx.x)==sum(roidata.nflies_per_roi)
+    if isstruct(visdata.trx) && size(visdata.trx,1)==nansum(roidata.nflies_per_roi) % The seccond part prevents format conversion if it has already been converted
         trx=struct('x',[],'y',[],'a',[],'b',[],'theta',[]);
         trx=repmat({trx},[roidata.nrois,roi_params.nframessample]);
         f=0;
         for i=1:roidata.nrois
+            if isnan(roidata.nflies_per_roi(i))
+                trx{i,:}=[];
+                continue
+            end
             f=f(end)+1:f(end)+roidata.nflies_per_roi(i);
             for t=1:roi_params.nframessample
                 trx{i,t}.x=visdata.trx(f,t).x;
@@ -126,6 +130,13 @@ else
         count.nflies_per_roi = nan(1,roidata.nrois);
     end
     [visdata.frames,visdata.dbkgd]=compute_dbkgd(count.readframe,count.nframes,roi_params.nframessample,tracking_params.bgmode,bgmed,roidata.inrois_all);
+    if getappdata(0,'iscancel') || getappdata(0,'isskip')
+        uiresume(handles.cbtrackGUI_ROI)
+        if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+            delete(handles.cbtrackGUI_ROI)
+        end
+        return
+    end
     visdata.isfore=cell(1,roi_params.nframessample);
     visdata.cc_ind=cell(roidata.nrois,roi_params.nframessample);
     visdata.flies_ind=cell(roidata.nrois,roi_params.nframessample);
@@ -182,16 +193,17 @@ minposy=6*GUIscale.rescaley;
 topposy=78*GUIscale.rescaley; topposy=pospanel(4)-minposy-topposy;
 height=topposy-minposy;
 
+check=nan(nROI,1);
 text1=nan(nROI,1);
 text2=nan(nROI,1);
 edit1=nan(nROI,1);
 
 fxROI=[(1:nROI)',nan(nROI,1),count.nflies_per_roi'];
-posx=[14, 81, 146]*GUIscale.rescalex;
+posx=[10, 30, 81, 146]*GUIscale.rescalex;
 lowposy=topposy-26*(nROI-1)*GUIscale.rescaley;
 posy=(topposy:-26*GUIscale.rescaley:lowposy);
-w=[52,52,70]*GUIscale.rescalex;
-h=[20,20,30]*GUIscale.rescaley;
+w=[15,20,52,70]*GUIscale.rescalex;
+h=[20,20,20,30]*GUIscale.rescaley;
 if posy(1)-posy(end)>height
     rescale=height/(posy(1)-posy(end));
     fontsize=fontsize*rescale;
@@ -200,23 +212,35 @@ if posy(1)-posy(end)>height
 end
 
 for i=1:nROI
-    text1(i)=uicontrol('Style','text', 'string',num2str(fxROI(i,1)),'fontsize',fontsize,'units','pixels','position',[posx(1), posy(i),w(1),h(1)],'parent',handles.uipanel_fxROI);
-    text2(i)=uicontrol('Style','text', 'string',num2str(fxROI(i,2)),'fontsize',fontsize,'units','pixels','position',[posx(2), posy(i),w(2),h(2)],'parent',handles.uipanel_fxROI);
-    edit1(i)=uicontrol('Style','edit', 'string',num2str(fxROI(i,3)),'BackgroundColor',[1 1 1],'fontsize',fontsize,'units','pixels','position',[posx(3), posy(i)-3,w(3),h(3)],'parent',handles.uipanel_fxROI,'enable','off');
+    check(i)=uicontrol('Style','checkbox','string','','fontunits','pixels','units','pixels','position',[posx(1), posy(i),w(1),h(1)],'parent', handles.uipanel_fxROI,'value',1,'callback',@checkbox_Callback);
+    text1(i)=uicontrol('Style','text', 'string',num2str(fxROI(i,1)),'fontunits','pixels','fontsize',fontsize,'units','pixels','position',[posx(2), posy(i),w(2),h(2)],'parent',handles.uipanel_fxROI);
+    text2(i)=uicontrol('Style','text', 'string',num2str(fxROI(i,2)),'fontunits','pixels','fontsize',fontsize,'units','pixels','position',[posx(3), posy(i),w(3),h(3)],'parent',handles.uipanel_fxROI);
+    edit1(i)=uicontrol('Style','edit', 'string',num2str(fxROI(i,3)),'fontunits','pixels','BackgroundColor',[1 1 1],'fontsize',fontsize,'units','pixels','position',[posx(4), posy(i)-3,w(4),h(4)],'parent',handles.uipanel_fxROI,'enable','off');
 end
+handles.check=check;
+handles.text1=text1;
+handles.text2=text2;
+handles.edit1=edit1;
 
- handles.text1=text1;
- handles.text2=text2;
- handles.edit1=edit1;
-
- set(handles.text_exp,'FontSize',24,'HorizontalAlignment','center','units','pixels','FontUnits','pixels','String',experiment);
+set(handles.text_exp,'FontSize',24,'HorizontalAlignment','center','units','pixels','FontUnits','pixels','String',experiment);
  
- % Set slider
+% Set slider
 nframessample=roi_params.nframessample;
 set(handles.slider_frame,'Value',1,'Min',1,'Max',nframessample,'SliderStep',[1/(nframessample-1),10/(nframessample-1)])
 fcn_slider_frame = get(handles.slider_frame,'Callback');
 hlisten_frame=addlistener(handles.slider_frame,'ContinuousValueChange',fcn_slider_frame); %#ok<NASGU>
  
+hslider=unique(findobj('Style','slider'));
+mins=get(hslider,'Min');
+maxs=get(hslider,'Max');
+if ~isa(mins,'cell')
+    mins=num2cell(mins);
+    maxs=num2cell(maxs);
+end
+for i=1:numel(hslider)
+    set(hslider(i),'SliderStep',[1/(maxs{i}-mins{i}),10/(maxs{i}-mins{i})])
+end
+
  GUI.old_pos=get(hObject,'position');
 
 
@@ -264,9 +288,20 @@ visdata=get(handles.popupmenu_vis,'UserData');
 restart='';
 setappdata(0,'restart',restart)
 
-if any(isnan(count.nflies_per_roi)) || all([cbparams.wingtrack.dosetwingtrack,any(any(cellfun(@isempty,visdata.trx)))]) 
+if all(isnan(count.nflies_per_roi)) || all([cbparams.wingtrack.dosetwingtrack,all(all(cellfun(@isempty,visdata.trx)))]) 
     roi_params.nframessample=str2double(get(handles.edit_set_nframessample,'String'));
+    setappdata(0,'allow_stop',true)
     [count.nflies_per_roi,visdata.isfore,visdata.cc_ind,visdata.flies_ind,visdata.trx] = CountFliesPerROI_GUI(visdata.dbkgd,roidata,roi_params,tracking_params,cbparams.wingtrack.dosetwingtrack);
+    if getappdata(0,'iscancel') || getappdata(0,'isskip')
+        uiresume(handles.cbtrackGUI_ROI)
+        if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+            delete(handles.cbtrackGUI_ROI)
+        end
+        return
+    elseif getappdata(0,'isstop')
+        setappdata(0,'isstop',false)
+        return
+    end
     count.trx=visdata.trx;
     roidata.nflies_per_roi=count.nflies_per_roi;
     roidata.isnew=3;
@@ -280,7 +315,18 @@ if isnew
             return
         elseif strcmp(msg_change,'Yes')
             roi_params.nframessample=str2double(get(handles.edit_set_nframessample,'String'));
+            setappdata(0,'allow_stop',true)
             [count.nflies_per_roi,visdata.isfore,visdata.cc_ind,visdata.flies_ind,visdata.trx] = CountFliesPerROI_GUI(visdata.dbkgd,roidata,roi_params,tracking_params,cbparams.wingtrack.dosetwingtrack);
+            if getappdata(0,'iscancel') || getappdata(0,'isskip')
+                uiresume(handles.cbtrackGUI_ROI)
+                if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+                    delete(handles.cbtrackGUI_ROI)
+                end
+                return
+            elseif getappdata(0,'isstop')
+                setappdata(0,'isstop',false)
+                return
+            end
             count.trx=visdata.trx;
             roidata.nflies_per_roi=count.nflies_per_roi;
             fxROI(:,2)=count.nflies_per_roi';
@@ -309,9 +355,12 @@ if isnew
         end
     elseif isnew==3 && cbparams.wingtrack.dosetwingtrack
         visdata.trx=struct('x',[],'y',[],'a',[],'b',[],'theta',[]);
-        visdata.trx=repmat(visdata.trx,[sum(count.nflies_per_roi),roi_params.nframessample]);
+        visdata.trx=repmat(visdata.trx,[nansum(count.nflies_per_roi),roi_params.nframessample]);
         k=1;
         for iroi = 1:size(count.trx,1),
+            if any(roidata.ignore==iroi)
+                continue
+            end
             for fly=1:count.nflies_per_roi(iroi)
                 for t=1:size(count.trx,2)
                     visdata.trx(k,t).x = count.trx{iroi,t}.x(fly);
@@ -350,8 +399,12 @@ if isnew
     
     out=getappdata(0,'out');
     savefile = fullfile(out.folder,cbparams.dataloc.roidatamat.filestr); 
-    logfid=open_log('roi_log',cbparams,out.folder);
-    fprintf(logfid,'Saving ROI data to file %s...\n\n***\n',savefile);
+    logfid=open_log('roi_log');
+    s=sprintf('Saving ROI data to file %s...\n\n***\n',savefile);
+    write_log(logfid,getappdata(0,'experiment'),s)
+    if logfid>1
+        fclose(logfid);
+    end
     if exist(savefile,'file'),
       delete(savefile);
     end
@@ -363,6 +416,7 @@ if isnew
 end
 
 setappdata(0,'iscancel',false)
+setappdata(0,'isskip',false)
 uiresume(handles.cbtrackGUI_ROI)
 if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
@@ -374,21 +428,19 @@ elseif getappdata(0,'singleexp') && cbparams.track.dotrack
     if ~cbparams.track.DEBUG
         WriteParams
         setappdata(0,'P_stage','track1')
+        savetemp([])
         cbtrackGUI_tracker_NOvideo
     else
         if isnew
             WriteParams
             setappdata(0,'P_stage','track1')
+            savetemp([])
             cbtrackGUI_tracker_video
         else
             P_stage=getappdata(0,'P_stage');       
             if strcmp(P_stage,'track2')
                 CourtshipBowlTrack_GUI2
-                iscancel=getappdata(0,'iscancel');
-                if iscancel
-                    if iscancel==1
-                        cancelar
-                    end
+                if getappdata(0,'iscancel') || getappdata(0,'isskip')
                     return
                 end
             elseif strcmp(P_stage,'track1')
@@ -399,9 +451,9 @@ elseif getappdata(0,'singleexp') && cbparams.track.dotrack
 end
 
 
-
 function cbtrackGUI_ROI_ResizeFcn(hObject, eventdata, handles)
-GUIresize(handles,hObject);
+GUIscale=getappdata(0,'GUIscale');
+GUIresize(handles,hObject,GUIscale);
 
 
 function slider_frame_Callback(hObject, eventdata, handles)
@@ -415,7 +467,8 @@ if isempty(visdata.isfore{1,f}) && visdata.plot~=1 && visdata.plot~=2
     BG=getappdata(0,'BG');
     bgmed=BG.bgmed;
     count=get(handles.pushbutton_set_count,'UserData');
-    [visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] = ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
+    [visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] = ...
+        ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
 elseif visdata.plot==6 && isempty(visdata.trx{1,f})
     tracking_params=get(handles.edit_set_bgthresh,'UserData');
     roidata=getappdata(0,'roidata');
@@ -468,7 +521,8 @@ if visdata.plot~=1 && visdata.plot~=2
     visdata.cc_ind=cell(nROI,nframes);
     visdata.flies_ind=cell(nROI,nframes);
     visdata.trx=cell(nROI,nframes);
-    [visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] = ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
+    [visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] =...
+        ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
     plot_vis(handles,visdata,f)
     roidata.isnew=2;
     setappdata(0,'roidata',roidata)
@@ -501,7 +555,8 @@ if visdata.plot~=1 && visdata.plot~=2
     visdata.cc_ind=cell(nROI,nframes);
     visdata.flies_ind=cell(nROI,nframes);
     visdata.trx=cell(nROI,nframes);
-    [visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] = ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
+    [visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] =...
+        ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
     plot_vis(handles,visdata,f)
     set(handles.edit_set_nframessample,'UserData',roi_params);
     roidata.isnew=2;
@@ -533,23 +588,30 @@ visdata=get(handles.popupmenu_vis,'UserData');
 
 roi_params.nframessample=str2double(get(handles.edit_set_nframessample,'String'));
 
+setappdata(0,'allow_stop',true)
 [count.nflies_per_roi,visdata.isfore,visdata.cc_ind,visdata.flies_ind,visdata.trx] = CountFliesPerROI_GUI(visdata.dbkgd,roidata,roi_params,tracking_params,cbparams.wingtrack.dosetwingtrack);
+if getappdata(0,'iscancel') || getappdata(0,'isskip')
+    uiresume(handles.cbtrackGUI_ROI)
+    if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+        delete(handles.cbtrackGUI_ROI)
+    end
+    return
+elseif getappdata(0,'isstop')
+    setappdata(0,'isstop',false)
+    return
+end
 count.trx=visdata.trx;
 fxROI(:,2)=count.nflies_per_roi';
 for i=1:roidata.nrois
     set(handles.text2(i),'String',num2str(fxROI(i,2)))
 end
 
-plot_vis(handles,visdata,1)
-
- % Set slider
-nframessample=roi_params.nframessample;
-set(handles.slider_frame,'Value',1,'Min',1,'Max',nframessample,'SliderStep',[1/(nframessample-1),10/(nframessample-1)])
+f=get(handles.slider_frame,'Value');
+plot_vis(handles,visdata,f)
 
 roidata.isnew=3;
 
 set(handles.pushbutton_set_count,'UserData',count);
-set(handles.popupmenu_vis,'UserData',visdata);
 set(handles.slider_frame,'UserData',1);
 set(handles.edit_set_nframessample,'UserData',roi_params);
 setappdata(0,'roidata',roidata)
@@ -561,11 +623,12 @@ msg_cancel=myquestdlg(14,'Helvetica','Cancel current project? All setup options 
 if isempty(msg_cancel)
     msg_cancel='No';
 end
-if isfield(count,'fid')
+if isfield(count,'fid') && count.fid>1
     fclose(count.fid); 
 end
 if strcmp('Yes',msg_cancel)
     setappdata(0,'iscancel',true)
+    setappdata(0,'isskip',true)
     uiresume(handles.cbtrackGUI_ROI)
     if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
         delete(handles.cbtrackGUI_ROI)
@@ -591,7 +654,8 @@ if visdata.plot~=1 && visdata.plot~=2
     visdata.cc_ind=cell(nROI,nframes);
     visdata.flies_ind=cell(nROI,nframes);
     visdata.trx=cell(nROI,nframes);
-    [visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] = ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
+    [visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] =...
+        ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
     plot_vis(handles,visdata,f)
 end
 set(handles.edit_set_bgthresh,'UserData',tracking_params);
@@ -624,7 +688,8 @@ if visdata.plot~=1 && visdata.plot~=2
     visdata.cc_ind=cell(nROI,nframes);
     visdata.flies_ind=cell(nROI,nframes);
     visdata.trx=cell(nROI,nframes);
-    [visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] = ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
+    [visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] =...
+        ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
     plot_vis(handles,visdata,f)
 end
 set(handles.edit_set_bgthresh,'UserData',tracking_params);
@@ -645,16 +710,14 @@ visdata=get(handles.popupmenu_vis,'UserData');
 visdata.plot=get(hObject,'Value');
 roidata=getappdata(0,'roidata');
 tracking_params=get(handles.edit_set_bgthresh,'UserData');
-if isempty(visdata.isfore{1,f}) && visdata.plot~=1 && visdata.plot~=2
+count=get(handles.pushbutton_set_count,'UserData');
+if isempty(visdata.isfore{1,f}) || roidata.isnew==2 && visdata.plot~=1 && visdata.plot~=2 
     roi_params=get(handles.edit_set_nframessample,'UserData');
-    tracking_params=get(handles.edit_set_bgthresh,'UserData');
-    roidata=getappdata(0,'roidata');
     BG=getappdata(0,'BG');
     bgmed=BG.bgmed;
-    count=get(handles.pushbutton_set_count,'UserData');
-    [visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] = ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
-elseif visdata.plot==6 && isempty(visdata.trx{1,f})
-    count=get(handles.pushbutton_set_count,'UserData');
+    [visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] =...
+        ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
+elseif isempty(visdata.trx{1,f}) || roidata.isnew==2 && visdata.plot==6 
     visdata.trx(:,f)=fit_to_ellipse_GUI(roidata,count.nflies_per_roi, visdata.dbkgd{f}, visdata.isfore{f},tracking_params);
 end
 
@@ -749,11 +812,7 @@ end
 P_stage=getappdata(0,'P_stage');
 if strcmp(P_stage,'track2')
     CourtshipBowlTrack_GUI2
-    iscancel=getappdata(0,'iscancel');
-    if iscancel
-        if iscancel==1
-            cancelar
-        end
+    if getappdata(0,'iscancel') || getappdata(0,'isskip')
         return
     end
 elseif strcmp(P_stage,'track1')
@@ -781,3 +840,35 @@ cbtrackGUI_WingTracker
 
 function pushbutton_vid_Callback(hObject, eventdata, handles)
 video_params
+
+
+function pushbutton_skip_Callback(hObject, eventdata, handles)
+setappdata(0,'iscancel',false)
+setappdata(0,'isskip',true)
+uiresume(handles.cbtrackGUI_ROI)
+if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
+    delete(handles.cbtrackGUI_ROI)
+end
+
+function checkbox_Callback(hObject, eventdata)
+handles=guidata(hObject);
+roidata=getappdata(0,'roidata');
+use=get(handles.check,'Value');
+roidata.ignore=find(~cell2mat(use));
+roidata.isnew=2;
+
+f=get(handles.slider_frame,'UserData');
+visdata=get(handles.popupmenu_vis,'UserData');
+count=get(handles.pushbutton_set_count,'UserData');
+tracking_params=get(handles.edit_set_bgthresh,'UserData');
+if visdata.plot~=1 && visdata.plot~=2 
+    roi_params=get(handles.edit_set_nframessample,'UserData');
+    BG=getappdata(0,'BG');
+    bgmed=BG.bgmed;
+    [visdata.isfore{f},visdata.cc_ind(:,f),visdata.flies_ind(:,f),visdata.trx(:,f)] = ChangeParams_GUI(visdata.frames{f},bgmed,visdata.dbkgd{f},roidata,count.nflies_per_roi,roi_params,tracking_params);
+end
+plot_vis(handles,visdata,f)
+
+setappdata(0,'roidata',roidata);
+
+

@@ -51,12 +51,12 @@ if ~ischar(compression),
   compression = '';
 end
 if ~isempty(compression) && ~any(strcmpi(compression,allowedcompressions)),
-  fprintf('Unknown compressor %s\n',compression);
+  write_log(1,getappdata(0,'experiment'),sprintf('Unknown compressor %s\n',compression));
   compression = '';
 end
 
 if ~ischar(moviename) || isempty(moviename) || ~exist(moviename,'file'),
-  fprintf('Choose raw movie to annotate\n');
+  write_log(1,getappdata(0,'experiment'),sprintf('Choose raw movie to annotate\n'));
   helpmsg = 'Choose raw movie to annotate';
   [movienameonly,moviepath] = uigetfilehelp({'*.fmf';'*.sbfmf';'*.avi'},'Choose raw movie to annotate','','helpmsg',helpmsg);
   if ~ischar(movienameonly),
@@ -86,7 +86,7 @@ if ~ischar(trxname) && isstruct(trxname),
   trx = trxname;
 else
   if ~ischar(trxname) || isempty(trxname) || ~exist(trxname,'file'),
-    fprintf('Choose mat file containing flies'' trajectories corresponding to movie %s\n',moviename);
+    write_log(1,getappdata(0,'experiment'),sprintf('Choose mat file containing flies'' trajectories corresponding to movie %s\n',moviename));
     [~,ext] = splitext(moviename);
     trxname = [moviename(1:end-length(ext)+1),'mat'];
     helpmsg = sprintf('Choose trx file to annotate the movie %s with',moviename);
@@ -111,7 +111,7 @@ if ischar(aviname) && ~isempty(aviname)
   end
 end
 if ~haveaviname,
-  fprintf('Choose avi file to output annotated version of %s\n',moviename);
+  write_log(1,getappdata(0,'experiment'),sprintf('Choose avi file to output annotated version of %s\n',moviename));
   [base,~] = splitext(movienameonly);
   aviname = [moviepath,'ctraxresults_',base,'.avi'];
   helpmsg = {};
@@ -239,18 +239,18 @@ if ~isempty(prompts),
           % check that nzoomr is not too big
           if nzoom > 0,
             if ~isnan(nzoomc) && nzoomr > ceil(nzoom / nzoomc),
-              fprintf('nzoomr = %d > ceil(nzoom = %d / nzoomc = %d), decreasing nzoomr\n',nzoomr,nzoom,nzoomc);
+              write_log(1,getappdata(0,'experiment'),sprintf('nzoomr = %d > ceil(nzoom = %d / nzoomc = %d), decreasing nzoomr\n',nzoomr,nzoom,nzoomc));
               nzoomr = ceil(nzoom/nzoomc);
             elseif nzoomr > nzoom,
-              fprintf('nzoomr = %d > nflies to plot = %d, decreasing nzoomr\n',nzoomr,nzoom);
+              write_log(1,getappdata(0,'experiment'),sprintf('nzoomr = %d > nflies to plot = %d, decreasing nzoomr\n',nzoomr,nzoom));
               nzoomr = nzoom;
             end
           else
             if ~isnan(nzoomc) && nzoomr > ceil(nids / nzoomc),
-              fprintf('nzoomr = %d > ceil(nflies = %d / nzoomc = %d), decreasing nzoomr\n',nzoomr,nids,nzoomc);
+              write_log(1,getappdata(0,'experiment'),sprintf('nzoomr = %d > ceil(nflies = %d / nzoomc = %d), decreasing nzoomr\n',nzoomr,nids,nzoomc));
               nzoomr = ceil(nids/nzoomc);
             elseif nzoomr > nids,
-              fprintf('nzoomr = %d > nflies = %d, decreasing nzoomr\n',nzoomr,nids);
+              write_log(1,getappdata(0,'experiment'),sprintf('nzoomr = %d > nflies = %d, decreasing nzoomr\n',nzoomr,nids));
               nzoomr = nids;
             end
           end
@@ -260,18 +260,18 @@ if ~isempty(prompts),
           % check that nzoomr is not too big
           if nzoom > 0,
             if ~isnan(nzoomr) && nzoomc > ceil(nzoom / nzoomr),
-              fprintf('nzoomc = %d > ceil(nzoom = %d / nzoomr = %d), decreasing nzoomc\n',nzoomc,nzoom,nzoomr);
+              write_log(1,getappdata(0,'experiment'),sprintf('nzoomc = %d > ceil(nzoom = %d / nzoomr = %d), decreasing nzoomc\n',nzoomc,nzoom,nzoomr));
               nzoomc = ceil(nzoom/nzoomr);
             elseif nzoomc > nzoom,
-              fprintf('nzoomc = %d > nflies to plot = %d, decreasing nzoomc\n',nzoomc,nzoom);
+              write_log(1,getappdata(0,'experiment'),sprintf('nzoomc = %d > nflies to plot = %d, decreasing nzoomc\n',nzoomc,nzoom));
               nzoomc = nzoom;
             end
           else
             if ~isnan(nzoomr) && nzoomc > ceil(nids / nzoomr),
-              fprintf('nzoomc = %d > ceil(nflies = %d / nzoomr = %d), decreasing nzoomc\n',nzoomc,nids,nzoomr);
+              write_log(1,getappdata(0,'experiment'),sprintf('nzoomc = %d > ceil(nflies = %d / nzoomr = %d), decreasing nzoomc\n',nzoomc,nids,nzoomr));
               nzoomc = ceil(nids/nzoomr);
             elseif nzoomc > nids,
-              fprintf('nzoomc = %d > nflies = %d, decreasing nzoomc\n',nzoomc,nids);
+              write_log(1,getappdata(0,'experiment'),sprintf('nzoomc = %d > nflies = %d, decreasing nzoomc\n',nzoomc,nids));
               nzoomc = nids;
             end
           end
@@ -321,7 +321,7 @@ fliesmaybeplot = find(nframesoverlap > 0);
 if isempty(zoomflies),
   if length(fliesmaybeplot) < nzoom,
     zoomflies = [fliesmaybeplot,nan(1,nzoom-length(fliesmaybeplot))];
-    fprintf('Not enough flies to plot\n');
+    write_log(1,getappdata(0,'experiment'),sprintf('Not enough flies to plot\n'));
   else
     
     if dynamicflyselection,
@@ -422,10 +422,17 @@ axis off;
 isdisplay = ispc || ~strcmpi(get(1,'XDisplay'),'nodisplay');
 
 % corners of zoom boxes in plotted image coords
-x0 = nc+(0:nzoomc-1)*rowszoom+1;
-y0 = (0:nzoomr-1)*rowszoom+1;
-x1 = x0 + rowszoom - 1;
-y1 = y0 + rowszoom - 1;
+if nzoom~=0
+    x0 = nc+(0:nzoomc-1)*rowszoom+1;
+    y0 = (0:nzoomr-1)*rowszoom+1;
+    x1 = x0 + rowszoom - 1;
+    y1 = y0 + rowszoom - 1;
+else
+    x0 = nc;
+    y0 = 1;
+    x1 = x0;
+    y1 = y0 + nr - 1;
+end
 
 % relative frame offset
 nframesoff = getstructarrayfield(trx,'firstframe') - 1;
@@ -450,7 +457,7 @@ for segi = 1:numel(firstframes),
 
   for frame = firstframe:endframe,
     if mod(frame - firstframe,5) == 0,
-      fprintf('frame %d, write rate = %f s/fr\n',frame,toc/5);
+      write_log(1,getappdata(0,'experiment'),sprintf('frame %d, write rate = %f s/fr\n',frame,toc/5));
       tic;
     end
     
@@ -730,7 +737,7 @@ for segi = 1:numel(firstframes),
 %         else
 %           aviobj = myavifile(aviname,'fps',fps,'quality',100,'compression',compression,...
 %             'TempDataFile',avifileTempDataFile); 
-%           fprintf('Temporary data file for avi writing: %s\n',aviobj.TempDataFile);
+%           write_log(1,getappdata(0,'experiment'),sprintf('Temporary data file for avi writing: %s\n',aviobj.TempDataFile);
 %         end
       end
     end
@@ -738,7 +745,7 @@ for segi = 1:numel(firstframes),
     if frame == firstframes(1),
       fr = getframe_invisible(hax);
       [height,width,~] = size(fr);
-      fprintf('Size of frame is %d x %d\n',height,width);
+      write_log(1,getappdata(0,'experiment'),sprintf('Size of frame is %d x %d\n',height,width));
       gfdata = getframe_initialize(hax);
       [fr,height,width] = getframe_invisible_nocheck(gfdata,[height,width],false,false);
 
@@ -759,7 +766,7 @@ for segi = 1:numel(firstframes),
   
 end
   
-fprintf('Finishing AVI...\n');
+write_log(1,getappdata(0,'experiment'),sprintf('Finishing AVI...\n'));
 
 if useVideoWriter,
   close(aviobj);
@@ -770,7 +777,7 @@ if fid > 0,
   fclose(fid);
 end
 
-fprintf('Cleanup...\n');
+write_log(1,getappdata(0,'experiment'),sprintf('Cleanup...\n'));
 
 getframe_cleanup(gfdata);
 

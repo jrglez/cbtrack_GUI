@@ -4,10 +4,16 @@ framessample = round(linspace(1,nframes,nframessample));
 im=cell(1,nframessample);
 dbkgd=cell(1,nframessample);
 dbkgd_in=cell(1,nframessample);
-    
-hwait=waitbar(0,{['Experiment ',experiment];['Reading frame 0 of ', num2str(nframessample)]});
+
+setappdata(0,'allow_stop',false)
+hwait=waitbar(0,{['Experiment ',experiment];['Reading frame 0 of ', num2str(nframessample)]},'CreateCancelBtn','cancel_waitbar');
 
 for i = 1:nframessample,
+  if getappdata(0,'iscancel') || getappdata(0,'isskip') || getappdata(0,'isstop')
+    im=[];
+    dbkgd_in=[];
+    return
+  end  
   waitbar(i/nframessample,hwait,{['Experiment ',experiment];['Reading frame ',num2str(i),' of ', num2str(nframessample)]});
   im{i} = readframe(framessample(i));
   switch bgmode,
@@ -22,4 +28,4 @@ for i = 1:nframessample,
   end
   dbkgd_in{i}=dbkgd{i}; dbkgd_in{i}(~inrois_all)=255;  
 end
-close (hwait)
+delete (hwait)

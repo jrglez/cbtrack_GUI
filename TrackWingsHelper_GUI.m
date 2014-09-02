@@ -68,7 +68,7 @@ if any([ischar(restart),ISPAUSE]) && isfield(trackdata,'twing'),
   perframedata=trackdata.perframedata;
   wingplotdata=trackdata.wingplotdata;
   t=trackdata.twing;
-  fprintf('Restarting tracking at frame %d...\n',t);
+  write_log(1,getappdata(0,'experiment'),sprintf('Restarting tracking at frame %d...\n',t));
   startframe = t;
 else
   startframe = firstframe;
@@ -115,7 +115,8 @@ if debugdata.DEBUG
     wingplotdata.fore2flywing=cell(debugdata.nframestrack,1);
   end
 elseif  ~debugdata.DEBUG
-      debugdata.hwait=waitbar(0,{['Experiment ',experiment];'Tracking wings'},'CreateCancelBtn','setappdata(0,''cancel_hwait'',1)');
+  setappdata(0,'allow_stop',false)
+  debugdata.hwait=waitbar(0,{['Experiment ',experiment];'Tracking wings'},'CreateCancelBtn','cancel_waitbar');
 end
 
 %for t = round(linspace(max(firstframe,min([trx.firstframe])),max([trx.endframe]),50)),
@@ -124,10 +125,13 @@ end
 debugdata.lastframe=framestrack(end)-framestrack(1)+1;
 ISPAUSE=false;
 for t = framestrack(:)',
-setappdata(0,'twing',t);
+  if getappdata(0,'iscancel') || getappdata(0,'isskip')
+      return
+  end
+  setappdata(0,'twing',t);
   if ISPAUSE
       debugdata.track=0;%#ok<UNRCH>
-      fprintf('Wing tracking paused at frame %i at %s...\n',t,datestr(now,'yyyymmddTHHMMSS')); 
+      write_log(1,getappdata(0,'experiment'),sprintf('Wing tracking paused at frame %i at %s...\n',t,datestr(now,'yyyymmddTHHMMSS'))); 
       break; 
   end
   debugdata.framestracked=[debugdata.framestracked,t];
@@ -190,8 +194,11 @@ setappdata(0,'twing',t);
     trackdata.perframedata = perframedata;
     trackdata.perframeunits = units;
     trackdata.twing = t;
+    twing=t; %#ok<NASGU>
+    debugdata_WT=getappdata(0,'debugdata_WT'); %#ok<NASGU>
+    cbparams=getappdata(0,'cbparams');
     if cbparams.track.dosave
-        save(out.temp_full,'trackdata','-append')
+        save(out.temp_full,'trackdata','twing','debugdata_WT','-append')
     end
   end
 end
@@ -209,4 +216,6 @@ for fly = 1:nflies,
 end
 
 %% clean up
-fclose(fid);
+if fid>1
+    fclose(fid);
+end

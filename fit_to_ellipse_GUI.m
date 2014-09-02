@@ -13,6 +13,10 @@ trxcurr.istouching = nan;
 trxcurr.gmm_isbadprior = nan;
 trxcurr = repmat(trxcurr,[1,nrois]);
 for j=1:nrois
+    if any(roidata.ignore==j),
+        trx{j} = [];
+        continue;
+    end    
     roibb = roidata.roibbs(j,:);
     dbkgdbb = double(dbkgd(roibb(3):roibb(4),roibb(1):roibb(2)));
     dbkgdbb(~roidata.inrois{j}) = 0;

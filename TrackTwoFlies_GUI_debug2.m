@@ -9,18 +9,18 @@ stages = {'maintracking','reformat','chooseorientations','trackwings1','assignid
 
 cbparams=getappdata(0,'cbparams');
 out=getappdata(0,'out');
-logfid=open_log('track_log',cbparams,out.folder);
+logfid=open_log('track_log');
 
 %% open movie
 
-fprintf(logfid,'Opening movie...\n');
+write_log(logfid,getappdata(0,'experiment'),sprintf('Opening movie...\n'));
 [readframe,nframes,fid,headerinfo] = get_readframe_fcn(moviefile);
 
 trackdata=getappdata(0,'trackdata');
 
 restartstage = trackdata.stage;
 if ~isempty(restart),
-  fprintf(logfid,'Restarting from stage %s...\n',trackdata.stage);
+  write_log(logfid,getappdata(0,'experiment'),sprintf('Restarting from stage %s...\n',trackdata.stage));
 end
 t=trackdata.t;
 nframes_track = t - params.firstframetrack + 1;
@@ -51,7 +51,7 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
     istouching = trackdata.istouching(:,1:nframes_track);
     gmm_isbadprior = trackdata.gmm_isbadprior(:,1:nframes_track);
 
-    fprintf(logfid,'Correcting for ROI bounding boxes...\n');
+    write_log(logfid,getappdata(0,'experiment'),sprintf('Correcting for ROI bounding boxes...\n'));
     for roii = 1:nrois, 
       roibb = roidata.roibbs(roii,:);
       trxx(:,roii,:) = trxx(:,roii,:) + roibb(1) - 1;
@@ -60,7 +60,7 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
 
     %% reformat
 
-    fprintf(logfid,'Reformatting...\n');
+    write_log(logfid,getappdata(0,'experiment'),sprintf('Reformatting...\n'));
     
     trackdata.tracktwoflies_version = version;
     trackdata.tracktwoflies_timestamp = timestamp;
@@ -89,8 +89,8 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
         trackdata.trx(j).arena = struct;
         if ~roidata.isall,
             trackdata.trx(j).arena.arena_radius_mm = roidata.radii(i);
-            trackdata.trx(i).arena.arena_center_mm_x = roidata.centerx(i);            
-            trackdata.trx(i).arena.arena_center_mm_y = roidata.centery(i);
+            trackdata.trx(j).arena.arena_center_mm_x = roidata.centerx(i);            
+            trackdata.trx(j).arena.arena_center_mm_y = roidata.centery(i);
         end
         %trackdata.trx(j).roipts = rois{i};
         %trackdata.trx(j).roibb = roibbs(i,:);
@@ -116,7 +116,7 @@ nflies = numel(trackdata.trx);
 
 stage = 'chooseorientations';  
 if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
-    fprintf(logfid,'Choosing orientations 1...\n');
+    write_log(logfid,getappdata(0,'experiment'),sprintf('Choosing orientations 1...\n'));
 
     for i = 1:nflies,
       x = trackdata.trx(i).x;
@@ -208,9 +208,9 @@ stage = 'trackwings1';
 didtrackwings = false;
 
 if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
-    if strcmp(params.assignidsby,'wingsize'),
+    if strcmp(params.assignidsby,'wingsize') && cbparams.track.dotrackwings,
 
-      fprintf(logfid,'Tracking wings 1...\n');
+      write_log(logfid,getappdata(0,'experiment'),sprintf('Tracking wings 1...\n'));
 
       [nr,nc,~] = size(readframe(1));
       if roidata.isall
@@ -235,6 +235,9 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
           [wingtrx,wingperframedata,~,wingtrackinfo,wingperframeunits,~] = TrackWingsHelper_GUI([],trackdata.trx,moviefile,double(bgmed),isarena,params.wingtracking_params,debugdata,...
             'firstframe',params.firstframetrack,...
             'debug',params.DEBUG);
+          if getappdata(0,'iscancel') || getappdata(0,'isskip')
+              return
+          end
           didtrackwings = true;
           trackdata.trackwings_timestamp = wingtrackinfo.trackwings_timestamp;
           trackdata.trackwings_version = wingtrackinfo.trackwings_version;
@@ -243,8 +246,7 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
           trackdata.perframeunits = wingperframeunits;
       else
           cbtrackGUI_WingTracker_video
-          iscancel=getappdata(0,'iscancel');
-          if iscancel
+          if getappdata(0,'iscancel') || getappdata(0,'isskip')
               return
           end
           trackdata=getappdata(0,'trackdata');
@@ -253,7 +255,9 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
     end
     trackdata.stage=stages{find(strcmp(stage,stages))+1};
     if cbparams.track.dosave
-        save(out.temp_full,'trackdata','-append')
+        twing=getappdata(0,'twing'); %#ok<NASGU>
+        debugdata_WT=getappdata(0,'debugdata_WT'); %#ok<NASGU>
+        save(out.temp_full,'trackdata','twing','debugdata_WT','-append')
     end
     setappdata(0,'trackdata',trackdata)
 end
@@ -264,7 +268,7 @@ end
 stage = 'assignids'; 
 
 if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
-    fprintf(logfid,'Assigning identities based on %s...\n',params.assignidsby);
+    write_log(logfid,getappdata(0,'experiment'),sprintf('Assigning identities based on %s...\n',params.assignidsby));
 
     assignids_nflips = nan(1,nrois);
     switch params.assignidsby,
@@ -318,7 +322,7 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
       [idsfit_curr,mudatafit_curr,sigmadatafit_curr,sigmamotionfit_curr,cost_curr,niters_curr] = ...
         AssignIdentities_GUI(x,y,iddata,'vel_dampen',params.err_dampen_pos,'appearanceweight',appearanceweight);
       assignids_nflips(roii) = nnz(idsfit_curr(1,1:end-1)~=idsfit_curr(1,2:end));
-      fprintf(logfid,'Roi %d, flipped ids %d times\n',roii,assignids_nflips(roii));
+      write_log(logfid,getappdata(0,'experiment'),sprintf('Roi %d, flipped ids %d times\n',roii,assignids_nflips(roii)));
 
       for i = 1:2,
         for j = 1:2,
@@ -364,7 +368,7 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
           error('Unknown assignidsby value');
       end
       meanareacurr = nanmean(areacurr(:));
-      fprintf(logfid,'%d: %f\n',i,meanareacurr);
+      write_log(logfid,getappdata(0,'experiment'),sprintf('%d: %f\n',i,meanareacurr));
       if meanareacurr <= area_thresh, 
         typeperroi{i} = params.typesmallval;
       else
@@ -404,7 +408,7 @@ end
 
 stage = 'chooseorientations2'; 
 if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
-    fprintf(logfid,'Choosing orientations 2...\n');
+    write_log(logfid,getappdata(0,'experiment'),sprintf('Choosing orientations 2...\n'));
     isflip = false(nflies,nframes_track);
 
     for i = 1:nflies,
@@ -417,10 +421,10 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
       x = trackdata.trx(i).x;
       y = trackdata.trx(i).y;
       theta = trackdata.trx(i).theta;
-      fprintf(logfid,'Re-choosing orientations for fly %d (nidflips = %d)\n',i,trackdata.assignids.nflips(roii));
+      write_log(logfid,getappdata(0,'experiment'),sprintf('Re-choosing orientations for fly %d (nidflips = %d)\n',i,trackdata.assignids.nflips(roii)));
       trackdata.trx(i).theta = choose_orientations(x,y,theta,params.choose_orientations_velocity_angle_weight,params.choose_orientations_max_velocity_angle_weight);
       isflip(i,:) = round(abs(modrange(theta-trackdata.trx(i).theta,-pi,pi))/pi) > 0;
-      fprintf(logfid,'N. orientation flips = %d\n',nnz(isflip(i,:)));
+      write_log(logfid,getappdata(0,'experiment'),sprintf('N. orientation flips = %d\n',nnz(isflip(i,:))));
 
     end
     trackdata.stage=stages{find(strcmp(stage,stages))+1};
@@ -450,7 +454,7 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
 
     if params.dotrackwings && ~isempty(roistrack),
 
-      fprintf(logfid,'Tracking wings 2...\n');
+      write_log(logfid,getappdata(0,'experiment'),sprintf('Tracking wings 2...\n'));
 
       [nr,nc,~] = size(readframe(1));
       if roidata.isall
@@ -480,6 +484,9 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
               'debug',false,...
               'framestrack',unique(cat(2,framestrack{:})),...
               'perframedata',trackdata.perframedata);
+          if getappdata(0,'iscancel') || getappdata(0,'isskip')
+              return
+          end
           trackdata.trackwings_timestamp = wingtrackinfo.trackwings_timestamp;
           trackdata.trackwings_version = wingtrackinfo.trackwings_version;
           trackdata.trx = wingtrx;
@@ -495,6 +502,9 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
               [wingtrx,wingperframedata,~,wingtrackinfo,wingperframeunits,~] = TrackWingsHelper_GUI([],trackdata.trx,moviefile,double(bgmed),isarena,params.wingtracking_params,debugdata,...
                   'firstframe',params.firstframetrack,...
                   'debug',params.DEBUG);
+              if getappdata(0,'iscancel') || getappdata(0,'isskip')
+                 return
+              end
 
               trackdata.trackwings_timestamp = wingtrackinfo.trackwings_timestamp;
               trackdata.trackwings_version = wingtrackinfo.trackwings_version;
@@ -503,15 +513,20 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
               trackdata.perframeunits = wingperframeunits;
           else
               cbtrackGUI_WingTracker_video
-              iscancel=getappdata(0,'iscancel');
-              if iscancel
+              if getappdata(0,'iscancel') || getappdata(0,'isskip')
                   return
               end
               trackdata=getappdata(0,'trackdata');             
           end
       end       
     end
+    if cbparams.track.dosave
+        twing=getappdata(0,'twing'); %#ok<NASGU>
+        debugdata_WT=getappdata(0,'debugdata_WT'); %#ok<NASGU>
+        save(out.temp_full,'trackdata','twing','debugdata_WT','-append')
+    end 
     trackdata.stage=stages{find(strcmp(stage,stages))+1};
+    setappdata(0,'trackdata',trackdata);
 end
 %% convert to real units
 stage='realunits';
@@ -519,7 +534,7 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
     if isfield(roidata,'pxpermm') 
 
       dorotate = isfield(roidata,'rotateby');
-      dotranslate = all(isfield(roidata,{'centerx','centery'}));
+      dotranslate = all(isfield(roidata,{'centerx','centery'}))&&~roidata.isall;
       if dorotate,
         costheta = cos(roidata.rotateby);
         sintheta = sin(roidata.rotateby);
@@ -588,21 +603,19 @@ end
 %% add arena parameters
 stage='arena';
 if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
-    if all(isfield(roidata,{'centerx','centery','radii'})),
-
+    if all(isfield(roidata,{'centerx','centery','radii'})) && ~isnan(roidata.pxpermm) && ~roidata.isall,
       for i = 1:nflies,
         roii = trackdata.trx(i).roi;
         trackdata.trx(i).arena.arena_radius_mm = roidata.radii(roii) / roidata.pxpermm;
         trackdata.trx(i).arena.arena_center_mm_x = 0;
         trackdata.trx(i).arena.arena_center_mm_y = 0;
       end
-      trackdata.stage=stages{find(strcmp(stage,stages))+1};
     end
     trackdata.stage=stages{find(strcmp(stage,stages))+1};
     setappdata(0,'trackdata',trackdata)
 end
 %% clean up
-fprintf(logfid,'Clean up...\n');
+write_log(logfid,getappdata(0,'experiment'),sprintf('Clean up...\n'));
 
 
 if fid > 1,

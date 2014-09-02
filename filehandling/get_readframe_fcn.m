@@ -196,6 +196,13 @@ end
 function [im,timestamp] = avi_read_frame(readerobj,headerinfo,f)
 
 im = read(readerobj,f);
+grayscale=getappdata(0,'grayscale');
+if isempty(grayscale)
+    grayscale=false;
+end
+if size(im,3)==3 && grayscale 
+    im=rgb2gray(im);
+end
 timestamp = (f-1)/headerinfo.FrameRate;
 
 

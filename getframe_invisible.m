@@ -57,7 +57,8 @@ img = hardcopy(haxes, ['-d' renderer], ['-r' num2str(round(pixelsperinch))]);
 set(hfig,'Units',units,'Position',pos);
 
 if numel(img) == 1,
-  fprintf('Could not grab invisible figure. Making visible temporarily.\n');
+  s=sprintf('Could not grab invisible figure. Making visible temporarily.\n');
+  write_log(1,getappdata(0,'experiment'),s)
   set(hfig,'visible','on');
   pause(.1);
   img = hardcopy(haxes, ['-d' renderer], ['-r' num2str(round(pixelsperinch))]);
@@ -81,8 +82,9 @@ if issize,
   lastcol0 = find(~all(isallgray,1),1,'last');
   lastrow0 = find(~all(isallgray,2),1,'last');
   if lastrow ~= lastrow0 || lastcol ~= lastcol0,
-    fprintf('input width = %d, actual width = %d, input height = %d, actual height = %d\n',...
+    s=sprintf('input width = %d, actual width = %d, input height = %d, actual height = %d\n',...
       sz(2),lastcol0-firstcol+1,sz(1),lastrow0-firstrow+1);
+    write_log(1,getappdata(0,'experiment'),s)
   end
 
 else 

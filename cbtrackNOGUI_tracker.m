@@ -1,6 +1,8 @@
 function cbtrackNOGUI_tracker
+out=getappdata(0,'out');
 cbparams=getappdata(0,'cbparams');
 roidata=getappdata(0,'roidata');
+logfid=open_log('roi_log');
 if cbparams.wingtrack.dosetwingtrack || ~isfield(roidata,'nflies_per_roi') || ~getappdata(0,'usefiles')
     moviefile=getappdata(0,'moviefile');
     BG=getappdata(0,'BG');
@@ -9,9 +11,16 @@ if cbparams.wingtrack.dosetwingtrack || ~isfield(roidata,'nflies_per_roi') || ~g
     [readframe,nframes,fid,~] = get_readframe_fcn(moviefile);
     [visdata.frames,visdata.dbkgd]=...
         compute_dbkgd(readframe,nframes,roi_params.nframessample,...
-        tracking_params,BG.bgmed,roidata.inrois_all);
+        tracking_params.bgmode,BG.bgmed,roidata.inrois_all);
+    if getappdata(0,'iscancel') || getappdata(0,'isskip') || getappdata(0,'isstop')
+        return
+    end  
+    setappdata(0,'allow_stop',false)
     [nflies_per_roi,~,~,~,trx] = ...
         CountFliesPerROI_GUI(visdata.dbkgd,roidata,roi_params,tracking_params,cbparams.wingtrack.dosetwingtrack);
+    if getappdata(0,'iscancel') || getappdata(0,'isskip')
+        return
+    end
     if cbparams.wingtrack.dosetwingtrack
         visdata.trx=struct('x',[],'y',[],'a',[],'b',[],'theta',[]);
         visdata.trx=repmat(visdata.trx,[sum(nflies_per_roi),roi_params.nframessample]);
@@ -39,18 +48,30 @@ if cbparams.wingtrack.dosetwingtrack || ~isfield(roidata,'nflies_per_roi') || ~g
             mymsgbox(50,190,14,'Helvetica',['Could not close movie file: ',getReport(ME)],'Warning','warn')
         end
     end
-    setappdata(0,'P_stage','wing_params')
+    if cbparams.wingtrack.dosetwingtrack
+        setappdata(0,'P_stage','wing_params')
+    else
+        setappdata(0,'P_stage','track1')
+    end
     if cbparams.track.dosave
         savetemp({'roidata','visdata'})
     end
 else
-    out=getappdata(0,'out');
     loadfile=fullfile(out.folder,cbparams.dataloc.roidatamat.filestr);
-    logfid=open_log('roi_log',cbparams,out.folder);
-    fprintf(logfid,'Loading number of flies from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
-    if logfid > 1,
-      fclose(logfid);
+    s=sprintf('Loading number of flies from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
+    write_log(logfid,getappdata(0,'experiment'),s)
+    setappdata(0,'P_stage','track1')
+    if cbparams.track.dosave
+        savetemp([])
     end
-    setappdata(0,'P_stage','wing_params')
 end
-
+savefile = fullfile(out.folder,cbparams.dataloc.roidatamat.filestr);
+s=sprintf('Saving ROI data to file %s...\n',savefile);
+write_log(logfid,getappdata(0,'experiment'),s)
+if exist(savefile,'file'),
+      delete(savefile);
+end
+save(savefile,'-struct','roidata');
+if logfid > 1,
+  fclose(logfid);
+end

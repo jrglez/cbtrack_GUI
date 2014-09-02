@@ -22,7 +22,8 @@ try
     save(matname,varname,'timestamps');
   end
 catch ME
-  fprintf('Error saving %s to %s. Error info:\n',varname,matname);
+  s=sprintf('Error saving %s to %s. Error info:\n',varname,matname);
+  write_log(1,getappdata(0,'experiment',s)
   disp(ME);
   return;
 end

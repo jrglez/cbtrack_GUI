@@ -20,25 +20,29 @@ end
 
 tmp = load(matname);
 if verbose,
-  fprintf('loaded %s\n',matname);
+  s=sprintf('loaded %s\n',matname);
+  write_log(1,getappdata(0,'experiment'),s)
 end
 if isfield(tmp,'pairtrx'),
   tmp.trx = tmp.pairtrx;
 end
 if ~isfield(tmp,'trx'),
   if verbose,
-    fprintf('no trx variable\n');
+    s=sprintf('no trx variable\n');
+    write_log(1,getappdata(0,'experiment'),s)
   end
   if isfield(tmp,'ntargets'),
     if verbose,
-      fprintf('Ctrax output file; converting to trx file\n');
+      s=sprintf('Ctrax output file; converting to trx file\n');
+      write_log(1,getappdata(0,'experiment'),s)
     end
     if ~exist('moviename','var'),
       moviename = '?';
     end
     %ds = datestr(now,30);
     if verbose,
-      fprintf('Calling cleanup_ctrax_data\n');
+      s=sprintf('Calling cleanup_ctrax_data\n');
+      write_log(1,getappdata(0,'experiment'),s)
     end
     [trx,matname,timestamps] = cleanup_ctrax_data(matname,moviename,tmp,'','dosave',dosave,'savename',savename,'annname',annname);
   else
@@ -47,7 +51,8 @@ if ~isfield(tmp,'trx'),
   end
 else
   if verbose,
-    fprintf('trx variable found\n');
+    s=sprintf('trx variable found\n');
+    write_log(1,getappdata(0,'experiment'),s)
   end
   trx = tmp.trx;
   
@@ -77,7 +82,8 @@ end
 
 % member functions can be weird
 if verbose,
-  fprintf('Adding off\n');
+  s=sprintf('Adding off\n');
+  write_log(1,getappdata(0,'experiment'),s)
 end
 for i = 1:length(trx),
   trx(i).off = -trx(i).firstframe + 1;
@@ -102,5 +108,6 @@ end
 
 succeeded = true;
 if verbose,
-  fprintf('Done. returning from load_tracks\n');
+  s=sprintf('Done. returning from load_tracks\n');
+  write_log(1,getappdata(0,'experiment'),s)
 end

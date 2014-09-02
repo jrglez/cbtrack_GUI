@@ -114,12 +114,15 @@ switch visdata.plot
             delete(visdata.hflies(ishandle(visdata.hflies)))
         end
         visdata.hflies=[];
+        if isfield(visdata,'hell') 
+            delete(visdata.hell(ishandle(visdata.hell)))
+        end
+        visdata.hell=[];
         set(handles.BG_img,'CData',visdata.frames{f});
         set_cmap(handles.cbtrackGUI_ROI,'gray')
         nROI=size(visdata.trx,1);
         l=0;
         hold(handles.axes_tracker,'on')
-        exists_ell=~isempty(~visdata.hell);
         for i=1:nROI
             trx=visdata.trx{i,f};
             if ~isempty(trx)
@@ -127,11 +130,7 @@ switch visdata.plot
                 colors_ell=hsv(nell)*0.7;
                 for k=1:length(trx.x)
                     l=l+1;
-                    if ~exists_ell || ~ishandle(visdata.hell(l)),
-                        visdata.hell(l) = drawellipse(trx.x(k),trx.y(k),trx.theta(k),trx.a(k),trx.b(k),'Color',colors_ell(k,:),'LineWidth',2);
-                    else
-                        updateellipse(visdata.hell(l),trx.x(k),trx.y(k),trx.theta(k),trx.a(k),trx.b(k));
-                    end
+                    visdata.hell(l) = drawellipse(trx.x(k),trx.y(k),trx.theta(k),trx.a(k),trx.b(k),'Color',colors_ell(k,:),'LineWidth',2);
                 end
             end
         end

@@ -13,8 +13,8 @@ out=getappdata(0,'out');
 
 %% open log file
 
-logfid=open_log('roi_log',cbparams,out.folder);
-fprintf(logfid,'Updating ROIs at %s...\n',timestamp);
+logfid=open_log('roi_log');
+write_log(logfid,getappdata(0,'experiment'),sprintf('Updating ROIs at %s...\n',timestamp));
 
 %% compute image to real-world transform
 
@@ -55,20 +55,20 @@ if roidata.nrois>1 && roidata.nrois>numel(fieldnames(params.roirows))
   dtheta = modrange(thetas-thetas(1),-pi,pi);
   meantheta = modrange(thetas(1) + mean(dtheta),-pi,pi);
   
-  fprintf(logfid,'Based on ROI centroids, we want to rotate by %f deg (std = %f, min = %f, max = %f)\n',...
+  write_log(logfid,getappdata(0,'experiment'),sprintf('Based on ROI centroids, we want to rotate by %f deg (std = %f, min = %f, max = %f)\n',...
     meantheta*180/pi,std(dtheta,1)*180/pi,modrange(thetas(1) + min(dtheta),-pi,pi)*180/pi,...
-    modrange(thetas(1) + max(dtheta),-pi,pi)*180/pi);
+    modrange(thetas(1) + max(dtheta),-pi,pi)*180/pi));
   
   if isfield(params,'baserotateby'),
     meantheta = modrange(-meantheta+params.baserotateby*pi/180,-pi,pi);
-    fprintf(logfid,'Adding in default baserotateby %f\n',params.baserotateby);
+    write_log(logfid,getappdata(0,'experiment'),sprintf('Adding in default baserotateby %f\n',params.baserotateby));
   end
   roidata.rotateby = -meantheta;
-  fprintf(logfid,'Final rotateby = %f\n',roidata.rotateby*180/pi);  
+  write_log(logfid,getappdata(0,'experiment'),sprintf('Final rotateby = %f\n',roidata.rotateby*180/pi));  
 end
 
 %% create masks
-fprintf(logfid,'Creating ROI masks...\n');
+write_log(logfid,getappdata(0,'experiment'),sprintf('Creating ROI masks...\n'));
 [imheight,imwidth]=size(roidata.idxroi);
 [XGRID,YGRID] = meshgrid(1:imwidth,1:imheight);
 roibbs = [max(1,floor(roidata.centerx(:)-roidata.radii(:))),...
@@ -93,7 +93,7 @@ roidata.inrois = inrois;
 roidata.inrois_all=(idxroi~=0);
 roidata.isall=false;
 
-fprintf(logfid,'Finished updating ROIs at %s.\n',datestr(now,'yyyymmddTHHMMSS'));
+write_log(logfid,getappdata(0,'experiment'),sprintf('Finished updating ROIs at %s.\n',datestr(now,'yyyymmddTHHMMSS')));
 if logfid > 1,
   fclose(logfid);
 end

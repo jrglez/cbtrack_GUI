@@ -1,4 +1,4 @@
-function ButtonName=questdlg(fontsize,fontname,Question,Title,Btn1,Btn2,Btn3,Default)
+function ButtonName=questdlg(fontsize,fontname,Question,Title,Btn1,Btn2,Btn3,Btn4,Default)
 %QUESTDLG Question dialog box.
 %  ButtonName = QUESTDLG(Question) creates a modal dialog box that
 %  automatically wraps the cell array or string (vector or matrix)
@@ -93,10 +93,11 @@ if nargin==3,Title=' ';end
 if nargin<=4, Default='Yes';end
 if nargin==5, Default=Btn1 ;end
 if nargin<=5, Btn1='Yes'; Btn2='No'; Btn3='Cancel';NumButtons=3;end
-if nargin==6, Default=Btn2;Btn2=[];Btn3=[];NumButtons=1;end
-if nargin==7, Default=Btn3;Btn3=[];NumButtons=2;end
-if nargin==8, NumButtons=3;end
-if nargin>8
+if nargin==6, Default=Btn2;Btn2=[];Btn3=[];Btn4=[];NumButtons=1;end
+if nargin==7, Default=Btn3;Btn3=[];Btn4=[];NumButtons=2;end
+if nargin==8, Default=Btn4;Btn4=[];NumButtons=3;end
+if nargin==9, NumButtons=4;end
+if nargin>9
   error('MATLAB:questdlg:TooManyInputs', 'Too many input arguments');NumButtons=3; %#ok
 end
 
@@ -185,6 +186,11 @@ elseif NumButtons==3,
     0
     FigPos(3)-DefOffset-BtnWidth];
   BtnXOffset(2)=(BtnXOffset(1)+BtnXOffset(3))/2;
+elseif NumButtons==4
+  BtnXOffset=[MsgTxtXOffset
+    MsgTxtXOffset+DefOffset+BtnWidth
+    MsgTxtXOffset+2*(DefOffset+BtnWidth)
+    FigPos(3)-DefOffset-BtnWidth];
 end
 
 MsgTxtYOffset=DefOffset+BtnYOffset+BtnHeight;
@@ -228,6 +234,13 @@ for i = 1:NumButtons
       if strcmp(ButtonString, Default)
         DefaultValid = true;
         DefaultButton = 3;
+      end
+    case 4
+      ButtonString=Btn4;
+      ButtonTag='Btn4';
+      if strcmp(ButtonString, Default)
+        DefaultValid = true;
+        DefaultButton = 4;
       end
   end
 
@@ -315,6 +328,9 @@ elseif NumButtons==3,
     BtnXOffset(2)
     BtnXOffset(2)+BtnWidth+DefOffset
     ];
+elseif NumButtons==4,
+    BtnXOffset(1)=(FigPos(3)-3*DefOffset-4*BtnWidth)/2;
+    BtnXOffset(2:4)=BtnXOffset(1)+((1:3)*(DefOffset+BtnWidth));    
 end
 
 set(QuestFig ,'Position',mygetnicedialoglocation(FigPos, get(QuestFig,'Units')));

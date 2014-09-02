@@ -17,10 +17,10 @@ check_params = cbparams.auto_checks_incoming;
 
 %% open log file
 
-logfid=open_log('automaticchecks_incoming_log',cbparams,out.folder);
+logfid=open_log('automaticchecks_incoming_log');
 
-fprintf(logfid,'\n\n***\nRunning CourtshipBowlAutomaticChecks_Incoming version %s for experiment %s at %s\n',version,experiment,timestamp);
-
+s=sprintf('\n\n***\nRunning CourtshipBowlAutomaticChecks_Incoming version %s for experiment %s at %s\n',version,experiment,timestamp);
+write_log(logfid,experiment,s)
 %%
 
 try
@@ -187,44 +187,39 @@ end
 
 %% output results to file
 
-if DEBUG,
-  fid = 1;
-else
-  if exist(outfile,'file'),
+if exist(outfile,'file'),
     try
       delete(outfile);
     catch ME,
       warning('Could not delete file %s:\n %s',outfile,getReport(ME));
     end
-  end
-  fid = fopen(outfile,'w');
 end
+fid = fopen(outfile,'w');
 if fid < 0,
   warning('Could not open automatic checks results file %s for writing, just printing to stdout.',outfile);
-  fid = 1;
-end
-if success,
-  fprintf(fid,'automated_pf,U\n');
 else
-  fprintf(fid,'automated_pf,F\n');
-  fprintf(fid,'notes_curation,');
-  s = sprintf('%s\\n',msgs{:});
-  s = s(1:end-2);
-  fprintf(fid,'%s\n',s);
-  i = find(iserror,1);
-  if isempty(i),
-    s = 'incoming_checks_other';
-  else
-    s = categories{i};
-  end
-  fprintf(fid,'automated_pf_category,%s\n',s);
-  
-end
-% version info
-fprintf(fid,'cbautochecksincoming_version,%s\n',version);
-fprintf(fid,'cbautochecksincoming_timestamp,%s\n',timestamp);
-fprintf(fid,'experiment,%s\n',experiment);
+    if success,
+      fprintf(fid,'automated_pf,U\n');
+    else
+      fprintf(fid,'automated_pf,F\n');
+      fprintf(fid,'notes_curation,');
+      s = sprintf('%s\\n',msgs{:});
+      s = s(1:end-2);
+      fprintf(fid,'%s\n',s);
+      i = find(iserror,1);
+      if isempty(i),
+        s = 'incoming_checks_other';
+      else
+        s = categories{i};
+      end
+      fprintf(fid,'automated_pf_category,%s\n',s);
 
+    end
+    % version info
+    fprintf(fid,'cbautochecksincoming_version,%s\n',version);
+    fprintf(fid,'cbautochecksincoming_timestamp,%s\n',timestamp);
+    fprintf(fid,'experiment,%s\n',experiment);
+end
 
 if ~DEBUG && fid > 1,
   fclose(fid);
@@ -237,15 +232,19 @@ end
   
 %% print results to log file
 
-fprintf(logfid,'Finished running CourtshipBowlAutomaticChecks_Incoming at %s for experiment %s.\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
-fprintf(logfid,'success = %d\n',success);
+s={sprintf('Finished running CourtshipBowlAutomaticChecks_Incoming at %s for experiment %s.\n',datestr(now,'yyyymmddTHHMMSS'),experiment);...
+    sprintf('success = %d\n',success)};
+write_log(logfid,experiment,s)
 if isempty(msgs),
-  fprintf(logfid,'No error or warning messages.\n');
+  s=sprintf('No error or warning messages.\n');
+  write_log(logfid,experiment,s)
 else
-  fprintf(logfid,'Warning/error messages:\n');
-  fprintf(logfid,'%s\n',msgs{:});
+  s={sprintf('Warning/error messages:\n');...
+      sprintf('%s\n',msgs{:})};
+  write_log(logfid,experiment,s)
 end
-fprintf(logfid,'\n***\n');
+s=sprintf('\n***\n');
+write_log(logfid,experiment,s)
 
 if logfid > 1,
   fclose(logfid);

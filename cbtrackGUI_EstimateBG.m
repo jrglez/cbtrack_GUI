@@ -2,7 +2,6 @@ function bgdata = cbtrackGUI_EstimateBG(expdir,moviefile,tracking_params,varargi
 
 version = '0.1.0';
 timestamp = datestr(now,TimestampFormat);
-out=getappdata(0,'out');
 
 bgdata = struct;
 bgdata.cbestimatebg_version = version;
@@ -22,38 +21,36 @@ end
 
 %% open log file
 
-logfid=open_log('bg_log',cbparams,out.folder);
+logfid=open_log('bg_log');
 
-
-fprintf(logfid,'\n\n***\nEstimating background for experiment %s at %s\n',experiment,timestamp);
+s=sprintf('\n\n***\nEstimating background for experiment %s at %s\n',experiment,timestamp);
+write_log(logfid,experiment,s)
 bgdata.analysis_protocol = real_analysis_protocol;
 
 %% open movie
 
-fprintf(logfid,'Opening movie file %s...\n',moviefile);
+s=sprintf('Opening movie file %s...\n',moviefile);
+write_log(logfid,experiment,s)
 [readframe,nframes,fid,headerinfo] = get_readframe_fcn(moviefile); %#ok<*NASGU>
 im = readframe(1);
 
 %% estimate the background model
 
 % compute background model
-fprintf(logfid,'Computing background model for %s...\n',experiment);
+s=sprintf('Computing background model for %s...\n',experiment);
+write_log(logfid,experiment,s)
 buffer = readframe(1);
 buffer = repmat(buffer,[1,1,tracking_params.bg_nframes]);
 frames = round(linspace(1,min(nframes,tracking_params.bg_lastframe),tracking_params.bg_nframes));
-hwait=waitbar(0,{['Experiment ',experiment];['Reading frame 0 of ', num2str(tracking_params.bg_nframes)]},'CreateCancelBtn','setappdata(0,''cancel_hwait'',1)');
-setappdata(0,'cancel_hwait',0)
+hwait=waitbar(0,{['Experiment ',experiment];['Reading frame 0 of ', num2str(tracking_params.bg_nframes)]},'CreateCancelBtn','cancel_waitbar');
 for i = 1:tracking_params.bg_nframes,
+  if getappdata(0,'iscancel') || getappdata(0,'isskip') || getappdata(0,'isstop')
+    bgdata=[];
+    return
+  end
   t = frames(i);
   buffer(:,:,i) = readframe(t);
   waitbar(i/tracking_params.bg_nframes,hwait,{['Experiment ',experiment];['Reading frame ', num2str(i),' of ', num2str(tracking_params.bg_nframes)]});
-  if getappdata(0,'cancel_hwait')
-    buffer = readframe(1);
-    buffer = repmat(buffer,[1,1,tracking_params.bg_nframes]);
-    clear t
-    delete(hwait)
-    return 
-  end
 end
 delete(hwait)
 hwait=waitbar(0,['Computing background model for experiment ''',experiment,'''']);
@@ -67,7 +64,8 @@ bgdata.bgmed=bgmed;
 delete(hwait)
 bgdata.isnew=true;
 
-fprintf(logfid,'Finished computting the Background at %s.\n***\n',datestr(now,'yyyymmddTHHMMSS'));
+s=sprintf('Finished computting the Background at %s.\n***\n',datestr(now,'yyyymmddTHHMMSS'));
+write_log(logfid,experiment,s)
 if logfid > 1,
   fclose(logfid);
 end

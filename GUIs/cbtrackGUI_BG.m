@@ -22,7 +22,7 @@ function cbtrackGUI_BG(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_BG
 
-% Last Modified by GUIDE v2.5 14-May-2014 09:10:14
+% Last Modified by GUIDE v2.5 11-Jun-2014 17:31:45
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -90,22 +90,40 @@ else
             tracking_params.dotrackwings=cbparams.track.dotrackwings;
 
 
-            logfid=open_log('bg_log',cbparams,out.folder);
-            fprintf(logfid,'Loading background data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
+            logfid=open_log('bg_log');
+            s=sprintf('Loading background data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
+            write_log(logfid,experiment,s)
             if logfid > 1,
               fclose(logfid);
             end
         catch
-            logfid=open_log('bg_log',cbparams,out.folder);
-            fprintf(logfid,'File %s could not be loaded.',loadfile);
+            logfid=open_log('bg_log');
+            s=sprintf('File %s could not be loaded.',loadfile);
+            write_log(logfid,experiment,s)
             if logfid > 1,
               fclose(logfid);
             end
             waitfor(mymsgbox(50,190,14,'Helvetica',{['File ', loadfile,' could not be loaded.'];'Trying to compute the background automatically'},'Warning','warn','modal'))
+            setappdata(0,'allow_stop',false)
             BG.data=cbtrackGUI_EstimateBG(BG.expdir,BG.moviefile,tracking_params,'analysis_protocol',BG.analysis_protocol);
+            if getappdata(0,'iscancel') || getappdata(0,'isskip')
+                uiresume(handles.cbtrackGUI_BG)
+                if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
+                    delete(handles.cbtrackGUI_BG)
+                end
+                return
+            end
         end            
     elseif tracking_params.computeBG
+        setappdata(0,'allow_stop',false)
         BG.data=cbtrackGUI_EstimateBG(BG.expdir,BG.moviefile,tracking_params,'analysis_protocol',BG.analysis_protocol);
+        if getappdata(0,'iscancel') || getappdata(0,'isskip')
+            uiresume(handles.cbtrackGUI_BG)
+            if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
+                delete(handles.cbtrackGUI_BG)
+            end
+            return
+        end
     else
         [readframe,~,fid,~] = get_readframe_fcn(getappdata(0,'moviefile')); %#ok<*NASGU>
         im = readframe(1);
@@ -143,42 +161,34 @@ if isempty(bgmode)
 end
 set(handles.popupmenu_BGtype,'Value',bgmode)
 
+bgmed=BG.data.bgmed;
+aspect_ratio=size(bgmed,2)/size(bgmed,1);
+pos1=get(handles.axes_BG,'position'); %axes 1 position
 
-if getappdata(0,'cancel_hwait')
-    if exist('hObject','var') && ishandle(hObject)
-        delete(hObject)
-    end
-    cbtrackGUI_files
+if aspect_ratio<=1 
+    old_width=pos1(3); new_width=pos1(4)*aspect_ratio; pos1(3)=new_width; %Recalculate the width of the axes to fit the figure aspect ratio
+    pos1(1)=pos1(1)-(new_width-old_width)/2; %Recalculate the new horizontal position of the axes
+    set(handles.axes_BG,'position',pos1) %reset axes position and size
 else
-    bgmed=BG.data.bgmed;
-    aspect_ratio=size(bgmed,2)/size(bgmed,1);
-    pos1=get(handles.axes_BG,'position'); %axes 1 position
-
-    if aspect_ratio<=1 
-        old_width=pos1(3); new_width=pos1(4)*aspect_ratio; pos1(3)=new_width; %Recalculate the width of the axes to fit the figure aspect ratio
-        pos1(1)=pos1(1)-(new_width-old_width)/2; %Recalculate the new horizontal position of the axes
-        set(handles.axes_BG,'position',pos1) %reset axes position and size
-    else
-        old_height=pos1(4); new_height=pos1(3)/aspect_ratio; pos1(4)=new_height; %Recalculate the width of the axes to fit the figure aspect ratio
-        pos1(2)=pos1(2)-(new_height-old_height)/2; %Recalculate the new horizontal position of the axes
-        set(handles.axes_BG,'position',pos1) %reset axes position and size
-    end
-
-    axes(handles.axes_BG);
-    colormap('gray')
-    imagesc(bgmed);
-    set(handles.axes_BG,'XTick',[],'YTick',[])
-    axis equal
-
-    set(handles.text_exp,'FontSize',24,'HorizontalAlignment','center','units','pixels','FontUnits','pixels','String',experiment);
-
-    % Update handles structure
-    guidata(hObject, handles);
-    set(hObject,'UserData',BG);
-    set(handles.pushbutton_recalc,'UserData',tracking_params)
-    
-    uiwait(handles.cbtrackGUI_BG);
+    old_height=pos1(4); new_height=pos1(3)/aspect_ratio; pos1(4)=new_height; %Recalculate the width of the axes to fit the figure aspect ratio
+    pos1(2)=pos1(2)-(new_height-old_height)/2; %Recalculate the new horizontal position of the axes
+    set(handles.axes_BG,'position',pos1) %reset axes position and size
 end
+
+axes(handles.axes_BG);
+colormap('gray')
+imagesc(bgmed);
+set(handles.axes_BG,'XTick',[],'YTick',[])
+axis equal
+
+set(handles.text_exp,'FontSize',24,'HorizontalAlignment','center','units','pixels','FontUnits','pixels','String',experiment);
+
+% Update handles structure
+guidata(hObject, handles);
+set(hObject,'UserData',BG);
+set(handles.pushbutton_recalc,'UserData',tracking_params)
+
+uiwait(handles.cbtrackGUI_BG);
 
 
 function varargout = cbtrackGUI_BG_OutputFcn(hObject, eventdata, handles) %#ok<STOUT>
@@ -231,15 +241,24 @@ else
     BG=get(handles.cbtrackGUI_BG,'UserData');
     tracking_params.bg_nframes=bg_nframes;
     tracking_params.bg_lastframes=bg_lastframe;
+    setappdata(0,'allow_stop',true)
     BG.data=cbtrackGUI_EstimateBG(BG.expdir,BG.moviefile,tracking_params,'analysis_protocol',BG.analysis_protocol);
-    if ~getappdata(0,'cancel_hwait')
-        bgmed=BG.data.bgmed;
-        axes(handles.axes_BG);
-        colormap('gray')
-        imagesc(bgmed);
-        set(handles.axes_BG,'XTick',[],'YTick',[])
-        set(handles.cbtrackGUI_BG,'UserData',BG)
+    if getappdata(0,'iscancel') || getappdata(0,'isskip')
+        uiresume(handles.cbtrackGUI_BG)
+        if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
+            delete(handles.cbtrackGUI_BG)
+        end
+        return
+    elseif getappdata(0,'isstop')
+        setappdata(0,'isstop',false)
+        return
     end
+    bgmed=BG.data.bgmed;
+    axes(handles.axes_BG);
+    colormap('gray')
+    imagesc(bgmed);
+    set(handles.axes_BG,'XTick',[],'YTick',[])
+    set(handles.cbtrackGUI_BG,'UserData',BG)
     set(handles.pushbutton_recalc,'UserData',tracking_params)
 end
 
@@ -257,8 +276,9 @@ BG.data.isnew=true;
 set(handles.cbtrackGUI_BG,'UserData',BG);
 out=getappdata(0,'out');
 
-logfid=open_log('bg_log',cbparams,out.folder);
-fprintf(logfid,'Background model fixed manualy at %s\n',datestr(now,'yyyymmddTHHMMSS'));
+logfid=open_log('bg_log');
+s=sprintf('Background model fixed manualy at %s\n',datestr(now,'yyyymmddTHHMMSS'));
+write_log(logfid,getappdata(0,'experiment'),s)
 if logfid > 1,
   fclose(logfid);
 end
@@ -331,7 +351,18 @@ if isnew
         cbparams.track.bg_nframes=nan;
         cbparams.track.bg_lastframe=nan;
     elseif computeBG && all(all(BG.data.bgmed==255))
+        setappdata(0,'allow_stop',true)
         BG.data=cbtrackGUI_EstimateBG(BG.expdir,BG.moviefile,tracking_params,'analysis_protocol',BG.analysis_protocol);
+        if getappdata(0,'iscancel') || getappdata(0,'isskip')
+            uiresume(handles.cbtrackGUI_BG)
+            if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
+                delete(handles.cbtrackGUI_BG)
+            end
+            return
+        elseif getappdata(0,'isstop')
+            setappdata(0,'isstop',false)
+            return
+        end
     end
     cbparams.track.computeBG=computeBG;
     bgmed=BG.data.bgmed;
@@ -340,12 +371,13 @@ if isnew
     
     % Save BG data
     out=getappdata(0,'out');
-    logfid=open_log('bg_log',cbparams,out.folder);
+    logfid=open_log('bg_log');
     cbestimatebg_version=BG.data.cbestimatebg_version; 
     cbestimatebg_timestamp=BG.data.cbestimatebg_timestamp; 
     params=cbparams.track;  
     savefile = fullfile(out.folder,cbparams.dataloc.bgmat.filestr);
-    fprintf(logfid,'Saving background model to file %s...\n',savefile);
+    s=sprintf('Saving background model to file %s...\n',savefile);
+    write_log(logfid,getappdata(0,'experiment'),s)
     if exist(savefile,'file'),
       delete(savefile);
     end
@@ -356,7 +388,8 @@ if isnew
     end
     
     bgimagefile = fullfile(out.folder,cbparams.dataloc.bgimage.filestr); 
-    fprintf(logfid,'Saving image of background model to file %s...\n\n***\n',bgimagefile);
+    s=sprintf('Saving image of background model to file %s...\n\n***\n',bgimagefile);
+    write_log(logfid,getappdata(0,'experiment'),s)
     imwrite(bgmed,bgimagefile,'png');
     if logfid > 1,
         fclose(logfid);
@@ -364,6 +397,7 @@ if isnew
 end
 
 setappdata(0,'iscancel',false)
+setappdata(0,'isskip',false)
 uiresume(handles.cbtrackGUI_BG)
 if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
     delete(handles.cbtrackGUI_BG)
@@ -380,6 +414,9 @@ else
     if isnew
         cbtrackNOGUI_ROI
         cbtrackNOGUI_tracker
+        if getappdata(0,'iscancel') || getappdata(0,'isskip')
+            return
+        end
     end
     if cbparams.wingtrack.dosetwingtrack
         cbtrackGUI_WingTracker
@@ -397,11 +434,7 @@ else
                 P_stage=getappdata(0,'P_stage');       
                 if strcmp(P_stage,'track2')
                     CourtshipBowlTrack_GUI2
-                    iscancel=getappdata(0,'iscancel');
-                    if iscancel
-                        if iscancel==1
-                            cancelar
-                        end
+                    if getappdata(0,'iscancel') || getappdata(0,'isskip')
                         return
                     end
                 elseif strcmp(P_stage,'track1')
@@ -474,11 +507,7 @@ end
 P_stage=getappdata(0,'P_stage');
 if strcmp(P_stage,'track2')
     CourtshipBowlTrack_GUI2
-    iscancel=getappdata(0,'iscancel');
-    if iscancel
-        if iscancel==1
-            cancelar
-        end
+    if getappdata(0,'iscancel') || getappdata(0,'isskip')
         return
     end
 elseif strcmp(P_stage,'track1')
@@ -491,7 +520,8 @@ mymsgbox(50,190,14,'Helvetica','Please, select the regions you wish to correct. 
 
 
 function cbtrackGUI_BG_ResizeFcn(hObject, eventdata, handles)
-GUIresize(handles,hObject)
+GUIscale=getappdata(0,'GUIscale');
+GUIresize(handles,hObject,GUIscale)
 
 
 function pushbutton_manual_KeyPressFcn(hObject, eventdata, handles)
@@ -501,6 +531,14 @@ function cbtrackGUI_BG_CloseRequestFcn(hObject, eventdata, handles)
 msg_cancel=myquestdlg(14,'Helvetica','Cancel current project? All setup options will be lost','Cancel','Yes','No','No'); 
 if isempty(msg_cancel)
     msg_cancel='No';
+end
+if strcmp('Yes',msg_cancel)
+    setappdata(0,'iscancel',true)
+    setappdata(0,'isskip',true)
+    uiresume(handles.cbtrackGUI_BG)
+    if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
+        delete(handles.cbtrackGUI_BG)
+    end
 end
 
 
@@ -514,8 +552,9 @@ BG.data.isnew=true;
 set(handles.cbtrackGUI_BG,'UserData',BG);
 out=getappdata(0,'out');
 
-logfid=open_log('bg_log',getappdata(0,'cbparams'),out.folder);
-fprintf(logfid,'Background model fixed automatically at %s\n',datestr(now,'yyyymmddTHHMMSS'));
+logfid=open_log('bg_log');
+s=sprintf('Background model fixed automatically at %s\n',datestr(now,'yyyymmddTHHMMSS'));
+write_log(logfid,getappdata(0,'experiment'),s)
 if logfid > 1,
   fclose(logfid);
 end
@@ -547,8 +586,9 @@ if ~file_BG{1}==0
     set(handles.pushbutton_recalc,'UserData',tracking_params)
     out=getappdata(0,'out');
     
-    logfid=open_log('bg_log',getappdata(0,'cbparams'),out.folder);
-    fprintf(logfid,'Loading background data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
+    logfid=open_log('bg_log');
+    s=sprintf('Loading background data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
+    write_log(logfid,getappdata(0,'experiment'),s)
     if logfid > 1,
       fclose(logfid);
     end
@@ -595,4 +635,13 @@ else
     set(handles.pushbutton_auto,'Enable','off')
     set(handles.text_load,'Enable','off')
     set(handles.pushbutton_load,'Enable','off')
+end
+
+
+function pushbutton_skip_Callback(hObject, eventdata, handles)
+setappdata(0,'iscancel',false)
+setappdata(0,'isskip',true)
+uiresume(handles.cbtrackGUI_BG)
+if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
+    delete(handles.cbtrackGUI_BG)
 end

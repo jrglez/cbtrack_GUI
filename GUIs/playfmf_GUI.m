@@ -22,7 +22,7 @@ function varargout = playfmf_GUI(varargin)
 
 % Edit the above text to modify the response to help playfmf_GUI
 
-% Last Modified by GUIDE v2.5 24-Oct-2013 15:04:44
+% Last Modified by GUIDE v2.5 29-Aug-2014 16:45:01
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -44,14 +44,7 @@ end
 % End initialization code - DO NOT EDIT
 
 
-% --- Executes just before playfmf_GUI is made visible.
 function playfmf_GUI_OpeningFcn(hObject, eventdata, handles, varargin)
-% This function has no output args, see OutputFcn.
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% varargin   command line arguments to playfmf_GUI (see VARARGIN)
-
 % Choose default command line output for playfmf_GUI
 handles.output = hObject;
 
@@ -59,6 +52,10 @@ handles.output = hObject;
 vid=get(handles.figure1,'Userdata');
 vid.old_pos=get(hObject,'position');
 vid.h=struct2array(handles);
+menu=findobj(vid.h,'Type','uimenu');
+[~,imenu,~]=intersect(vid.h,menu);
+vid.h(imenu)=[];
+vid.doresize=true;
 
 set(handles.figure1,'UserData',vid)
 
@@ -133,8 +130,6 @@ handles = open_fmf(handles);
 % Update handles structure
 guidata(hObject, handles);
 
-% UIWAIT makes playfmf_GUI wait for user response (see UIRESUME)
-% uiwait(handles.figure1);
 
 function play(hObject)
 
@@ -174,14 +169,8 @@ ISPLAYING = false;
 guidata(hObject,handles);
 set(handles.pushbutton_PlayStop,'String','Play','BackgroundColor',[0,.5,0]);
 
-% --- Outputs from this function are returned to the command line.
-function varargout = playfmf_GUI_OutputFcn(hObject, eventdata, handles) 
-% varargout  cell array for returning output args (see VARARGOUT);
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% Get default command line output from handles structure
+function varargout = playfmf_GUI_OutputFcn(hObject, eventdata, handles) 
 varargout{1} = handles.output;
 
 function handles = update_frame(handles)
@@ -196,37 +185,21 @@ set(handles.himage,'CData',handles.im);
 set(handles.edit_Frame,'String',num2str(handles.f));
 set(handles.slider_Frame,'Value',(handles.f-1)/(handles.nframes-1));
 
-% --- Executes on slider movement.
-function slider_Frame_Callback(hObject, eventdata, handles) %#ok<*DEFNU>
-% hObject    handle to slider_Frame (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'Value') returns position of slider
-%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+function slider_Frame_Callback(hObject, eventdata, handles) %#ok<*DEFNU>
 v = get(hObject,'Value');
 handles.f = round(1 + v * (handles.nframes - 1));
 handles = update_frame(handles);
 guidata(hObject,handles);
 
-% --- Executes during object creation, after setting all properties.
-function slider_Frame_CreateFcn(hObject, eventdata, handles) %#ok<*INUSD>
-% hObject    handle to slider_Frame (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
 
-% Hint: slider controls usually have a light gray background.
+function slider_Frame_CreateFcn(hObject, eventdata, handles) %#ok<*INUSD>
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
 
 
-% --- Executes on button press in pushbutton_PlayStop.
 function pushbutton_PlayStop_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_PlayStop (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 global ISPLAYING;
 
 if ~ISPLAYING,
@@ -235,13 +208,8 @@ else
   stop(hObject);
 end
 
-function edit_Frame_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_Frame (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit_Frame as text
-%        str2double(get(hObject,'String')) returns contents of edit_Frame as a double
+function edit_Frame_Callback(hObject, eventdata, handles)
 f = str2double(get(hObject,'String'));
 if isnan(f),
   set(hObject,'String',num2str(handles.f));
@@ -251,14 +219,8 @@ handles.f = max(1,min(f,handles.nframes));
 handles = update_frame(handles);
 guidata(hObject,handles);
 
-% --- Executes during object creation, after setting all properties.
-function edit_Frame_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_Frame (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
+function edit_Frame_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -266,19 +228,13 @@ end
 
 % --------------------------------------------------------------------
 function menu_File_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_File (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 
 % --------------------------------------------------------------------
 function menu_File_Open_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_File_Open (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 handles = open_fmf(handles);
 guidata(hObject,handles);
+
 
 function handles = open_fmf(handles)
 
@@ -348,21 +304,13 @@ handles = update_frame(handles);
 
 ISPLAYING = false;
 
+
 % --------------------------------------------------------------------
 function menu_File_Quit_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_File_Quit (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 figure1_CloseRequestFcn(handles.figure1, eventdata, handles);
 
-% --- Executes when user attempts to close figure1.
+
 function figure1_CloseRequestFcn(hObject, eventdata, handles)
-% hObject    handle to figure1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: delete(hObject) closes the figure
-
 if isfield(handles,'fid') && ~isempty(fopen(handles.fid)) && handles.fid > 1,
   fclose(handles.fid);
 end
@@ -373,12 +321,8 @@ if ishandle(hObject)
     delete(hObject);
 end
 
-% --- Executes when figure1 is resized.
-function figure1_ResizeFcn(hObject, eventdata, handles)
-% hObject    handle to figure1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
+function figure1_ResizeFcn(hObject, eventdata, handles)
 vid=get(handles.figure1,'UserData');
 if isfield(vid,'doresize')
     if ~isfield(vid,'old_pos')
@@ -390,7 +334,7 @@ if isfield(vid,'doresize')
     h=vid.h;
     for i=2:length(h)
         obj_handle=h(i);
-        if isprop(obj_handle,'position') && isempty(strfind(h{i},'menu'))        
+        if isprop(obj_handle,'position')  
             old_pos=get(obj_handle,'position');
             if ~isprop(obj_handle,'xTick') %not a figure
                 new_pos([1,3])=old_pos([1,3])*rescalex;
@@ -417,10 +361,6 @@ set(hObject,'UserData',vid)
 
 % --------------------------------------------------------------------
 function menu_Edit_Preferences_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_Edit_Preferences (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 prompts = {};
 defAns = {};
 prompts{end+1} = 'Max FPS: ';
@@ -450,10 +390,6 @@ guidata(hObject,handles);
 
 % --------------------------------------------------------------------
 function menu_Help_About_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_Help_About (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 s = {};
 s{end+1} = 'PlayFMF';
 s{end+1} = '';
@@ -463,19 +399,13 @@ s{end+1} = '';
 s{end+1} = 'This is a GUI for playing FMF, SBFMF, UFMF, and AVI videos. The maximum frame rate can be set through the "Preferences..." menu. Set to <= 0 for no maximum frame rate. Control the frame shown with the slider or editable text box. The Play/Stop button does what you think it does.';
 msgbox(s,'About PlayFMF','help','Replace');
 
+
 % --------------------------------------------------------------------
 function menu_Edit_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_Edit (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 
 % --------------------------------------------------------------------
 function menu_Edit_CompressionSettings_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_Edit_CompressionSettings (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 CompressionSettings = SaveFMFSettings(handles.CompressionSettings);
 fns = fieldnames(CompressionSettings);
 for i = 1:length(fns),
@@ -484,12 +414,9 @@ for i = 1:length(fns),
 end
 guidata(hObject,handles);
 
+
 % --------------------------------------------------------------------
 function menu_File_Compress_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_File_Compress (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 if handles.CompressionSettings.StartFrame > handles.nframes,
   uiwait(errordlg(sprintf('StartFrame set to %d > NFrames = %d. Please fix Compression Settings',...
     handles.CompressionSettings.StartFrame,handles.nframes)));
@@ -566,60 +493,30 @@ if ishandle(hwaitbar),
 end
 msgbox(sprintf('Successfully compressed %d / %d of frames in the interval [%d,%d].',i,nframescompress,handles.CompressionSettings.StartFrame,endframe),'Compression Complete','modal');
 
+
 % --------------------------------------------------------------------
 function menu_Help_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_Help (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 
 function edit_initial_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_final (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit_final as text
-%        str2double(get(hObject,'String')) returns contents of edit_final as a double
 
-% --- Executes during object creation, after setting all properties.
 function edit_initial_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_final (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 
 function edit_final_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_final (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit_final as text
-%        str2double(get(hObject,'String')) returns contents of edit_final as a double
 
-% --- Executes during object creation, after setting all properties.
 function edit_final_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_final (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
 
 
-% --- Executes on button press in pushbutton_accept.
 function pushbutton_accept_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_accept (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 global ISPLAYING;
 init=str2double(get(handles.edit_initial,'String'));
 if isempty(init) || isnan(init)
@@ -645,3 +542,9 @@ elseif init<=0 || round(init)~=init || fin<0 || round(fin)~=fin || fin>handles.n
 elseif fin<=init
     mymsgbox(50,190,14,'Helvetica',{'The inital value must be lower than the final value'},'Error','error')
 end
+
+
+function pushbutton_cancel_Callback(hObject, eventdata, handles)
+setappdata(0,'startframe',0)
+setappdata(0,'endframe',0)
+set(handles.figure1,'Visible','off')
