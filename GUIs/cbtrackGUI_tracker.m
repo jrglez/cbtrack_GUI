@@ -215,7 +215,11 @@ for i=1:nROI
     check(i)=uicontrol('Style','checkbox','string','','fontunits','pixels','units','pixels','position',[posx(1), posy(i),w(1),h(1)],'parent', handles.uipanel_fxROI,'value',1,'callback',@checkbox_Callback);
     text1(i)=uicontrol('Style','text', 'string',num2str(fxROI(i,1)),'fontunits','pixels','fontsize',fontsize,'units','pixels','position',[posx(2), posy(i),w(2),h(2)],'parent',handles.uipanel_fxROI);
     text2(i)=uicontrol('Style','text', 'string',num2str(fxROI(i,2)),'fontunits','pixels','fontsize',fontsize,'units','pixels','position',[posx(3), posy(i),w(3),h(3)],'parent',handles.uipanel_fxROI);
-    edit1(i)=uicontrol('Style','edit', 'string',num2str(fxROI(i,3)),'fontunits','pixels','BackgroundColor',[1 1 1],'fontsize',fontsize,'units','pixels','position',[posx(4), posy(i)-3,w(4),h(4)],'parent',handles.uipanel_fxROI,'enable','off');
+    edit1(i)=uicontrol('Style','edit', 'string',num2str(fxROI(i,3)),'fontunits','pixels','BackgroundColor',[1 1 1],'fontsize',fontsize,'units','pixels','position',[posx(4), posy(i)-3,w(4),h(4)],'parent',handles.uipanel_fxROI);
+    %%% Aqui. estoy poniendo el nflies manual. En accept, justo antes de
+    %%% pasar al siguiente paso, tengo que comparar las columnas de
+    %%% automatico y manual y poner un warning (tener en cuenta tambien los
+    %%% ignored)
 end
 handles.check=check;
 handles.text1=text1;
@@ -453,7 +457,9 @@ end
 
 function cbtrackGUI_ROI_ResizeFcn(hObject, eventdata, handles)
 GUIscale=getappdata(0,'GUIscale');
-GUIresize(handles,hObject,GUIscale);
+GUIscale=GUIresize(handles,hObject,GUIscale);
+setappdata(0,'GUIscale',GUIscale)
+
 
 
 function slider_frame_Callback(hObject, eventdata, handles)

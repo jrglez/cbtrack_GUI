@@ -521,7 +521,8 @@ mymsgbox(50,190,14,'Helvetica','Please, select the regions you wish to correct. 
 
 function cbtrackGUI_BG_ResizeFcn(hObject, eventdata, handles)
 GUIscale=getappdata(0,'GUIscale');
-GUIresize(handles,hObject,GUIscale)
+GUIscale=GUIresize(handles,hObject,GUIscale);
+setappdata(0,'GUIscale',GUIscale)
 
 
 function pushbutton_manual_KeyPressFcn(hObject, eventdata, handles)

@@ -21,4 +21,5 @@ else
     s_log=textwrap(h_log(2),s_log);
     curr_s=[curr_s;s_log];
     set(h_log(2),'String',curr_s,'Value',numel(curr_s))
+    drawnow
 end

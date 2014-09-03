@@ -861,7 +861,7 @@ handles=guidata(hObject);
 if isfield(handles,'axes_vid')
     movie_params=get(handles.panel_set,'UserData');
     vidscale=get(handles.figure1,'UserData');
-    GUIresize(handles,hObject,vidscale)
+    vidscale=GUIresize(handles,hObject,vidscale);
 
     figpos=movie_params.figpos;
     position=get(handles.axes_vid,'Position');

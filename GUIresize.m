@@ -1,4 +1,4 @@
-function GUIresize(handles,hObject,GUIscale)
+function GUIscale=GUIresize(handles,hObject,GUIscale)
 new_pos_GUI=get(hObject,'position');
 if isempty(GUIscale)
     old_pos_GUI=new_pos_GUI;
@@ -52,4 +52,4 @@ if rescalex~=1 || rescaley~=1
     end
 end
 GUIscale.position=new_pos_GUI;
-setappdata(0,'GUIscale',GUIscale)
+

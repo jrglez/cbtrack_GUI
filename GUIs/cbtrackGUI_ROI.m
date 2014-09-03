@@ -276,8 +276,11 @@ restart='';
 setappdata(0,'restart',restart)
 
 if isnew
-    if isfield(roidata,'nflies_per_roi')
-        roidata=rmfield(roidata,'nflies_per_roi');
+    if ~isempty(params.nflies_per_roi) && roidata.nrois==numel(params.nflies_per_roi)
+        roidata.nflies_per_roi=params.nflies_per_roi;
+    else
+        roidata.nflies_per_roi=2*ones(1,roidata.nrois);
+        params.nflies_per_roi=roidata.nflies_per_roi;
     end
     if isappdata(0,'visdata')
         rmappdata(0,'visdata')
@@ -378,7 +381,8 @@ end
 
 function cbtrackGUI_ROI_ResizeFcn(hObject, eventdata, handles)
 GUIscale=getappdata(0,'GUIscale');
-GUIresize(handles,hObject,GUIscale);
+GUIscale=GUIresize(handles,hObject,GUIscale);
+setappdata(0,'GUIscale',GUIscale)
 
 
 function text_load_Callback(hObject, eventdata, handles)
@@ -707,7 +711,7 @@ elseif eventdata.NewValue==handles.radiobutton_manual %The user clicks points of
     set(handles.pushbutton_clear,'Enable','on')
     set(handles.pushbutton_detect,'Enable','on')
     if ~isempty(manual.pos) || isfield(roidata,'radii')
-        msg_manual_exist=myquestdlg(14,'Helvetica',{'You have alread y selected some points to detect your ROIs.';'Would you like to delete them?'}','Existing data','Yes','No','No'); 
+        msg_manual_exist=myquestdlg(14,'Helvetica',{'You have already selected some points to detect your ROIs.';'Would you like to delete them?'}','Existing data','Yes','No','No'); 
         if isempty(msg_manual_exist)
             msg_manual_exist='No';
         end
