@@ -232,7 +232,9 @@ end
 
 function cbtrackGUI_ROI_ResizeFcn(hObject, eventdata, handles)
 GUIscale=getappdata(0,'GUIscale');
-GUIresize(handles,hObject,GUIscale);
+GUIscale=GUIresize(handles,hObject,GUIscale);
+setappdata(0,'GUIscale',GUIscale)
+
 
 
 function slider_frame_Callback(hObject, eventdata, handles)

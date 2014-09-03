@@ -622,10 +622,12 @@ delete(handles.himzoom(ishandle(handles.himzoom)))
 handles.himzoom=[];
 delete(handles.htextzoom(ishandle(handles.htextzoom)))
 handles.htextzoom=[];
-delete(handles.hzoomwing(ishandle(handles.hzoomwing)));
-handles.hzoomwing=[];
-delete(handles.hzoom(ishandle(handles.hzoom)));
-handles.hzoom=[];
+if doplotwings,
+    delete(handles.hzoomwing(ishandle(handles.hzoomwing)));
+    handles.hzoomwing=[];
+    delete(handles.hzoom(ishandle(handles.hzoom)));
+    handles.hzoom=[];
+end
 hold on
 
 % corners of zoom boxes in plotted image coords
