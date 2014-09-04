@@ -333,11 +333,12 @@ else
         hwait=waitbar(0,'Checking incomings');
         for i=1:numel(expdirs)
             experiment=splitdir(expdirs{i},'last');
-            experiment(experiment=='_')=' ';
 
             out{i}.folder=expdirs{i};            
             out{i}.temp=strcat('Temp_',datestr(now,TimestampFormat),'_',experiment,'.mat');
             out{i}.temp_full=fullfile(out{i}.folder,out{i}.temp);
+            
+            experiment(experiment=='_')=' ';
 
             setappdata(0,'experiment',experiment);
             setappdata(0,'expdir',expdirs{i});
@@ -699,6 +700,7 @@ else
                     experiment(experiment=='_')=' ';
                     setappdata(0,'expdir',expdirs{i});
                     setappdata(0,'experiment',experiment);
+                    setappdata(0,'moviefile',moviefile{i});
                     setappdata(0,'out',out{i});
                     setappdata(0,'analysis_protocol',analysis_protocol);
                     setappdata(0,'cbparams',expparams{i});
