@@ -63,7 +63,7 @@ save(outfilename,'trx','timestamps');
 % perframe data
 perframedir = fullfile(out.folder,cbparams.dataloc.perframedir.filestr);
 pfd_files=dir(perframedir);
-if ~ismepty(pfd_files)
+if ~isempty(pfd_files)
     delete(fullfile(perframedir,'*'))
 end
 if isfield(trackdata,'perframedata')
