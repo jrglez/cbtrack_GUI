@@ -276,12 +276,11 @@ restart='';
 setappdata(0,'restart',restart)
 
 if isnew
-    if ~isempty(params.nflies_per_roi) && roidata.nrois==numel(params.nflies_per_roi)
-        roidata.nflies_per_roi=params.nflies_per_roi;
-    else
-        roidata.nflies_per_roi=2*ones(1,roidata.nrois);
+    if isempty(params.nflies_per_roi) || numel(params.nflies_per_roi)~=roidata.nrois
         params.nflies_per_roi=roidata.nflies_per_roi;
     end
+    roidata=rmfield(roidata,'nflies_per_roi');
+
     if isappdata(0,'visdata')
         rmappdata(0,'visdata')
     end
