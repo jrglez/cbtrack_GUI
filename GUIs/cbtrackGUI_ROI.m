@@ -279,7 +279,10 @@ if isnew
     if isempty(params.nflies_per_roi) || numel(params.nflies_per_roi)~=roidata.nrois
         params.nflies_per_roi=roidata.nflies_per_roi;
     end
-    roidata=rmfield(roidata,'nflies_per_roi');
+    
+    if isfield(roidata,'nflies_per_roi')
+        roidata=rmfield(roidata,'nflies_per_roi');
+    end
 
     if isappdata(0,'visdata')
         rmappdata(0,'visdata')
@@ -414,10 +417,12 @@ if ~file_ROI{1}==0
         handles.hrois(i,1).setColor(colors(i,:));
         handles.hroisT(i,1)=text(roidata.centerx(i),roidata.centery(i),['ROI: ',num2str(i)],...
           'Color',colors(i,:),'HorizontalAlignment','center','VerticalAlignment','middle','Clipping','on');
-        for j=1:length(manual.pos{i})
-            manual.pos_h{i}(j)=plot(manual.pos{i}(j,1),manual.pos{i}(j,2),'rx');
+        if ~isempty(manual.pos)
+            for j=1:length(manual.pos{i})
+                manual.pos_h{i}(j)=plot(manual.pos{i}(j,1),manual.pos{i}(j,2),'rx');
+            end
+            set(handles.listbox_manual,'string',vertcat(list.text{:}))
         end
-        set(handles.listbox_manual,'string',vertcat(list.text{:}))
     end
     roidata.isnew=true;
     if isfield(roidata,'nflies_per_roi')

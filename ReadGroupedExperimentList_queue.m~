@@ -1,0 +1,47 @@
+function [analysis_protocol,paramsfile,expdirs] = ReadGroupedExperimentList_queue(expfile)
+
+fid = fopen(expfile,'r');
+endread = false;
+unique_params = true;
+while true,
+  
+  isfirst = true;
+  issecond = false;
+  while true,
+    l = fgetl(fid);
+    if ~ischar(l),
+      endread = true;
+      break;
+    end
+    l = strtrim(l);
+    if isempty(l),
+      break;
+    end
+    if isfirst,
+      analysis_protocol = l;
+      expdirs = {};
+      isfirst = false;
+      issecond = true;
+    elseif issecond
+      if strcmp(l(end-2:end),'xml')
+        paramsfile = l;
+      else 
+        unique_params = false;
+        paramsfile = [];
+        expdirs{end+1} = l; %#ok<AGROW>
+      end
+      issecond = false;
+    else
+      expdirs{end+1} = l; %#ok<AGROW>
+      if ~unique_params
+        paramsfile{end+1} = fullfile(expdirs{end},'params.xml'); %#ok<AGROW>
+      end
+    end    
+  end
+    
+  if endread,
+    break;
+  end
+end
+
+fclose(fid);
