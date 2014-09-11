@@ -7,12 +7,11 @@ if getappdata(0,'usefiles') && exist(loadfile,'file')
         BG_data=load(loadfile);
         BG_data.isnew=true;
         isempty(BG_data.bgmed);
-        BG_data.params.DEBUG=cbparams.track.DEBUG;
-        BG_data.params.dosetBG=cbparams.track.dosetBG;
-        BG_data.params.dosettrack=cbparams.track.dosettrack;
-        BG_data.params.dotrack=cbparams.track.dotrack;
-        BG_data.params.dotrackwings=cbparams.track.dotrackwings;
-        cbparams.track=BG_data.params;
+        cbparams.track.bg_lastframe=BG_data.params.bg_lastframe;
+        cbparams.track.bg_nframes=BG_data.params.bg_nframes;
+        cbparams.track.bgmode=BG_data.params.bgmode;
+        cbparams.track.computeBG=BG_data.params.computeBG;
+        BG_data.params=cbparams.track;
         logfid=open_log('bg_log');
         s=sprintf('Loading background data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
         write_log(logfid,getappdata(0,'experiment'),s)

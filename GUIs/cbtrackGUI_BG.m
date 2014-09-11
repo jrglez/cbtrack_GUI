@@ -82,13 +82,11 @@ else
             BG.data=load(loadfile);
             BG.data.isnew=true;
             isempty(BG.data.bgmed);
-            tracking_params=BG.data.params;
-            tracking_params.DEBUG=cbparams.track.DEBUG;
-            tracking_params.dosetBG=cbparams.track.dosetBG;
-            tracking_params.dosettrack=cbparams.track.dosettrack;
-            tracking_params.dotrack=cbparams.track.dotrack;
-            tracking_params.dotrackwings=cbparams.track.dotrackwings;
-
+            tracking_params.bg_lastframe=BG.data.params.bg_lastframe;
+            tracking_params.bg_nframes=BG.data.params.bg_nframes;
+            tracking_params.bgmode=BG.data.params.bgmode;
+            tracking_params.computeBG=BG.data.params.computeBG;
+            BG.data.params=tracking_data;
 
             logfid=open_log('bg_log');
             s=sprintf('Loading background data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
@@ -571,7 +569,13 @@ if ~file_BG{1}==0
     set(handles.text_load,'String',loadfile,'HorizontalAlignment','right')
     BG.data=load(loadfile);
     BG.data.isnew=true;
-    tracking_params=BG.data.params;
+    tracking_params=get(handles.pushbutton_recalc,'UserData');
+    tracking_params.bg_lastframe=BG.data.params.bg_lastframe;
+    tracking_params.bg_nframes=BG.data.params.bg_nframes;
+    tracking_params.bgmode=BG.data.params.bgmode;
+    tracking_params.computeBG=BG.data.params.computeBG;
+    BG.data.params=tracking_data;
+
     % Set parameters in the GUI
     set(handles.edit_Nframes,'String',num2str(tracking_params.bg_nframes))
     set(handles.edit_Lframe,'String',num2str(tracking_params.bg_lastframe))
