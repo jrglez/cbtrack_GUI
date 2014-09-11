@@ -60,9 +60,6 @@ for sc = 1:nstates,
 end
 
 for t = 3:T,
-  if t==18528
-      t
-  end
   for sc = 1:nstates,
     
     idsc = state2ids(sc,:);
