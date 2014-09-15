@@ -22,10 +22,19 @@ while true,
       isfirst = false;
       issecond = true;
     elseif issecond
-      paramsfile = l;
+      if strcmp(l,'multiple')
+        multiple_params = true;
+        paramsfile = [];
+      else
+        multiple_params = false;
+        paramsfile = {l};
+      end
       issecond = false;
     else
       expdirs{end+1} = l; %#ok<AGROW>
+      if multiple_params
+        paramsfile{end+1} = fullfile(l,'params.xml'); %#ok<AGROW>
+      end
     end    
   end
     

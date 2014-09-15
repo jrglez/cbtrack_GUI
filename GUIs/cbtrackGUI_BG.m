@@ -86,7 +86,7 @@ else
             tracking_params.bg_nframes=BG.data.params.bg_nframes;
             tracking_params.bgmode=BG.data.params.bgmode;
             tracking_params.computeBG=BG.data.params.computeBG;
-            BG.data.params=tracking_data;
+            BG.data.params=tracking_params;
 
             logfid=open_log('bg_log');
             s=sprintf('Loading background data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
@@ -574,7 +574,7 @@ if ~file_BG{1}==0
     tracking_params.bg_nframes=BG.data.params.bg_nframes;
     tracking_params.bgmode=BG.data.params.bgmode;
     tracking_params.computeBG=BG.data.params.computeBG;
-    BG.data.params=tracking_data;
+    BG.data.params=tracking_params;
 
     % Set parameters in the GUI
     set(handles.edit_Nframes,'String',num2str(tracking_params.bg_nframes))

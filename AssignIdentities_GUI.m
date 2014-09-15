@@ -95,6 +95,7 @@ for iter = 1:niters,
     for i = 1:ndata,
       mudata(:,i) = sum(bsxfun(@times,datasort(:,:,i),appearanceweight),2)/zappearance;
       sigmadata(:,i) = sqrt(sum(bsxfun(@times,bsxfun(@minus,datasort(:,:,i),mudata(:,i)).^2,appearanceweight),2)/zappearance);
+      sigmadata(sigmadata==0)=eps;
     end
     
   else

@@ -131,7 +131,7 @@ if get(handles.checkbox_restart,'Value')
             CourtshipBowlTrack_GUI2
         elseif strcmp(P_stage,'track1')
 %             if isfield(roidata,'nflies_per_roi') %#ok<NODEF>
-            if cbparams.track.DEBUG %#ok<NODEF>
+            if cbparams.track.DEBUG
                 cbtrackGUI_tracker_video
             elseif ~cbparams.track.DEBUG
                 cbtrackGUI_tracker_NOvideo
@@ -158,7 +158,7 @@ if get(handles.checkbox_restart,'Value')
            % Reuslts movie 
         if cbparams.results_movie.dovideo
             try
-                CourtshipBowlMakeResultsMovie_GUI
+                CourtshipBowlMakeResultsMovie_GUI;
             catch ME
                 experiment=getappdata(0,'experiment');
                 experiment(experiment=='_')=' ';
@@ -211,7 +211,7 @@ else
             exps{1}=splitdir(expdirs{1},'last');
             moviefile=strcat(moviefile{1},ext); moviefile={fullfile(expdirs{1},moviefile)};
             analysis_protocol=splitdir(expdirs{1},'last');
-            paramsfile=fullfile(expdirs{1},'params.xml');
+            paramsfile={fullfile(expdirs{1},'params.xml')};
             success=true;
         elseif VidDirOrTxt==handles.radiobutton_Dir
             expdir=get(handles.edit_in,'String');
@@ -255,6 +255,11 @@ else
             moviefile=fullfile(expdir,exps,movie_name);
             analysis_protocol = splitdir(expdir,'last');
             paramsfile=fullfile(expdir,'params.xml');
+            if exist(paramsfile,'file')
+                paramsfile={paramsfile};
+            else
+                paramsfile=fullfile(expdirs,'params.xml');
+            end
         elseif VidDirOrTxt==handles.radiobutton_Txt
             fullfiletxt=get(handles.edit_in,'String');
             [analysis_protocol,paramsfile,expdirs] = ReadGroupedExperimentList_queue(fullfiletxt);
@@ -295,39 +300,57 @@ else
         end
         setappdata(0,'singleexp',numel(exps)==1);
 
-        if ~exist(paramsfile,'file')
-            mymsgbox(50,190,14,'Helvetica','Invalid or missing Parameters File','Error','error','modal')
+        if numel(paramsfile)==1
+            paramsfile=repmat(paramsfile,size(expdirs));
+        end
+        expparams=cell(size(paramsfile));
+        success=true(1,numel(expdirs));
+        for i=1:numel(paramsfile) 
+            if ~exist(paramsfile{i},'file')
+                mymsgbox(50,190,14,'Helvetica','Invalid or missing Parameters File','Error','error','modal')
+                success(i)=false;
+            end
+            expparams{i} = ReadXMLParams(paramsfile{i});
+            if ~get(handles.checkbox_log,'Value')
+                expparams{i}.dataloc.ufmf_log.filestr=[];
+                expparams{i}.dataloc.fbdc_log.filestr=[];
+                expparams{i}.dataloc.main_log.filestr=[];
+                expparams{i}.dataloc.automaticchecks_incoming_log.filestr=[];
+                expparams{i}.dataloc.bg_log.filestr=[];
+                expparams{i}.dataloc.roi_log.filestr=[];
+                expparams{i}.dataloc.track_log.filestr=[];
+                expparams{i}.dataloc.perframefeature_log.filestr=[];
+                expparams{i}.dataloc.resultsmovie_log.filestr=[];
+                expparams{i}.dataloc.automaticchecks_complete_log.filestr=[];
+                setappdata(0,'text_log',false)
+            else
+                setappdata(0,'text_log',true)
+            end
+            expparams{i}.track.dosave=get(handles.checkbox_savetemp,'Value');
+            expparams{i}.track.dosetBG=get(handles.checkbox_dosetBG,'Value');
+            expparams{i}.detect_rois.dosetROI=get(handles.checkbox_dosetROI,'Value');
+            expparams{i}.track.dosettrack=get(handles.checkbox_dosetT,'Value');
+            expparams{i}.wingtrack.dosetwingtrack=get(handles.checkbox_dosetWT,'Value');
+            expparams{i}.auto_checks_incoming.doAcI=get(handles.checkbox_doAcI,'Value');
+            expparams{i}.auto_checks_complete.doAcC=get(handles.checkbox_doAcC,'Value');
+            expparams{i}.track.dotrack=get(handles.checkbox_dotrack,'Value');
+            expparams{i}.track.dotrackwings=get(handles.checkbox_dotrackwings,'Value');
+            expparams{i}.compute_perframe_features.dopff=get(handles.checkbox_dopff,'Value');
+            expparams{i}.results_movie.dovideo=get(handles.checkbox_domovie,'Value');
+        end
+        omitedexp=exps(~success);
+        omitedexp_all=[omitedexp_all,omitedexp];
+        exps(~success)=[];
+        expdirs(~success)=[];
+        movie_name(~success)=[];
+        success(~success)=[];
+        if ~isempty(omitedexp)
+            waitfor(mymsgbox(50,190,14,'Helvetica',['The parameters file could not be found for the following experiments and will be omited:',sprintf('\n\t- %s',omitedexp{:})],'Warning','warn','modal'))
+        elseif numel(expdirs)==0
+            mymsgbox(50,190,14,'Helvetica','There are no valid videos in the selected directory','Error','error','modal')
             return
         end
-
-        cbparams = ReadXMLParams(paramsfile);
-        if ~get(handles.checkbox_log,'Value')
-            cbparams.dataloc.ufmf_log.filestr=[];
-            cbparams.dataloc.fbdc_log.filestr=[];
-            cbparams.dataloc.main_log.filestr=[];
-            cbparams.dataloc.automaticchecks_incoming_log.filestr=[];
-            cbparams.dataloc.bg_log.filestr=[];
-            cbparams.dataloc.roi_log.filestr=[];
-            cbparams.dataloc.track_log.filestr=[];
-            cbparams.dataloc.perframefeature_log.filestr=[];
-            cbparams.dataloc.resultsmovie_log.filestr=[];
-            cbparams.dataloc.automaticchecks_complete_log.filestr=[];
-            setappdata(0,'text_log',false)
-        else
-            setappdata(0,'text_log',true)
-        end
-        cbparams.track.dosave=get(handles.checkbox_savetemp,'Value');
-        cbparams.track.dosetBG=get(handles.checkbox_dosetBG,'Value');
-        cbparams.detect_rois.dosetROI=get(handles.checkbox_dosetROI,'Value');
-        cbparams.track.dosettrack=get(handles.checkbox_dosetT,'Value');
-        cbparams.wingtrack.dosetwingtrack=get(handles.checkbox_dosetWT,'Value');
-        cbparams.auto_checks_incoming.doAcI=get(handles.checkbox_doAcI,'Value');
-        cbparams.auto_checks_complete.doAcC=get(handles.checkbox_doAcC,'Value');
-        cbparams.track.dotrack=get(handles.checkbox_dotrack,'Value');
-        cbparams.track.dotrackwings=get(handles.checkbox_dotrackwings,'Value');
-        cbparams.compute_perframe_features.dopff=get(handles.checkbox_dopff,'Value');
-        cbparams.results_movie.dovideo=get(handles.checkbox_domovie,'Value');
-                
+        
         % Autmatic check incomings for all experiments
         out=cell(numel(expdirs),1);
         hwait=waitbar(0,'Checking incomings');
@@ -346,7 +369,7 @@ else
             setappdata(0,'moviefile',moviefile{i});
             setappdata(0,'analysis_protocol',analysis_protocol);
             setappdata(0,'out',out{i});
-            setappdata(0,'cbparams',cbparams)
+            setappdata(0,'cbparams',expparams{i})
             setappdata(0,'P_stage','BG')
 
             if get(handles.checkbox_doAcI,'Value')
@@ -379,7 +402,7 @@ else
                   continue;
                 end
             end
-            if cbparams.track.dosave
+            if expparams{i}.track.dosave
                 savetemp({'text_log','out','expdir','moviefile','experiment','analysis_protocol','P_stage'});
             end
         end
@@ -403,7 +426,6 @@ else
         
         BG=cell(numel(expdirs),1);
         roidata=cell(numel(expdirs),1);
-        expparams=cell(numel(expdirs),1);
         for i=1:numel(expdirs)
             experiment=exps{i};
             experiment(experiment=='_')=' ';
@@ -414,7 +436,7 @@ else
             setappdata(0,'moviefile',moviefile{i});
             setappdata(0,'out',out{i});
             setappdata(0,'analysis_protocol',analysis_protocol);
-            setappdata(0,'cbparams',cbparams);
+            setappdata(0,'cbparams',expparams{i});
             setappdata(0,'P_stage','BG');
             setappdata(0,'restart','');
             setappdata(0,'usefiles',get(handles.checkbox_usefiles,'Value'));
@@ -423,9 +445,9 @@ else
             setappdata(0,'isstop',false);
 
             try
-                if cbparams.track.dosetBG
+                if expparams{i}.track.dosetBG
                     cbtrackGUI_BG;
-                elseif cbparams.detect_rois.dosetROI
+                elseif expparams{i}.detect_rois.dosetROI
                     cbtrackNOGUI_BG
                     if getappdata(0,'iscancel')
                         cancelar
@@ -435,7 +457,7 @@ else
                         continue
                     end
                     cbtrackGUI_ROI
-                elseif cbparams.track.dosettrack
+                elseif expparams{i}.track.dosettrack
                     cbtrackNOGUI_BG
                     if getappdata(0,'iscancel')
                         cancelar
@@ -446,7 +468,7 @@ else
                     end
                     cbtrackNOGUI_ROI
                     cbtrackGUI_tracker
-                elseif cbparams.wingtrack.dosetwingtrack
+                elseif expparams{i}.wingtrack.dosetwingtrack
                     cbtrackNOGUI_BG
                     if getappdata(0,'iscancel')
                         cancelar
@@ -484,9 +506,9 @@ else
                         continue
                     end
                     WriteParams
-                    if cbparams.track.DEBUG && cbparams.track.dotrack && getappdata(0,'singleexp')
+                    if expparams{i}.track.DEBUG && expparams{i}.track.dotrack && getappdata(0,'singleexp')
                         cbtrackGUI_tracker_video
-                    elseif cbparams.track.dotrack && getappdata(0,'singleexp')
+                    elseif expparams{i}.track.dotrack && getappdata(0,'singleexp')
                         cbtrackGUI_tracker_NOvideo
                     end
                 end
@@ -556,7 +578,7 @@ else
                 success(i)=false;
                 continue
             end
-            if ~getappdata(0,'singleexp') || ~cbparams.track.dotrack
+            if ~getappdata(0,'singleexp') || ~expparams{i}.track.dotrack
                 WriteParams
             end
         end
@@ -589,7 +611,7 @@ else
         trackdata=cell(numel(expdirs),1);
         stage_error=cell(numel(expdirs),1);
         error_msg=cell(numel(expdirs),1);
-        if cbparams.track.dotrack && ~getappdata(0,'singleexp')
+        if get(handles.checkbox_dotrack,'Value') && ~getappdata(0,'singleexp')
             for i=1:numel(expdirs)
                 experiment=exps{i};
                 experiment(experiment=='_')=' ';
@@ -682,7 +704,7 @@ else
         end
 
         % Reuslts movie 
-        if cbparams.results_movie.dovideo
+        if get(handles.checkbox_domovie,'Value')
             if ~getappdata(0,'text_log')
                 logfid=open_log('main_log');
                 s=sprintf('\n\n***\n*** RESULTS MOIVIES STARTED AT %s ***\n',datestr(now,'yyyymmddTHHMMSS'));
@@ -739,7 +761,7 @@ else
         end
 
         %PFF
-        if cbparams.compute_perframe_features.dopff
+        if get(handles.checkbox_dopff,'Value');
             if ~getappdata(0,'text_log')
                 logfid=open_log('main_log');
                 s=sprintf('\n\n***\n*** PFF COMPUTATION STARTED AT %s ***\n',datestr(now,'yyyymmddTHHMMSS'));
