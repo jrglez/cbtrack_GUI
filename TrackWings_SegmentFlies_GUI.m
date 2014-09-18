@@ -31,10 +31,7 @@ for fly = 1:nflies,
     c = chol(S);
     temp = diffs/c;
     dcurr = sum(temp.^2, 2);
-    [mind,j] = min(dcurr);
-    if mind>params.max_wingcc_dist
-        continue
-    end
+    [~,j] = min(dcurr);
     fly2cc(fly) = fore2cc(j);
   end
   
