@@ -117,8 +117,14 @@ nflies = numel(trackdata.trx);
 stage = 'chooseorientations';  
 if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
     write_log(logfid,getappdata(0,'experiment'),sprintf('Choosing orientations 1...\n'));
-
+    setappdata(0,'allow_stop',false)
+    hwait = waitbar(0,{['Experiment ',getappdata(0,'experiment')];'Computing fly orientations'},'CreateCancelBtn','cancel_waitbar');
     for i = 1:nflies,
+      if getappdata(0,'iscancel') || getappdata(0,'isskip')
+          trackdata = [];
+          return
+      end
+      waitbar(i/nflies,hwait)
       x = trackdata.trx(i).x;
       y = trackdata.trx(i).y;
       theta = trackdata.trx(i).theta;
@@ -147,6 +153,10 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
 
       trackdata.trx(i).theta = choose_orientations2(x,y,theta,weight_theta,weight_phi);
     end
+    if ishandle(hwait)
+        delete(hwait)
+    end
+
     trackdata.stage=stages{find(strcmp(stage,stages))+1};
     if cbparams.track.dosave
         save(out.temp_full,'trackdata','-append')
@@ -281,8 +291,14 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
       oldperframedata = trackdata.perframedata;
     end
     trxfns = intersect({'x','y','a','b','theta','xwingl','ywingl','xwingr','ywingr','wing_anglel','wing_angler'},fieldnames(trackdata.trx));
+    setappdata(0,'allow_stop',false)
+    hwait = waitbar(0,{['Experiment ',getappdata(0,'experiment')];'Asigning IDs'},'CreateCancelBtn','cancel_waitbar');
     for roii = 1:nrois,
-
+      if getappdata(0,'iscancel') || getappdata(0,'isskip')
+          trackdata = [];
+          return
+      end
+      waitbar(roii/nrois,hwait)
       if isnan(roidata.nflies_per_roi(roii)) || roidata.nflies_per_roi(roii) < 2,
         continue;
       end
@@ -330,6 +346,9 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
       cost_assignids(roii) = cost_curr;
       sigmamotionfit(roii) = sigmamotionfit_curr;  
       idsfit(:,roii,:) = idsfit_curr;
+    end
+    if ishandle(hwait)
+        delete(hwait)
     end
 
     idx = find(roidata.nflies_per_roi == 2);
@@ -395,8 +414,14 @@ stage = 'chooseorientations2';
 if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
     write_log(logfid,getappdata(0,'experiment'),sprintf('Choosing orientations 2...\n'));
     isflip = false(nflies,nframes_track);
-
+    setappdata(0,'allow_stop',false)
+    hwait = waitbar(0,{['Experiment ',getappdata(0,'experiment')];'Computing fly orientations'},'CreateCancelBtn','cancel_waitbar');
     for i = 1:nflies,
+      if getappdata(0,'iscancel') || getappdata(0,'isskip')
+          trackdata = [];
+          return
+      end
+      waitbar(i/nflies,hwait)
 
       % if there is some kind of flip
       roii = trackdata.trx(i).roi;
@@ -411,6 +436,9 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
       isflip(i,:) = round(abs(modrange(theta-trackdata.trx(i).theta,-pi,pi))/pi) > 0;
       write_log(logfid,getappdata(0,'experiment'),sprintf('N. orientation flips = %d\n',nnz(isflip(i,:))));
 
+    end
+    if ishandle(hwait)
+      delete(hwait)
     end
     trackdata.stage=stages{find(strcmp(stage,stages))+1};
     if cbparams.track.dosave

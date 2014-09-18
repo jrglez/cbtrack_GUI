@@ -451,11 +451,25 @@ htextzoom = zeros(nzoomr,nzoomc);
 mencoder_nframes = 0;
 tic;
 
+hwait=waitbar(0,{['Experiment ',getappdata(0,'experiment')];'Creating results movie'},'CreateCancelBtn','cancel_waitbar');
+k = 0;
+setappdata(0,'allow_stop',false)
 for segi = 1:numel(firstframes),
   firstframe = firstframes(segi);
   endframe = endframes(segi);
 
   for frame = firstframe:endframe,
+    if getappdata(0,'iscancel') || getappdata(0,'isskip')
+      succeeded = false;
+      aviname = [];
+      figpos = [];
+      height = [];
+      width = [];
+      write_log(1,getappdata(0,'experiment'),sprintf('Results movie cancelled\n'));
+      return
+    end
+    k = k+1;
+    waitbar(k/sum(maxnframes),hwait)
     if mod(frame - firstframe,5) == 0,
       write_log(1,getappdata(0,'experiment'),sprintf('frame %d, write rate = %f s/fr\n',frame,toc/5));
       tic;
@@ -472,6 +486,7 @@ for segi = 1:numel(firstframes),
     if ncolors == 1,
       im = repmat(im,[1,1,3]);
     end
+    set(0,'CurrentFigure',1)
     if frame == firstframes(1),
       him = image([1,nc],[1,nr],im);
       axis image;
@@ -764,6 +779,9 @@ for segi = 1:numel(firstframes),
     
   end
   
+end
+if ishandle(hwait)
+    delete(hwait)
 end
   
 write_log(1,getappdata(0,'experiment'),sprintf('Finishing AVI...\n'));

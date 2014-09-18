@@ -33,6 +33,7 @@ s=sprintf('Opening movie file %s...\n',moviefile);
 write_log(logfid,experiment,s)
 [readframe,nframes,fid,headerinfo] = get_readframe_fcn(moviefile); %#ok<*NASGU>
 im = readframe(1);
+im_class = class(im);
 
 %% estimate the background model
 
@@ -55,9 +56,7 @@ end
 delete(hwait)
 hwait=waitbar(0,['Computing background model for experiment ''',experiment,'''']);
 bgmed = median(single(buffer),3);
-if isa(readframe(1),'uint8')
-    bgmed=uint8(bgmed);
-end
+bgmed=any_class(bgmed,im_class);
 
 waitbar(1,hwait);
 bgdata.bgmed=bgmed;
