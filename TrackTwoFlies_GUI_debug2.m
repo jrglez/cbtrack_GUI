@@ -68,7 +68,7 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
 
     trackdata.trx = struct;
     j = 1;
-    fly2roiid = [];
+    trackdata.fly2roiid = [];
     for i = 1:nrois,
       if isnan(roidata.nflies_per_roi(i)),
         continue;
@@ -97,7 +97,7 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
         trackdata.trx(j).moviefile = moviefile;
         trackdata.trx(j).dt = diff(timestamps(trackdata.trx(j).firstframe:trackdata.trx(j).endframe));
         trackdata.trx(j).timestamps = timestamps(trackdata.trx(j).firstframe:trackdata.trx(j).endframe);    
-        fly2roiid(j) = jj;  %#ok<AGROW>
+        trackdata.fly2roiid(j) = jj; 
         j = j + 1;
       end
     end
@@ -191,7 +191,7 @@ if params.DEBUG > 1,
     title(num2str(t));
 
     for i = 1:nflies,
-      fly = fly2roiid(i);
+      fly = trackdata.fly2roiid(i);
       if isnewplot || ~ishandle(hell(i)),
         hell(i) = drawflyo(trackdata.trx(i).x(iframe),trackdata.trx(i).y(iframe),...
           trackdata.trx(i).theta(iframe),trackdata.trx(i).a(iframe),...
@@ -222,22 +222,7 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
 
       write_log(logfid,getappdata(0,'experiment'),sprintf('Tracking wings 1...\n'));
 
-      [nr,nc,~] = size(readframe(1));
-      if roidata.isall
-          isarena=true(nr,nc);
-      else
-          isarena = false(nr,nc);
-          [XGRID,YGRID] = meshgrid(1:nc,1:nr);
-          for roii = 1:nrois,
-            if roidata.nflies_per_roi(roii) == 0,
-              continue;
-            end
-            isarena = isarena | ...
-              ( ((XGRID - roidata.centerx(roii)).^2 + ...
-              (YGRID - roidata.centery(roii)).^2) ...
-              <= roidata.radii(roii)^2 );
-          end
-      end
+      isarena = roidata.inrois_all;
       
       if ~params.DEBUG
           debugdata.track=1;
@@ -407,7 +392,7 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
     for i = 1:nflies,
       roii = trackdata.trx(i).roi;
       if roidata.nflies_per_roi(roii) == 2,
-        if fly2roiid(i) == 1,
+        if trackdata.fly2roiid(i) == 1,
           trackdata.trx(i).(params.typefield) = repmat({params.typesmallval},[1,nframes_track]);
         else
           trackdata.trx(i).(params.typefield) = repmat({params.typebigval},[1,nframes_track]);
@@ -484,23 +469,8 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
 
       write_log(logfid,getappdata(0,'experiment'),sprintf('Tracking wings 2...\n'));
 
-      [nr,nc,~] = size(readframe(1));
-      if roidata.isall
-          isarena=true(nr,nc);
-      else
-          isarena = false(nr,nc);
-          [XGRID,YGRID] = meshgrid(1:nc,1:nr);
-          for roii = roistrack,
-            if roidata.nflies_per_roi(roii) == 0,
-              continue;
-            end
-            isarena = isarena | ...
-              ( ((XGRID - roidata.centerx(roii)).^2 + ...
-              (YGRID - roidata.centery(roii)).^2) ...
-              <= roidata.radii(roii)^2 );
-          end
-      end
-      
+      isarena = roidata.inrois_all;
+            
       if didtrackwings,
           debugdata.track=1;
           debugdata.vis=0;

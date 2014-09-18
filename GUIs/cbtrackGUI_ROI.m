@@ -277,7 +277,7 @@ setappdata(0,'restart',restart)
 
 if isnew
     if isempty(params.nflies_per_roi) || numel(params.nflies_per_roi)~=roidata.nrois
-        params.nflies_per_roi=roidata.nflies_per_roi;
+        params.nflies_per_roi=2*roidata.nrois;
     end
     
     if isfield(roidata,'nflies_per_roi')
