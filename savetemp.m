@@ -7,6 +7,16 @@ end
 savelist2={'P_stage','cbparams'};
 out=getappdata(0,'out');
 
+scrSize=get(0,'screensize');
+boxpos=[(scrSize(3)-500)/2,(scrSize(4)-150)/2,500,150];
+hbox=figure('units','pixels','position',boxpos,'windowstyle','modal');
+htext=uicontrol('style','text','BackgroundColor',[0.8 0.8 0.8],'FontUnits','pixels',...
+    'FontSize',14,'units','pixels','position',[50 35 400 80],...
+    'HorizontalAlignment','center','Parent',hbox);
+s={['Experiment ', getappdata(0,'experiment')];'';'Saving temporary resulst'};
+s=textwrap(s,htext);
+set(htext,'String',s)
+
 logfid=open_log('main_log');
 s=sprintf('Saving temporary results to file %s...\n\n***\n',out.temp_full);
 write_log(logfid,getappdata(0,'experiment'),s)
@@ -28,5 +38,9 @@ for i=1:length(savelist2)
         eval([savelist2{i},'=getappdata(0,''',savelist2{i},''');'])
         save(out.temp_full,savelist2{i},'-append')
     end
+end
+
+if ishandle(hbox)
+    delete(hbox)
 end
 

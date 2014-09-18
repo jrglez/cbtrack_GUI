@@ -129,9 +129,7 @@ else
         BG.data.cbestimatebg_timestamp=datestr(now,TimestampFormat);
         BG.data.analysis_protocol=getappdata(0,'analysis_protocol');
         BG.data.bgmed=255*ones(size(im));
-        if isa(im,'uint8')
-            BG.data.bgmed=uint8(BG.data.bgmed);
-        end
+        BG.data.bgmed=any_class(BG.data.bgmed,class(im));
         BG.data.isnew=true;
         if fid > 1,
             fclose(fid);
@@ -340,9 +338,7 @@ if isnew
         BG.data.cbestimatebg_timestamp=datestr(now,TimestampFormat);
         BG.data.analysis_protocol=getappdata(0,'analysis_protocol');
         BG.data.bgmed=255*ones(size(BG.data.bgmed));
-        if isa(readframe(1),'uint8')
-            BG.data.bgmed=uint8(BG.data.bgmed);
-        end
+        BG.data.bgmed=any_class(BG.data.bgmed,class(readframe(1)));
         if fid>1
             fclose(fid);
         end

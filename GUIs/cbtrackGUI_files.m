@@ -127,26 +127,23 @@ if get(handles.checkbox_restart,'Value')
         if ishandle(handles.figure1)
             delete(handles.figure1)
         end
-        if strcmp(P_stage,'track2') 
-            CourtshipBowlTrack_GUI2
-        elseif strcmp(P_stage,'track1')
-%             if isfield(roidata,'nflies_per_roi') %#ok<NODEF>
-            if cbparams.track.DEBUG
-                cbtrackGUI_tracker_video
-            elseif ~cbparams.track.DEBUG
-                cbtrackGUI_tracker_NOvideo
-            end
-%             else
-%                 cbtrackGUI_tracker
-%             end
-        elseif strcmp(P_stage,'wing_params')
-            cbtrackGUI_WingTracker
-        elseif strcmp(P_stage,'params')
-            cbtrackGUI_tracker
-        elseif strcmp(P_stage,'ROIs')
-            cbtrackGUI_ROI
-        elseif strcmp(P_stage,'BG')
-            cbtrackGUI_BG
+        switch P_stage
+            case strcmp(P_stage,'track2') 
+                CourtshipBowlTrack_GUI2
+            case strcmp(P_stage,'track1')
+                if cbparams.track.DEBUG
+                    cbtrackGUI_tracker_video
+                elseif ~cbparams.track.DEBUG
+                    cbtrackGUI_tracker_NOvideo
+                end
+            case strcmp(P_stage,'wing_params')
+                cbtrackGUI_WingTracker
+            case strcmp(P_stage,'params')
+                cbtrackGUI_tracker
+            case strcmp(P_stage,'ROIs')
+                cbtrackGUI_ROI
+            case strcmp(P_stage,'BG')
+                cbtrackGUI_BG
         end 
         if getappdata(0,'iscancel')
             cancelar
@@ -155,10 +152,18 @@ if get(handles.checkbox_restart,'Value')
             clear_all
             return
         end
-           % Reuslts movie 
+        
+        % Reuslts movie 
         if cbparams.results_movie.dovideo
             try
                 CourtshipBowlMakeResultsMovie_GUI;
+                if getappdata(0,'iscancel')
+                    cancelar
+                    return
+                elseif getappdata(0,'isskip')
+                    clear_all
+                    return
+                end
             catch ME
                 experiment=getappdata(0,'experiment');
                 experiment(experiment=='_')=' ';
@@ -173,7 +178,7 @@ if get(handles.checkbox_restart,'Value')
         end
 
         %PFF
-        if cbparams.compute_perframe_features.dopff
+        if cbparams.compute_perframe_features.dopff && strcmp(getappdata(0,'P_stage'),'pff')
             try
                 [~] = CourtshipBowlComputePerFrameFeatures_GUI(1);
                 if getappdata(0,'iscancel')
@@ -727,6 +732,14 @@ else
                     setappdata(0,'analysis_protocol',analysis_protocol);
                     setappdata(0,'cbparams',expparams{i});
                     CourtshipBowlMakeResultsMovie_GUI
+                    if getappdata(0,'iscancel')
+                        cancelar
+                        return
+                    elseif getappdata(0,'isskip')
+                        success(i)=false;
+                        error_msg{i}='Experiment skipped by user';
+                        continue
+                    end
                 catch ME
                     stage_error{i}=getappdata(0,'P_stage');
                     error_msg{i}=ME.message;
@@ -745,7 +758,7 @@ else
                     experiment(experiment=='_')=' ';
                     logfid2=open_log('resultsmovie_log');
                     s=sprintf('Results movie could not be created for experiment %s: %s\n',experiment,error_msg{idomited(k)});
-                    writelog(logfid2,experiment,s)
+                    write_log(logfid2,experiment,s)
                     if logfid2>1
                         flcose(logfid2)
                     end
@@ -787,6 +800,7 @@ else
                         return
                     elseif getappdata(0,'isskip')
                         success(i)=false;
+                        error_msg{i}='Experiment skipped by user';
                         continue
                     end
                 catch ME

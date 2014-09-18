@@ -42,9 +42,7 @@ if getappdata(0,'usefiles') && exist(loadfile,'file')
             BG_data.cbestimatebg_timestamp=datestr(now,TimestampFormat);
             BG_data.analysis_protocol=getappdata(0,'analysis_protocol');
             BG_data.bgmed=255*ones(size(im));
-            if isa(im,'uint8')
-                BG_data.bgmed=uint8(BG_data.bgmed);
-            end
+            BG_data.bgmed=any_class(BG_data.bgmed,class(im));
             if fid > 1,
                 fclose(fid);
             end
@@ -67,9 +65,7 @@ else
         BG_data.cbestimatebg_timestamp=datestr(now,TimestampFormat);
         BG_data.analysis_protocol=getappdata(0,'analysis_protocol');
         BG_data.bgmed=255*ones(size(im));
-        if isa(im,'uint8')
-            BG_data.bgmed=uint8(BG_data.bgmed);
-        end
+        BG_data.bgmed=any_class(BG_data.bgmed,class(im));
         if fid > 1,
             fclose(fid);
         end

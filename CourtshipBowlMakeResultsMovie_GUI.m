@@ -199,6 +199,10 @@ end
   'dynamicflyselection',true,...
   'doshowsex',true,...
   'colors',colors);
+if getappdata(0,'iscancel') || getappdata(0,'isskip')
+    resultsmoviedata = [];
+    return
+end
 
 if ishandle(1),
   close(1);
