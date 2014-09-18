@@ -156,7 +156,10 @@ end
 isfore = visdata.dbkgd{1} >= tracking_params.bgthresh;
 cc=bwconncomp(isfore);
 cc.Area = cellfun(@numel,cc.PixelIdxList);
-maxccarea=max(cc.Area);
+maxccarea=2*max(cc.Area);
+if isempty(maxccarea)
+    maxccarea=10*tracking_params.minccarea;
+end
 clear cc
 
 set(handles.edit_set_nframessample,'String',num2str(roi_params.nframessample));

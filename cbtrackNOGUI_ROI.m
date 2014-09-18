@@ -13,7 +13,8 @@ if getappdata(0,'usefiles') && exist(loadfile,'file')
         end
         isempty(roidata.cbdetectrois_version);
         roidata.params.dosetROI=cbparams.detect_rois.dosetROI;
-        cbparams.detect_rois=roidata.params;
+        params=roidata.params;
+        cbparams.detect_rois=params;
         setappdata(0,'cbparams',cbparams);
     catch
         logfid=open_log('roi_log');
@@ -48,7 +49,12 @@ else
         params.roimus=roimus;
     end
 end
+if isempty(params.nflies_per_roi) || numel(params.nflies_per_roi)~=roidata.nrois
+    params.nflies_per_roi=2*roidata.nrois;
+    cbparams.detect_rois=params;
+end
 roidata.isnew=true;
+setappdata(0,'cbparams',cbparams);
 setappdata(0,'roidata',roidata);
 setappdata(0,'P_stage','params')
 if cbparams.track.dosave
