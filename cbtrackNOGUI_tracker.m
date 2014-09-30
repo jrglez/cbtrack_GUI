@@ -45,7 +45,7 @@ if cbparams.wingtrack.dosetwingtrack || ~isfield(roidata,'nflies_per_roi') || ~g
         try
             fclose(fid);
         catch ME,
-            mymsgbox(50,190,14,'Helvetica',['Could not close movie file: ',getReport(ME)],'Warning','warn')
+            mymsgbox(50,190,14,'Helvetica',['Could not close movie file: ',ME.message],'Warning','warn')
         end
     end
     if cbparams.wingtrack.dosetwingtrack

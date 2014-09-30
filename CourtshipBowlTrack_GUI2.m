@@ -12,7 +12,11 @@ moviefile=getappdata(0,'moviefile');
 cbparams = getappdata(0,'cbparams');
 params=cbparams.track;
 metadatafile = fullfile(expdir,cbparams.dataloc.metadata.filestr);
-metadata = ReadMetadataFile(metadatafile);
+if exist(metadatafile,'file')
+    metadata = ReadMetadataFile(metadatafile);
+else
+    metadata = [];
+end
 
 logfid=open_log('track_log');
 

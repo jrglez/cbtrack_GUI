@@ -1,10 +1,12 @@
 function write_log(logfid,s_exp,s_log)
+viewlog=getappdata(0,'viewlog');
 if ~iscell(s_log)
     s_log={s_log};
 end
-if logfid>1
+if logfid>=1
     fprintf(logfid,'%s\n',s_log{:});
-else
+end
+if viewlog
     h_log=getappdata(0,'h_log');
     if isempty(h_log) || any(~ishandle(h_log)) 
         h_log=log_GUI;

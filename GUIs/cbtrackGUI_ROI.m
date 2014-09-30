@@ -185,7 +185,7 @@ else
             else
                 params.roimus=[params.roimus.x',params.roimus.y'];
                 [handles,roidata] = DetectROIsGUI(bgmed,cbparams,params,handles);
-                roidata.ignore=[];
+                roidata.ignore=params.ignorebowls;
             end
         end
     else
@@ -195,7 +195,7 @@ else
         else
             params.roimus=[params.roimus.x',params.roimus.y'];
             [handles,roidata] = DetectROIsGUI(bgmed,cbparams,params,handles);
-            roidata.ignore=[];
+            roidata.ignore=params.ignorebowls;
         end
     end
     roidata.isnew=true;
@@ -648,6 +648,7 @@ else
         end
         manual.detected=1;
         params.roimus=[xc,yc];
+        params.ignorebowls=[];
         BG=getappdata(0,'BG');
         bgmed=BG.bgmed;
         [handles,roidata] = DetectROIsGUI(bgmed,cbparams,params,handles);

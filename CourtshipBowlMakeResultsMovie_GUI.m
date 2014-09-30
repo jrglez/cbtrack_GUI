@@ -178,7 +178,7 @@ if ~DEBUG && exist(avifile,'file'),
   try
     delete(avifile);
   catch ME,
-    s=sprintf('Could not remove avi file %s:\n%s\n',avifile,getReport(ME));
+    s=sprintf('Could not remove avi file %s:\n%s\n',avifile,ME.message);
     write_log(logfid,experiment,s)
   end
 end

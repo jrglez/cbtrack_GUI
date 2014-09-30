@@ -882,9 +882,12 @@ end
 function checkbox_Callback(hObject, eventdata)
 handles=guidata(hObject);
 roidata=get(handles.uipanel_fxROI,'UserData');
+roi_params=get(handles.edit_set_nframessample,'UserData');
 use=get(handles.check,'Value');
 roidata.ignore=find(~cell2mat(use));
 roidata.isnew=2;
+
+roi_params.ignorebowls=roidata.ignore;
 
 f=get(handles.slider_frame,'UserData');
 visdata=get(handles.popupmenu_vis,'UserData');
@@ -899,3 +902,4 @@ end
 plot_vis(handles,visdata,f)
 
 set(handles.uipanel_fxROI,'UserData',roidata) ;
+set(handles.edit_set_nframessample,'UserData',roi_params)

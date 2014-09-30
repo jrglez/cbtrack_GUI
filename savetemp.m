@@ -1,6 +1,6 @@
 function savetemp(savelist)
 if strcmp(savelist,'all')
-    savelist={'text_log','expdir','moviefile','experiment',...
+    savelist={'viewlog','expdir','moviefile','experiment',...
         'analysis_protocol','P_stage','GUIscale', 'cbparams','BG',...
         'roidata','visdata','trackdata','debugdata'};
 end
@@ -13,7 +13,7 @@ hbox=figure('units','pixels','position',boxpos,'windowstyle','modal');
 htext=uicontrol('style','text','BackgroundColor',[0.8 0.8 0.8],'FontUnits','pixels',...
     'FontSize',14,'units','pixels','position',[50 35 400 80],...
     'HorizontalAlignment','center','Parent',hbox);
-s={['Experiment ', getappdata(0,'experiment')];'';'Saving temporary resulst'};
+s={['Experiment ', getappdata(0,'experiment')];'';'Saving temporary results'};
 s=textwrap(s,htext);
 set(htext,'String',s)
 

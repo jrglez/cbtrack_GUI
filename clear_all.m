@@ -1,4 +1,4 @@
-appdatalist={'text_log','h_log','expdir','experiment','moviefile','out',...
+appdatalist={'viewlog','h_log','expdir','experiment','moviefile','out',...
     'analysis_protocol','P_stage','cbparams','restart','GUIscale',...
     'startframe','endframe','BG','roidata','visdata','debugdata_WT',...
     'pff_all','t','trackdata','iscancel','isskip','allow_stop','isstop','twing'};
@@ -21,7 +21,7 @@ if ~isempty(all_files)
         try
             fclose(all_files(i));
         catch ME
-            mymsgbox(50,190,14,'Helvetica',['Could not close all the opened files: ',getReport(ME)],'Warning','warn')
+            mymsgbox(50,190,14,'Helvetica',['Could not close all the opened files: ',ME.message],'Warning','warn')
         end
     end
 end

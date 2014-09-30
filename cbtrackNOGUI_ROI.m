@@ -32,7 +32,7 @@ if getappdata(0,'usefiles') && exist(loadfile,'file')
             roimus=params.roimus;
             params.roimus=[roimus.x',roimus.y'];
             [~,roidata] = DetectROIsGUI(BG.bgmed,cbparams,params,[]);
-            roidata.ignore=[];
+            roidata.ignore=params.ignorebowls;
             params.roimus=roimus;
         end
     end
@@ -45,7 +45,7 @@ else
         roimus=params.roimus;
         params.roimus=[roimus.x',roimus.y'];
         [~,roidata] = DetectROIsGUI(BG.bgmed,cbparams,params,[]);
-        roidata.ignore=[];
+        roidata.ignore=params.ignorebowls;
         params.roimus=roimus;
     end
 end

@@ -28,7 +28,6 @@ try
 
 metadatafile = fullfile(expdir,cbparams.dataloc.metadata.filestr);
 moviefile = getappdata(0,'moviefile');
-temperaturefile = fullfile(expdir,cbparams.dataloc.temperature.filestr); %#ok<NASGU>
 outfile = fullfile(out.folder,cbparams.dataloc.automaticchecksincomingresults.filestr);
 
 % order matters here: higher up categories have higher priority
@@ -61,64 +60,59 @@ end
 %% read metadata
 
 ismetadata = exist(metadatafile,'file');
-if ~ismetadata,
-  success = false;
-  msgs{end+1} = 'Missing Metadata.xml file';
-  iserror(category2idx.missing_metadata_file) = true;
-  metadata = struct;
-else
+if ismetadata,
   try
     metadata = ReadMetadataFile(metadatafile);
   catch %#ok<CTCH>
-    msgs{end+1} = 'Error reading Metadata file';
-    success = false;
+    ismetadata = false;
   end
 end
   
 
 %% check for metadata fields
 
-required_fns = {'flag_aborted','flag_redo','seconds_fliesloaded',...
-  'screen_type','screen_reason'};
-if isfield(check_params,'required_fns'),
-  required_fns = check_params.required_metadata_fields;
+if ismetadata
+    required_fns = {'flag_aborted','flag_redo','seconds_fliesloaded',...
+      'screen_type','screen_reason'};
+    if isfield(check_params,'required_fns'),
+      required_fns = check_params.required_metadata_fields;
+    end
+    ismissingfn = ~ismember(required_fns,fieldnames(metadata));
+    if any(ismissingfn),
+      success = false;
+      msgs{end+1} = ['Missing metadata fields:',sprintf(' %s',required_fns{ismissingfn})];
+      iserror(category2idx.missing_metadata_fields) = true;
+    end
+
+    %% check for flags
+
+    if isfield(metadata,'flag_aborted') && metadata.flag_aborted ~= 0,
+      success = false;
+      msgs{end+1} = 'Experiment aborted.';
+      iserror(category2idx.flag_aborted_set_to_1) = true;
+    end
+
+    if isfield(metadata,'flag_redo') && metadata.flag_redo ~= 0,
+      success = false;
+      msgs{end+1} = 'Redo flag set to 1.';
+      iserror(category2idx.flag_redo_set_to_1) = true;
+    end
+
+    %% check loading time
+
+    if isfield(metadata,'seconds_fliesloaded'),
+      if metadata.seconds_fliesloaded < check_params.min_seconds_fliesloaded,
+        success = false;
+        msgs{end+1} = sprintf('Load time = %f < %f seconds.',metadata.seconds_fliesloaded,check_params.min_seconds_fliesloaded);
+        iserror(category2idx.fliesloaded_time_too_short) = true;
+      end
+      if metadata.seconds_fliesloaded > check_params.max_seconds_fliesloaded,
+        success = false;
+        msgs{end+1} = sprintf('Load time = %f > %f seconds.',metadata.seconds_fliesloaded,check_params.max_seconds_fliesloaded);
+        iserror(category2idx.fliesloaded_time_too_long) = true;
+      end
+    end
 end
-ismissingfn = ~ismember(required_fns,fieldnames(metadata));
-if any(ismissingfn),
-  success = false;
-  msgs{end+1} = ['Missing metadata fields:',sprintf(' %s',required_fns{ismissingfn})];
-  iserror(category2idx.missing_metadata_fields) = true;
-end
-
-%% check for flags
-
-if isfield(metadata,'flag_aborted') && metadata.flag_aborted ~= 0,
-  success = false;
-  msgs{end+1} = 'Experiment aborted.';
-  iserror(category2idx.flag_aborted_set_to_1) = true;
-end
-
-if isfield(metadata,'flag_redo') && metadata.flag_redo ~= 0,
-  success = false;
-  msgs{end+1} = 'Redo flag set to 1.';
-  iserror(category2idx.flag_redo_set_to_1) = true;
-end
-
-%% check loading time
-
-if isfield(metadata,'seconds_fliesloaded'),
-  if metadata.seconds_fliesloaded < check_params.min_seconds_fliesloaded,
-    success = false;
-    msgs{end+1} = sprintf('Load time = %f < %f seconds.',metadata.seconds_fliesloaded,check_params.min_seconds_fliesloaded);
-    iserror(category2idx.fliesloaded_time_too_short) = true;
-  end
-  if metadata.seconds_fliesloaded > check_params.max_seconds_fliesloaded,
-    success = false;
-    msgs{end+1} = sprintf('Load time = %f > %f seconds.',metadata.seconds_fliesloaded,check_params.max_seconds_fliesloaded);
-    iserror(category2idx.fliesloaded_time_too_long) = true;
-  end
-end
-
 %% check video length
 
 try
@@ -134,7 +128,7 @@ if nframes < check_params.min_ufmf_nframes,
 end
 catch ME,
 success = false;
-msgs{end+1} = sprintf('Error reading movie filefile: %s',getReport(ME));
+msgs{end+1} = sprintf('Error reading movie filefile: %s',ME.message);
 iserror(category2idx.incoming_checks_other) = true;
 end
 
@@ -227,7 +221,7 @@ end
 
 catch ME,
   success = false;
-  msgs = {getReport(ME)};
+  msgs = {ME.message};
 end
   
 %% print results to log file

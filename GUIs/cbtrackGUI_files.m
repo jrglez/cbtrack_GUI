@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_files(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_files
 
-% Last Modified by GUIDE v2.5 18-Jun-2014 17:24:10
+% Last Modified by GUIDE v2.5 22-Sep-2014 16:26:45
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -105,7 +105,7 @@ if get(handles.checkbox_restart,'Value')
     restart=get(handles.edit_restart,'String');
     if exist(restart,'file')
         load(restart);
-        appdatalist={'text_log','h_log','expdir','experiment','moviefile','out',...
+        appdatalist={'viewlog','h_log','expdir','experiment','moviefile','out',...
     'analysis_protocol','P_stage','cbparams','restart','GUIscale',...
     'startframe','endframe','BG','roidata','visdata','debugdata_WT',...
     'pff_all','t','trackdata','iscancel','isskip','allow_stop','isstop','twing'};
@@ -171,7 +171,7 @@ if get(handles.checkbox_restart,'Value')
                 s=sprintf('Results movie could not be created for experiment %s: %s\n',getappdata(0,'experiment'),ME.message);
                 write_log(logfid2,experiment,s)
                 if logfid2>1
-                    flcose(logfid2)
+                    fclose(logfid2);
                 end
                 waitfor(mymsgbox(50,190,14,'Helvetica',['Results movie could not be created for the following experiments:',sprintf('\n\t- %s',getappdata(0,'experiment'))],'Warning','warn','modal'))
             end
@@ -195,9 +195,39 @@ if get(handles.checkbox_restart,'Value')
                 s=sprintf('Perframe features could not be computed for the following experiment %s: %s\n',getappdata(0,'experiment'),ME.message);
                 write_log(logfid2,experiment,s)
                 if logfid2>1
-                    flcose(logfid2)
+                    fclose(logfid2);
                 end
                 waitfor(mymsgbox(50,190,14,'Helvetica',['Perframe features could not be computed for the following experiments:',sprintf('\n\t- %s',getappdata(0,'experiment'))],'Warning','warn','modal'))
+            end
+        end
+        
+        % Autmatic check complete for all experiments
+        if get(handles.checkbox_doAcC,'Value')
+            experiment=getappdata(0,'experiment');
+            experiment(experiment=='_')=' ';
+            out=getappdata(0,'out');
+
+            logfid=open_log('automaticchecks_incoming_log');
+            try
+              s=sprintf('AutomaticChecks_Complete for experiment %s...\n',experiment);
+              write_log(logfid,experiment,s)
+              [success,msgs] = CourtshipBowlAutomaticChecks_Complete(out.folder);
+              if ~success,
+                  s={sprintf('AutomaticChecks_Complete error/warning for experiment %s:\n',experiment);...
+                      sprintf('%s\n',msgs{:})};
+                  write_log(logfid,experiment,s)
+                  if logfid>1
+                    fclose(logfid);
+                  end
+              end      
+            catch ME,
+              msgs = {sprintf('Error running AutomaticChecks_Complete:\n%s',ME.message)};
+              s={sprintf('AutomaticChecks_Complete error/warning for experiment %s:\n',experiment);...
+              sprintf('%s\n',msgs{:})};
+              write_log(logfid,experiment,s)
+              if logfid>1
+                  fclose(logfid);
+              end
             end
         end
     else
@@ -316,21 +346,7 @@ else
                 success(i)=false;
             end
             expparams{i} = ReadXMLParams(paramsfile{i});
-            if ~get(handles.checkbox_log,'Value')
-                expparams{i}.dataloc.ufmf_log.filestr=[];
-                expparams{i}.dataloc.fbdc_log.filestr=[];
-                expparams{i}.dataloc.main_log.filestr=[];
-                expparams{i}.dataloc.automaticchecks_incoming_log.filestr=[];
-                expparams{i}.dataloc.bg_log.filestr=[];
-                expparams{i}.dataloc.roi_log.filestr=[];
-                expparams{i}.dataloc.track_log.filestr=[];
-                expparams{i}.dataloc.perframefeature_log.filestr=[];
-                expparams{i}.dataloc.resultsmovie_log.filestr=[];
-                expparams{i}.dataloc.automaticchecks_complete_log.filestr=[];
-                setappdata(0,'text_log',false)
-            else
-                setappdata(0,'text_log',true)
-            end
+            setappdata(0,'viewlog',get(handles.checkbox_log,'Value'))
             expparams{i}.track.dosave=get(handles.checkbox_savetemp,'Value');
             expparams{i}.track.dosetBG=get(handles.checkbox_dosetBG,'Value');
             expparams{i}.detect_rois.dosetROI=get(handles.checkbox_dosetROI,'Value');
@@ -370,12 +386,10 @@ else
 
             setappdata(0,'experiment',experiment);
             setappdata(0,'expdir',expdirs{i});
-            setappdata(0,'experiment',experiment);
             setappdata(0,'moviefile',moviefile{i});
             setappdata(0,'analysis_protocol',analysis_protocol);
             setappdata(0,'out',out{i});
             setappdata(0,'cbparams',expparams{i})
-            setappdata(0,'P_stage','BG')
 
             if get(handles.checkbox_doAcI,'Value')
                 logfid=open_log('automaticchecks_incoming_log');
@@ -383,32 +397,32 @@ else
                   s=sprintf('AutomaticChecks_Incoming for experiment %s...\n',experiment);
                   write_log(logfid,experiment,s)
                   waitbar(i/numel(expdirs),hwait,['Checking incomings for experiment ',experiment]);
-                  [success(i),msgs,iserror] = CourtshipBowlAutomaticChecks_Incoming_GUI(expdirs{i},'analysis_protocol',analysis_protocol); %#ok<*NASGU>
+                  [success(i),msgs,iserror] = CourtshipBowlAutomaticChecks_Incoming_GUI(out{i}.folder,'analysis_protocol',analysis_protocol); %#ok<*NASGU>
                   if ~success(i),
                     waitfor(mymsgbox(50,190,14,'Helvetica',sprintf('AutomaticChecks_Incoming failed for experiment %s (experiment will be ignored):\n',experiment),'Warning','warn','modal'))
                     s={sprintf('AutomaticChecks_Incoming failed for experiment %s (experiment will be ignored):\n',experiment);...
                         sprintf('%s\n',msgs{:})};
                     write_log(logfid,experiment,s)
                     if logfid>1
-                      flcose(logfid)
+                      fclose(logfid);
                     end
                     continue;
                   end      
                 catch ME,
                   success(i)=false;
-                  msgs = {sprintf('Error running AutomaticChecks_Incoming:\n%s',getReport(ME))};
+                  msgs = {sprintf('Error running AutomaticChecks_Incoming:\n%s',ME.message)};
                   waitfor(mymsgbox(50,190,14,'Helvetica',sprintf('AutomaticChecks_Incoming failed for experiment %s (experiment will be ignored):\n',experiment),'Warning','warn','modal'))
                   s={sprintf('AutomaticChecks_Incoming failed for experiment %s (experiment will be ignored):\n',experiment);...
                   sprintf('%s\n',msgs{:})};
                   write_log(logfid,experiment,s)
                   if logfid>1
-                      flcose(logfid)
+                      fclose(logfid);
                   end
                   continue;
                 end
             end
             if expparams{i}.track.dosave
-                savetemp({'text_log','out','expdir','moviefile','experiment','analysis_protocol','P_stage'});
+                savetemp({'viewlog','out','expdir','moviefile','experiment','analysis_protocol','P_stage'});
             end
         end
         delete(hwait);
@@ -420,13 +434,11 @@ else
         success(~success)=[];
 
         % Compute background and ROIs for all the experiments
-        if ~getappdata(0,'text_log')
-            logfid=open_log('main_log');
-            s=sprintf('\n\n***\n*** SETUP STARTED AT %s ***\n',datestr(now,'yyyymmddTHHMMSS')); 
-            write_log(logfid,'',s)
-            if logfid > 1,
-              fclose(logfid);
-            end
+        logfid=open_log('main_log');
+        s=sprintf('\n\n***\n*** SETUP STARTED AT %s ***\n',datestr(now,'yyyymmddTHHMMSS')); 
+        write_log(logfid,'',s)
+        if logfid > 1,
+          fclose(logfid);
         end
         
         BG=cell(numel(expdirs),1);
@@ -536,7 +548,7 @@ else
                         s=sprintf('Backgroud computation failed for experiment %s: %s\n',experiment,ME.message);
                         write_log(logfid2,experiment,s)
                         if logfid2>1
-                            flcose(logfid2)
+                            fclose(logfid2);
                         end
                         waitfor(mymsgbox(50,190,14,'Helvetica',['Backgroud computation failed for ', experiment,' and will be ommited'],'Warning','warn','modal'))
                     case 'ROIs'
@@ -544,7 +556,7 @@ else
                         s=sprintf('ROI detection failed for experiment %s: %s\n',experiment,ME.message);
                         write_log(logfid2,experiment,s)
                         if logfid2>1
-                            flcose(logfid2)
+                            fclose(logfid2);
                         end
                         waitfor(mymsgbox(50,190,14,'Helvetica',['ROI detection failed for ', experiment,' and will be ommited'],'Warning','warn','modal'))                        
                     case 'params'
@@ -552,7 +564,7 @@ else
                         s=sprintf('Body tracking parameters setup failed for experiment %s: %s\n',experiment,ME.message);
                         write_log(logfid2,experiment,s)
                         if logfid2>1
-                            flcose(logfid2)
+                            fclose(logfid2);
                         end
                         waitfor(mymsgbox(50,190,14,'Helvetica',['Body tracking parameters setup failed for ', experiment,' and will be ommited'],'Warning','warn','modal'))
                     case 'wings_params'
@@ -560,7 +572,7 @@ else
                         s=sprintf('Wing tracking parameters setup failed for experiment %s: %s\n',experiment,ME.message);
                         write_log(logfid2,experiment,s)
                         if logfid2>1
-                            flcose(logfid2)
+                            fclose(logfid2);
                         end
                         waitfor(mymsgbox(50,190,14,'Helvetica',['Wing tracking parameters setup failed for ', experiment,' and will be ommited'],'Warning','warn','modal'))
                     case 'track1'
@@ -568,7 +580,7 @@ else
                         s=sprintf('Body tracking failed for experiment %s: %s\n',experiment,ME.message);
                         write_log(logfid2,experiment,s)
                         if logfid2>1
-                            flcose(logfid2)
+                            fclose(logfid2);
                         end
                         waitfor(mymsgbox(50,190,14,'Helvetica',['Body tracking failed for ', experiment,' and will be ommited'],'Warning','warn','modal'))
                     case 'track2'
@@ -576,7 +588,7 @@ else
                         s=sprintf('Wing Tracking failed for experiment %s: %s\n',experiment,ME.message);
                         write_log(logfid2,experiment,s)
                         if logfid2>1
-                            flcose(logfid2)
+                            fclose(logfid2);
                         end
                         waitfor(mymsgbox(50,190,14,'Helvetica',['Wing tracking failed for ', experiment,' and will be ommited'],'Warning','warn','modal'))
                 end
@@ -604,13 +616,11 @@ else
         end    
 
         % Track
-        if ~getappdata(0,'text_log')
-            logfid=open_log('main_log');
-            s=sprintf('\n\n***\n*** TRACK STARTED AT %s ***\n',datestr(now,'yyyymmddTHHMMSS'));
-            write_log(logfid,'',s)
-            if logfid > 1,
-              fclose(logfid);
-            end
+        logfid=open_log('main_log');
+        s=sprintf('\n\n***\n*** TRACK STARTED AT %s ***\n',datestr(now,'yyyymmddTHHMMSS'));
+        write_log(logfid,'',s)
+        if logfid > 1,
+          fclose(logfid);
         end
         
         trackdata=cell(numel(expdirs),1);
@@ -688,7 +698,7 @@ else
                     end
                     write_log(logfid2,experiment,s)
                     if logfid2>1
-                        flcose(logfid2)
+                        fclose(logfid2);
                     end
                 end
                 mymsgbox(50,190,14,'Helvetica',['Tracking failed or was skipped for the following experiments:',sprintf('\n\t- %s',omitedexp{:})],'Warning','warn');
@@ -710,13 +720,11 @@ else
 
         % Reuslts movie 
         if get(handles.checkbox_domovie,'Value')
-            if ~getappdata(0,'text_log')
-                logfid=open_log('main_log');
-                s=sprintf('\n\n***\n*** RESULTS MOIVIES STARTED AT %s ***\n',datestr(now,'yyyymmddTHHMMSS'));
-                write_log(logfid,'',s)
-                if logfid > 1,
-                  fclose(logfid);
-                end
+            logfid=open_log('main_log');
+            s=sprintf('\n\n***\n*** RESULTS MOIVIES STARTED AT %s ***\n',datestr(now,'yyyymmddTHHMMSS'));
+            write_log(logfid,'',s)
+            if logfid > 1,
+              fclose(logfid);
             end
             
             stage_error=cell(numel(expdirs),1);
@@ -760,7 +768,7 @@ else
                     s=sprintf('Results movie could not be created for experiment %s: %s\n',experiment,error_msg{idomited(k)});
                     write_log(logfid2,experiment,s)
                     if logfid2>1
-                        flcose(logfid2)
+                        fclose(logfid2);
                     end
                 end
                 mymsgbox(50,190,14,'Helvetica',['Results movie could not be created for the following experiments:',sprintf('\n\t- %s',omitedexp{:})],'Warning','warn')
@@ -775,13 +783,11 @@ else
 
         %PFF
         if get(handles.checkbox_dopff,'Value');
-            if ~getappdata(0,'text_log')
-                logfid=open_log('main_log');
-                s=sprintf('\n\n***\n*** PFF COMPUTATION STARTED AT %s ***\n',datestr(now,'yyyymmddTHHMMSS'));
-                write_log(logfid,'',s)
-                if logfid > 1,
-                  fclose(logfid);
-                end
+            logfid=open_log('main_log');
+            s=sprintf('\n\n***\n*** PFF COMPUTATION STARTED AT %s ***\n',datestr(now,'yyyymmddTHHMMSS'));
+            write_log(logfid,'',s)
+            if logfid > 1,
+              fclose(logfid);
             end
             
             stage_error=cell(numel(expdirs),1);
@@ -823,7 +829,7 @@ else
                     s=sprintf('Perframe features could not be computed for experiment %s: %s\n',experiment,error_msg{idomited(k)});
                     write_log(logfid2,experiment,s)
                     if logfid2>1
-                        flcose(logfid2)
+                        fclose(logfid2);
                     end
                 end
                 mymsgbox(50,190,14,'Helvetica',['Perframe features could not be computed for the following experiments:',sprintf('\n\t- %s',omitedexp{:})],'Warning','warn');
@@ -833,6 +839,52 @@ else
             movie_name(~success)=[];
             out(~success)=[];
             expparams(~success)=[];
+            success(~success)=[];
+        end
+        
+        % Autmatic check complete for all experiments
+        hwait=waitbar(0,'Checking complete');
+        if get(handles.checkbox_doAcC,'Value')
+            for i=1:numel(expdirs)
+                experiment=exps{i};
+                experiment(experiment=='_')=' ';
+                setappdata(0,'experiment',experiment);
+                setappdata(0,'out',out{i});
+                setappdata(0,'cbparams',expparams{i});
+                
+                logfid=open_log('automaticchecks_incoming_log');
+                try
+                  s=sprintf('AutomaticChecks_Complete for experiment %s...\n',experiment);
+                  write_log(logfid,experiment,s)
+                  waitbar(i/numel(expdirs),hwait,['Checking Complete for experiment ',experiment]);
+                  [success(i),msgs] = CourtshipBowlAutomaticChecks_Complete(out{i}.folder);
+                  if ~success(i),
+                      s={sprintf('AutomaticChecks_Complete error/warning for experiment %s:\n',experiment);...
+                          sprintf('%s\n',msgs{:})};
+                      write_log(logfid,experiment,s)
+                      if logfid>1
+                        fclose(logfid);
+                      end
+                      continue;
+                  end      
+                catch ME,
+                  success(i)=false;
+                  msgs = {sprintf('Error running AutomaticChecks_Complete:\n%s',ME.message)};
+                  s={sprintf('AutomaticChecks_Complete error/warning for experiment %s:\n',experiment);...
+                  sprintf('%s\n',msgs{:})};
+                  write_log(logfid,experiment,s)
+                  if logfid>1
+                      fclose(logfid);
+                  end
+                  continue;
+                end
+            end
+            delete(hwait);
+            omitedexp=exps(~success);
+            omitedexp_all=[omitedexp_all,omitedexp];
+            exps(~success)=[]; 
+            expdirs(~success)=[];
+            movie_name(~success)=[];
             success(~success)=[];
         end
     end
