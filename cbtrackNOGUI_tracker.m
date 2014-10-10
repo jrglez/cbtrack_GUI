@@ -11,7 +11,7 @@ if cbparams.wingtrack.dosetwingtrack || ~isfield(roidata,'nflies_per_roi') || ~g
     [readframe,nframes,fid,~] = get_readframe_fcn(moviefile);
     [visdata.frames,visdata.dbkgd]=...
         compute_dbkgd(readframe,nframes,roi_params.nframessample,...
-        tracking_params.bgmode,BG.bgmed,roidata.inrois_all);
+        tracking_params,BG.bgmed,roidata.inrois_all);
     if getappdata(0,'iscancel') || getappdata(0,'isskip') || getappdata(0,'isstop')
         return
     end  
@@ -56,15 +56,9 @@ if cbparams.wingtrack.dosetwingtrack || ~isfield(roidata,'nflies_per_roi') || ~g
     if cbparams.track.dosave
         savetemp({'roidata','visdata'})
     end
-else
-    loadfile=fullfile(out.folder,cbparams.dataloc.roidatamat.filestr);
-    s=sprintf('Loading number of flies from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
-    write_log(logfid,getappdata(0,'experiment'),s)
-    setappdata(0,'P_stage','track1')
-    if cbparams.track.dosave
-        savetemp([])
-    end
 end
+setappdata(0,'isnew',true)
+setappdata(0,'button','wing')
 savefile = fullfile(out.folder,cbparams.dataloc.roidatamat.filestr);
 s=sprintf('Saving ROI data to file %s...\n',savefile);
 write_log(logfid,getappdata(0,'experiment'),s)

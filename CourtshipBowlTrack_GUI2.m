@@ -122,6 +122,9 @@ cbparams.dataloc.trackingdatamat.filestr='trackingdata.mat';
 outfilename = fullfile(out.folder,cbparams.dataloc.trackingdatamat.filestr);
 save(outfilename,'-struct','trackdata');
 setappdata(0,'trackdata',trackdata)
+setappdata(0,'next',true)
+setappdata(0,'button','')
+setappdata(0,'P_stage','results_movie')
 %% close log file
 
 s=sprintf('Finished secondary tracking at %s for experiment %s.\n',datestr(now,'yyyymmddTHHMMSS'),experiment);

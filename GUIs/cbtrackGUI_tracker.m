@@ -128,7 +128,7 @@ else
         roidata.nflies_per_roi=roi_params.nflies_per_roi;        
         count.nflies_per_roi = nan(1,roidata.nrois);
     end
-    [visdata.frames,visdata.dbkgd]=compute_dbkgd(count.readframe,count.nframes,roi_params.nframessample,tracking_params.bgmode,bgmed,roidata.inrois_all);
+    [visdata.frames,visdata.dbkgd]=compute_dbkgd(count.readframe,count.nframes,roi_params.nframessample,tracking_params,bgmed,roidata.inrois_all);
     if getappdata(0,'iscancel') || getappdata(0,'isskip')
         uiresume(handles.cbtrackGUI_ROI)
         if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
@@ -322,6 +322,7 @@ if all(isnan(count.nflies_per_roi)) || all([cbparams.wingtrack.dosetwingtrack,al
     roidata.isnew=3;
 end
 isnew=roidata.isnew;
+setappdata(0,'isnew',isnew~=0)
 
 if isnew
     if isnew==2
@@ -451,33 +452,7 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-if cbparams.wingtrack.dosetwingtrack
-    cbtrackGUI_WingTracker
-elseif getappdata(0,'singleexp') && cbparams.track.dotrack
-    if ~cbparams.track.DEBUG
-        WriteParams
-        setappdata(0,'P_stage','track1')
-        savetemp([])
-        cbtrackGUI_tracker_NOvideo
-    else
-        if isnew
-            WriteParams
-            setappdata(0,'P_stage','track1')
-            savetemp([])
-            cbtrackGUI_tracker_video
-        else
-            P_stage=getappdata(0,'P_stage');       
-            if strcmp(P_stage,'track2')
-                CourtshipBowlTrack_GUI2
-                if getappdata(0,'iscancel') || getappdata(0,'isskip')
-                    return
-                end
-            elseif strcmp(P_stage,'track1')
-                cbtrackGUI_tracker_video
-            end
-        end        
-    end
-end
+setappdata(0,'button','wing')
 
 
 function cbtrackGUI_ROI_ResizeFcn(hObject, eventdata, handles)
@@ -796,7 +771,8 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-cbtrackGUI_BG
+setappdata(0,'button','BG')
+setappdata(0,'isnew',false)
 
 
 function pushbutton_ROIs_Callback(hObject, eventdata, handles)
@@ -815,7 +791,8 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-cbtrackGUI_ROI
+setappdata(0,'button','ROI')
+setappdata(0,'isnew',false)
 
 
 function pushbutton_tracker_setup_Callback(hObject, eventdata, handles)
@@ -837,15 +814,8 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-P_stage=getappdata(0,'P_stage');
-if strcmp(P_stage,'track2')
-    CourtshipBowlTrack_GUI2
-    if getappdata(0,'iscancel') || getappdata(0,'isskip')
-        return
-    end
-elseif strcmp(P_stage,'track1')
-    cbtrackGUI_tracker_video
-end
+setappdata(0,'button','track')
+setappdata(0,'isnew',false)
 
 
 function pushbutton_WT_Callback(hObject, eventdata, handles)
@@ -863,7 +833,8 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-cbtrackGUI_WingTracker
+setappdata(0,'button','wing')
+setappdata(0,'isnew',false)
 
 
 function pushbutton_vid_Callback(hObject, eventdata, handles)

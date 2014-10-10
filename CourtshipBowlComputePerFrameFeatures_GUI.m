@@ -41,7 +41,11 @@ trx.AddExpDir(out.folder,'openmovie',false);
 %% compute per-frame features
 
 if isempty(perframefns),
-  perframefns = perframe_params.perframefns;
+  if ~isempty(perframe_params.perframefns)
+    perframefns = perframe_params.perframefns;
+  else
+    perframefns = {};
+  end
 end
 nfns = numel(perframefns);
 

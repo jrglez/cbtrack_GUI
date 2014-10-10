@@ -69,7 +69,7 @@ if ~isempty(unassignedcc),
   end
 end
 
-if debugdata.DEBUG && debugdata.vis==6
+if debugdata.DEBUG && debugdata.vis==7
   
   DebugPlot_SegmentFlies1();
   
@@ -344,7 +344,7 @@ for cci = unique_cc,
   end
 end
 
-if debugdata.DEBUG && debugdata.vis==7,
+if debugdata.DEBUG && debugdata.vis==8,
   DebugPlot_SegmentFlies2();
 end
 

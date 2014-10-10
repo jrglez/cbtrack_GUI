@@ -1,125 +1,75 @@
 function plot_vis(handles,visdata,f)
 switch visdata.plot
     case 1
-        if isfield(visdata,'hcc') 
-            delete(visdata.hcc(ishandle(visdata.hcc)))
-        end
-        visdata.hcc=[];
-        if isfield(visdata,'hflies') 
-            delete(visdata.hflies(ishandle(visdata.hflies)))
-        end
-        visdata.hflies=[];
         if isfield(visdata,'hell') 
             delete(visdata.hell(ishandle(visdata.hell)))
         end
         visdata.hell=[];
-        set_cmap(handles.cbtrackGUI_ROI,'gray')
         set(handles.BG_img,'CData',visdata.frames{f});
     case 2
-        if isfield(visdata,'hcc') 
-            delete(visdata.hcc(ishandle(visdata.hcc)))
-        end
-        visdata.hcc=[];
-        if isfield(visdata,'hflies') 
-            delete(visdata.hflies(ishandle(visdata.hflies)))
-        end
-        visdata.hflies=[];
         if isfield(visdata,'hell') 
             delete(visdata.hell(ishandle(visdata.hell)))
         end
         visdata.hell=[];
         set(handles.BG_img,'CData',visdata.dbkgd{f});
-        set_cmap(handles.cbtrackGUI_ROI,'gray')
     case 3
-        if isfield(visdata,'hcc') 
-            delete(visdata.hcc(ishandle(visdata.hcc)))
-        end
-        visdata.hcc=[];
-        if isfield(visdata,'hflies') 
-            delete(visdata.hflies(ishandle(visdata.hflies)))
-        end
-        visdata.hflies=[];
         if isfield(visdata,'hell') 
             delete(visdata.hell(ishandle(visdata.hell)))
         end
         visdata.hell=[];
         set(handles.BG_img,'CData',visdata.isfore{f});
-        set_cmap(handles.cbtrackGUI_ROI,'gray')
     case 4
-        if isfield(visdata,'hcc') 
-            delete(visdata.hcc(ishandle(visdata.hcc)))
-        end
-        visdata.hcc=[];
-        if isfield(visdata,'hflies') 
-            delete(visdata.hflies(ishandle(visdata.hflies)))
-        end
-        visdata.hflies=[];
         if isfield(visdata,'hell') 
             delete(visdata.hell(ishandle(visdata.hell)))
         end
         visdata.hell=[];
-        set(handles.BG_img,'CData',visdata.rois);
-        set_cmap(handles.cbtrackGUI_ROI,'light_gray')
+        
         nROI=size(visdata.cc_ind,1);
-        l=0;
-        hold(handles.axes_tracker,'on')
+        nc=size(visdata.frames{f},2);
+        nr=size(visdata.frames{f},1);
+        imtmp = repmat(double(visdata.frames{f}(:)),[1,3]);
         for i=1:nROI
             cc_ind=visdata.cc_ind{i,f};
             if ~isempty(cc_ind)
                 ncc=length(cc_ind);
                 colors_cc=hsv(ncc)*0.7;
                 for k=1:ncc
-                    l=l+1;
-                    visdata.hcc(l)=plot(handles.axes_tracker,cc_ind{k}(:,1),cc_ind{k}(:,2),'.','Color',colors_cc(k,:));
+                    idx=sub2ind([nr,nc],cc_ind{k}(:,2),cc_ind{k}(:,1));
+                    imtmp(idx,:)=min(bsxfun(@plus,imtmp(idx,:)*3,255*colors_cc(k,:))/2,255);
                 end
             end
         end
-        hold(handles.axes_tracker,'off')
+        imtmp = uint8(reshape(imtmp,[nr,nc,3]));
+        set(handles.BG_img,'CData',imtmp);
     case 5
-        if isfield(visdata,'hcc') 
-            delete(visdata.hcc(ishandle(visdata.hcc)))
-        end
-        visdata.hcc=[];
-        if isfield(visdata,'hflies') 
-            delete(visdata.hflies(ishandle(visdata.hflies)))
-        end
-        visdata.hflies=[];
         if isfield(visdata,'hell') 
             delete(visdata.hell(ishandle(visdata.hell)))
         end
         visdata.hell=[];
-        set(handles.BG_img,'CData',visdata.rois);
-        set_cmap(handles.cbtrackGUI_ROI,'light_gray')
-        nROI=size(visdata.flies_ind,1);
-        l=0;
-        hold(handles.axes_tracker,'on')
+        
+        nROI=size(visdata.cc_ind,1);
+        nc=size(visdata.frames{f},2);
+        nr=size(visdata.frames{f},1);
+        imtmp = repmat(double(visdata.frames{f}(:)),[1,3]);
         for i=1:nROI
-             flies_ind=visdata.flies_ind{i,f};
-           if ~isempty(flies_ind)
-                nflies=length(flies_ind);
-                colors_flies=hsv(nflies)*0.7;
-                for k=1:nflies
-                    l=l+1;
-                    visdata.hflies(l)=plot(handles.axes_tracker,flies_ind{k}(:,1),flies_ind{k}(:,2),'.','Color',colors_flies(k,:));
+            flies_ind=visdata.flies_ind{i,f};
+            if ~isempty(flies_ind)
+                ncc=length(flies_ind);
+                colors_cc=hsv(ncc)*0.7;
+                for k=1:ncc
+                    idx=sub2ind([nr,nc],flies_ind{k}(:,2),flies_ind{k}(:,1));
+                    imtmp(idx,:)=min(bsxfun(@plus,imtmp(idx,:)*3,255*colors_cc(k,:))/2,255);
                 end
             end
         end
-        hold(handles.axes_tracker,'off')
+        imtmp = uint8(reshape(imtmp,[nr,nc,3]));
+        set(handles.BG_img,'CData',imtmp);
     case 6
-        if isfield(visdata,'hcc') 
-            delete(visdata.hcc(ishandle(visdata.hcc)))
-        end
-        visdata.hcc=[];
-        if isfield(visdata,'hflies') 
-            delete(visdata.hflies(ishandle(visdata.hflies)))
-        end
-        visdata.hflies=[];
         if isfield(visdata,'hell') 
             delete(visdata.hell(ishandle(visdata.hell)))
         end
         visdata.hell=[];
         set(handles.BG_img,'CData',visdata.frames{f});
-        set_cmap(handles.cbtrackGUI_ROI,'gray')
         nROI=size(visdata.trx,1);
         l=0;
         hold(handles.axes_tracker,'on')

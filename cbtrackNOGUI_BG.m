@@ -8,6 +8,7 @@ if getappdata(0,'usefiles') && exist(loadfile,'file')
         BG_data.isnew=true;
         isempty(BG_data.bgmed);
         cbparams.track.bg_lastframe=BG_data.params.bg_lastframe;
+        cbparams.track.bg_firstframe=BG_data.params.bg_firstframe;
         cbparams.track.bg_nframes=BG_data.params.bg_nframes;
         cbparams.track.bgmode=BG_data.params.bgmode;
         cbparams.track.computeBG=BG_data.params.computeBG;
@@ -74,6 +75,8 @@ end
 BG_data.isnew=true;
 setappdata(0,'BG',BG_data);
 setappdata(0,'P_stage','ROIs')
+setappdata(0,'button','ROI')
+setappdata(0,'isnew',true)
 if cbparams.track.dosave
     savetemp({'BG'})
 end

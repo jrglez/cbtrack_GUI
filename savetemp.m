@@ -4,7 +4,7 @@ if strcmp(savelist,'all')
         'analysis_protocol','P_stage','GUIscale', 'cbparams','BG',...
         'roidata','visdata','trackdata','debugdata'};
 end
-savelist2={'P_stage','cbparams'};
+savelist2={'P_stage','cbparams','button'};
 out=getappdata(0,'out');
 
 scrSize=get(0,'screensize');
@@ -16,11 +16,12 @@ htext=uicontrol('style','text','BackgroundColor',[0.8 0.8 0.8],'FontUnits','pixe
 s={['Experiment ', getappdata(0,'experiment')];'';'Saving temporary results'};
 s=textwrap(s,htext);
 set(htext,'String',s)
+drawnow
 
 logfid=open_log('main_log');
 s=sprintf('Saving temporary results to file %s...\n\n***\n',out.temp_full);
 write_log(logfid,getappdata(0,'experiment'),s)
-if logfid>2
+if logfid>1
     fclose(logfid);
 end
 for i=1:length(savelist)

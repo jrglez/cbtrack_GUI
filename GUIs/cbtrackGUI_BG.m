@@ -22,7 +22,7 @@ function cbtrackGUI_BG(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_BG
 
-% Last Modified by GUIDE v2.5 11-Jun-2014 17:31:45
+% Last Modified by GUIDE v2.5 03-Oct-2014 17:49:40
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -83,6 +83,7 @@ else
             BG.data.isnew=true;
             isempty(BG.data.bgmed);
             tracking_params.bg_lastframe=BG.data.params.bg_lastframe;
+            tracking_params.bg_firstframe=BG.data.params.bg_firstframe;
             tracking_params.bg_nframes=BG.data.params.bg_nframes;
             tracking_params.bgmode=BG.data.params.bgmode;
             tracking_params.computeBG=BG.data.params.computeBG;
@@ -149,6 +150,7 @@ end
 % Set parameters in the GUI
 set(handles.edit_Nframes,'String',num2str(tracking_params.bg_nframes))
 set(handles.edit_Lframe,'String',num2str(tracking_params.bg_lastframe))
+set(handles.edit_Fframe,'String',num2str(tracking_params.bg_firstframe))
 set(handles.checkbox_BG,'Value',tracking_params.computeBG)
 bgmodes={'LIGHTBKGD';'DARKBKGD';'OTHERBKGD'};
 bgmode=find(strcmp(tracking_params.bgmode,bgmodes));
@@ -228,15 +230,21 @@ close(handles.cbtrackGUI_BG)
 function pushbutton_recalc_Callback(hObject, eventdata, handles)
 bg_nframes=str2double(get(handles.edit_Nframes,'String'));
 bg_lastframe=str2double(get(handles.edit_Lframe,'String'));
+bg_firstframe=str2double(get(handles.edit_Fframe,'String'));
 if isnan(bg_nframes) || bg_nframes<1
 	mymsgbox(50,190,14,'Helvetica','Please, input a valid value for the number of frames','Error','error')
-elseif isnan(bg_lastframe) || bg_lastframe<1
+elseif isnan(bg_lastframe) || bg_lastframe<2
     mymsgbox(50,190,14,'Helvetica','Please, input a valid value for the last frame','Error','error')    
+elseif isnan(bg_firstframe) || bg_firstframe<1
+    mymsgbox(50,190,14,'Helvetica','Please, input a valid value for the first frame','Error','error')
+elseif bg_lastframe<=bg_firstframe
+    mymsgbox(50,190,14,'Helvetica','The last frame has to be greater than the first frame','Error','error')    
 else
     tracking_params=get(handles.pushbutton_recalc,'UserData');
     BG=get(handles.cbtrackGUI_BG,'UserData');
     tracking_params.bg_nframes=bg_nframes;
     tracking_params.bg_lastframes=bg_lastframe;
+    tracking_params.bg_firstframes=bg_firstframe;
     setappdata(0,'allow_stop',true)
     BG.data=cbtrackGUI_EstimateBG(BG.expdir,BG.moviefile,tracking_params,'analysis_protocol',BG.analysis_protocol);
     if getappdata(0,'iscancel') || getappdata(0,'isskip')
@@ -306,6 +314,7 @@ if computeBG~=cbparams.track.computeBG
     cbparams.track.computeBG=computeBG;
 end
 isnew=BG.data.isnew;
+setappdata(0,'isnew',isnew)
 
 restart='';
 setappdata(0,'restart',restart)
@@ -344,6 +353,7 @@ if isnew
         end
         cbparams.track.bg_nframes=nan;
         cbparams.track.bg_lastframe=nan;
+        cbparams.track.bg_firstframe=nan;
     elseif computeBG && all(all(BG.data.bgmed==255))
         setappdata(0,'allow_stop',true)
         BG.data=cbtrackGUI_EstimateBG(BG.expdir,BG.moviefile,tracking_params,'analysis_protocol',BG.analysis_protocol);
@@ -397,47 +407,7 @@ if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
     delete(handles.cbtrackGUI_BG)
 end
 
-if cbparams.detect_rois.dosetROI
-    cbtrackGUI_ROI
-elseif cbparams.track.dosettrack
-    if isnew
-        cbtrackNOGUI_ROI
-    end
-    cbtrackGUI_tracker
-else
-    if isnew
-        cbtrackNOGUI_ROI
-        cbtrackNOGUI_tracker
-        if getappdata(0,'iscancel') || getappdata(0,'isskip')
-            return
-        end
-    end
-    if cbparams.wingtrack.dosetwingtrack
-        cbtrackGUI_WingTracker
-    elseif getappdata(0,'singleexp') && cbparams.track.dotrack
-        if ~cbparams.track.DEBUG
-            WriteParams
-            setappdata(0,'P_stage','track1');
-            cbtrackGUI_tracker_NOvideo
-        else
-            if isnew
-                WriteParams
-                setappdata(0,'P_stage','track1');
-                cbtrackGUI_tracker_video
-            else
-                P_stage=getappdata(0,'P_stage');       
-                if strcmp(P_stage,'track2')
-                    CourtshipBowlTrack_GUI2
-                    if getappdata(0,'iscancel') || getappdata(0,'isskip')
-                        return
-                    end
-                elseif strcmp(P_stage,'track1')
-                    cbtrackGUI_tracker_video
-                end
-            end        
-        end
-    end
-end
+setappdata(0,'button','ROI')
 
 
 function pushbutton_BG_Callback(hObject, eventdata, handles)
@@ -459,7 +429,8 @@ if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
     delete(handles.cbtrackGUI_BG)
 end
 
-cbtrackGUI_ROI
+setappdata(0,'button','ROI')
+setappdata(0,'isnew',false)
 
 
 
@@ -479,7 +450,8 @@ if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
     delete(handles.cbtrackGUI_BG)
 end
 
-cbtrackGUI_tracker
+setappdata(0,'button','body')
+setappdata(0,'isnew',false)
 
 
 function pushbutton_debuger_Callback(hObject, eventdata, handles)
@@ -498,15 +470,8 @@ if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
     delete(handles.cbtrackGUI_BG)
 end
 
-P_stage=getappdata(0,'P_stage');
-if strcmp(P_stage,'track2')
-    CourtshipBowlTrack_GUI2
-    if getappdata(0,'iscancel') || getappdata(0,'isskip')
-        return
-    end
-elseif strcmp(P_stage,'track1')
-    cbtrackGUI_tracker_video
-end
+setappdata(0,'button','track')
+setappdata(0,'isnew',false)
 
 
 function pushbutton_manual_ButtonDownFcn(hObject, eventdata, handles)
@@ -567,6 +532,7 @@ if ~file_BG{1}==0
     BG.data.isnew=true;
     tracking_params=get(handles.pushbutton_recalc,'UserData');
     tracking_params.bg_lastframe=BG.data.params.bg_lastframe;
+    tracking_params.bg_firstframe=BG.data.params.bg_firstframe;
     tracking_params.bg_nframes=BG.data.params.bg_nframes;
     tracking_params.bgmode=BG.data.params.bgmode;
     tracking_params.computeBG=BG.data.params.computeBG;
@@ -575,6 +541,7 @@ if ~file_BG{1}==0
     % Set parameters in the GUI
     set(handles.edit_Nframes,'String',num2str(tracking_params.bg_nframes))
     set(handles.edit_Lframe,'String',num2str(tracking_params.bg_lastframe))
+    set(handles.edit_Fframe,'String',num2str(tracking_params.bg_firstframe))
     bgmodes={'LIGHTBKGD';'DARKBKGD';'OTHERBKGD'};
     bgmode=find(strcmp(tracking_params.bgmode,bgmodes));
     if isempty(bgmode)
@@ -612,7 +579,8 @@ if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
     delete(handles.cbtrackGUI_BG)
 end
 
-cbtrackGUI_WingTracker
+setappdata(0,'button','wing')
+setappdata(0,'isnew',false)
 
 
 function checkbox_BG_Callback(hObject, eventdata, handles)
@@ -645,4 +613,14 @@ setappdata(0,'isskip',true)
 uiresume(handles.cbtrackGUI_BG)
 if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
     delete(handles.cbtrackGUI_BG)
+end
+
+
+
+function edit_Fframe_Callback(hObject, eventdata, handles)
+
+
+function edit_Fframe_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
 end

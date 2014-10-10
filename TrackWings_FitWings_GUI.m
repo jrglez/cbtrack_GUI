@@ -24,7 +24,7 @@ end
 
 % plot
 
-if debugdata.DEBUG && debugdata.vis==8,
+if debugdata.DEBUG && debugdata.vis==9,
   DebugPlot_FitWings();
 end
 

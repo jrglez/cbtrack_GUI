@@ -61,7 +61,7 @@ roidata=getappdata(0,'roidata');
 %%% Detect flies
 f=cbparams.track.firstframetrack;
 [readframe] = get_readframe_fcn(moviefile);
-[im,dbkgd]=compute_dbkgd(readframe,1,1,cbparams.track.bgmode,BG.bgmed,roidata.inrois_all);
+[im,dbkgd]=compute_dbkgd(readframe,1,1,cbparams.track,BG.bgmed,roidata.inrois_all);
 im=im{1};
 dbkgd=dbkgd{1};
 [~,~,~,trx] = ChangeParams_GUI(readframe(1),BG.bgmed,dbkgd,roidata,cbparams.detect_rois.nflies_per_roi,cbparams.detect_rois,cbparams.track);
@@ -139,7 +139,7 @@ handles.vid_img=imagesc(im,'Parent',handles.axes_vid);
 axis(handles.axes_vid,[0.5,vidw+0.5,0.5,vidh+0.5]);
 colormap('gray')
 
-debugdata.vis=8; debugdata.DEBUG=0; debugdata.track=0; debugdata.vid=1; 
+debugdata.vis=9; debugdata.DEBUG=0; debugdata.track=0; debugdata.vid=1; 
 [~,trx]=TrackWingsSingle_GUI(trx,BG.bgmed,roidata.inrois_all,cbparams.wingtrack,readframe(f),debugdata);
 doplotwings = cbparams.track.dotrackwings && all(isfield(trx,{'xwingl','ywingl','xwingr','ywingr'}));
 scalefactor = movie_params.scalefactor;

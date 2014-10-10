@@ -217,7 +217,7 @@ temp_Wparams.wing_frac_filter=[str2double(get(handles.edit_wing_frac_filter1,'St
     str2double(get(handles.edit_wing_frac_filter2,'String')),...
     str2double(get(handles.edit_wing_frac_filter3,'String'))];
 
-if debugdata.vis>1
+if debugdata.vis>2
     f=debugdata.f;
     BG=getappdata(0,'BG');
     bgmed=BG.bgmed;
@@ -256,7 +256,7 @@ temp_Wparams.wing_frac_filter=[str2double(get(handles.edit_wing_frac_filter1,'St
     str2double(get(handles.edit_wing_frac_filter2,'String')),...
     str2double(get(handles.edit_wing_frac_filter3,'String'))];
 
-if debugdata.vis>1
+if debugdata.vis>2
     f=debugdata.f;
     BG=getappdata(0,'BG');
     bgmed=BG.bgmed;
@@ -272,7 +272,7 @@ set(handles.pushbutton_apply,'UserData',debugdata)
 function figure1_CloseRequestFcn(hObject, eventdata, handles)
 temp_Wparams=get(handles.figure1,'UserData');
 debugdata=get(handles.pushbutton_apply,'UserData');
-if debugdata.vis>1
+if debugdata.vis>2
     f=debugdata.f;
     BG=getappdata(0,'BG');
     bgmed=BG.bgmed;

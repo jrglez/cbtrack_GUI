@@ -37,10 +37,10 @@ debugdata.im = im;
 debugdata.track=0;
 bgmodel=double(bgmodel);
 [iswing,isfore_thresh,idxfore_thresh,npxfore_thresh,fore2body,debugdata] = TrackWings_BackSub(im,bgmodel,isarena,params,debugdata);
-if debugdata.vis>5
+if debugdata.vis>6
     [fore2flywing,dthetawing,trxcurr,debugdata] = TrackWings_SegmentFlies_GUI(im,isfore_thresh,idxfore_thresh,npxfore_thresh,fore2body,iswing,...
       trxcurr,params,XGRID,YGRID,debugdata);
-  if debugdata.vis==8
+  if debugdata.vis==9
         [wingtrxcurr,debugdata] = TrackWings_FitWings_GUI(fore2flywing,dthetawing,idxfore_thresh,trxcurr,params,debugdata);
   end
 end

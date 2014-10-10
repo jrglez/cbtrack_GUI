@@ -82,7 +82,7 @@ manual.add=0; % 1 whena dding point to a ROI after removing any of the exitent o
 manual.pos_h=cell(0);
 manual.on=0;
 manual.delete=0;
-handles.texth=text(255,420,'','FontSize',20,'Color',[1 0 0],'HorizontalAlignment','center','units','pixels');    
+handles.texth=text(255,415,'','FontSize',16,'Color',[0 1 0],'HorizontalAlignment','center','units','pixels');    
 set(handles.text_exp,'FontSize',24,'HorizontalAlignment','center','units','pixels','FontUnits','pixels','String',experiment);
 list.text=cell(0); %list of selected points to display at listbox_manual
 list.ind=cell(0);
@@ -171,6 +171,7 @@ else
                     set(handles.listbox_manual,'string',vertcat(list.text{:}))
                 end
             end
+            set(handles.pushbutton_delete,'Enable','on')
         catch
             logfid=open_log('roi_log');
             s=sprintf('File %s could not be loaded.',loadfile);
@@ -272,12 +273,13 @@ else
 end
 
 isnew=roidata.isnew;
+setappdata(0,'isnew',isnew)
 restart='';
 setappdata(0,'restart',restart)
 
 if isnew
     if isempty(params.nflies_per_roi) || numel(params.nflies_per_roi)~=roidata.nrois
-        params.nflies_per_roi=2*roidata.nrois;
+        params.nflies_per_roi=2*ones(1,roidata.nrois);
     end
     
     if isfield(roidata,'nflies_per_roi')
@@ -344,41 +346,7 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-if cbparams.track.dosettrack
-    cbtrackGUI_tracker
-else
-    if isnew
-        cbtrackNOGUI_tracker
-        if getappdata(0,'iscancel') || getappdata(0,'isskip')
-            return
-        end
-    end
-    if cbparams.wingtrack.dosetwingtrack
-        cbtrackGUI_WingTracker
-    elseif getappdata(0,'singleexp') && cbparams.track.dotrack
-        if ~cbparams.track.DEBUG
-            WriteParams
-            setappdata(0,'P_stage','track1')
-            cbtrackGUI_tracker_NOvideo
-        else
-            if isnew
-                WriteParams
-                setappdata(0,'P_stage','track1')
-                cbtrackGUI_tracker_video
-            else
-                P_stage=getappdata(0,'P_stage');       
-                if strcmp(P_stage,'track2')
-                    CourtshipBowlTrack_GUI2
-                    if getappdata(0,'iscancel') || getappdata(0,'isskip')
-                        return
-                    end
-                elseif strcmp(P_stage,'track1')
-                    cbtrackGUI_tracker_video
-                end
-            end        
-        end
-    end
-end
+setappdata(0,'button','body')
 
 
 function cbtrackGUI_ROI_ResizeFcn(hObject, eventdata, handles)
@@ -715,7 +683,7 @@ elseif eventdata.NewValue==handles.radiobutton_manual %The user clicks points of
     set(handles.pushbutton_delete,'Enable','on')
     set(handles.pushbutton_clear,'Enable','on')
     set(handles.pushbutton_detect,'Enable','on')
-    if ~isempty(manual.pos) || isfield(roidata,'radii')
+    if ~isempty(manual.pos) || (isfield(roidata,'radii') && ~isempty(roidata.radii))
         msg_manual_exist=myquestdlg(14,'Helvetica',{'You have already selected some points to detect your ROIs.';'Would you like to delete them?'}','Existing data','Yes','No','No'); 
         if isempty(msg_manual_exist)
             msg_manual_exist='No';
@@ -805,6 +773,8 @@ elseif manual.delete==1 && manual.detected==1
     pos_ij = get(handles.axes_ROI,'CurrentPoint'); 
     dist2=(pos_ij(1,1)-roidata.centerx).^2+(pos_ij(1,2)-roidata.centery).^2;
     [mindist2,nearROI]=min(dist2);
+    %%% aqui. Seguir con la lista. Usar el centro de los circulos (no de
+    %%% los rois) ver como conseguir el centro en l.261
     if mindist2<=roidata.radii(nearROI)^2
         list=get(handles.listbox_manual,'UserData');
         manual=get(handles.radiobutton_manual,'UserData');
@@ -907,9 +877,8 @@ if strcmp('Yes',msg_clear)
     set(handles.radiobutton_manual,'UserData',manual);
     set(handles.pushbutton_detect,'UserData',roidata);
     set(handles.listbox_manual,'UserData',list);
-    guidata(handles.cbtrackGUI_ROI,handles)
-    
-    set(handles.BG_img,'ButtonDownFcn',{@axes_ROI_ButtonDownFcn,handles});
+    guidata(handles.cbtrackGUI_ROI,handles)   
+%     set(handles.BG_img,'ButtonDownFcn',{@axes_ROI_ButtonDownFcn,handles});
 end
 
 
@@ -1014,7 +983,8 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-cbtrackGUI_BG
+setappdata(0,'button','BG')
+setappdata(0,'isnew',false)
 
 
 function pushbutton_ROIs_Callback(hObject, eventdata, handles)
@@ -1036,7 +1006,8 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-cbtrackGUI_tracker
+setappdata(0,'button','body')
+setappdata(0,'isnew',false)
 
 
 function pushbutton_debuger_Callback(hObject, eventdata, handles)
@@ -1055,15 +1026,8 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-P_stage=getappdata(0,'P_stage');
-if strcmp(P_stage,'track2')
-    CourtshipBowlTrack_GUI2
-    if getappdata(0,'iscancel') || getappdata(0,'isskip')
-        return
-    end
-elseif strcmp(P_stage,'track1')
-    cbtrackGUI_tracker_video
-end
+setappdata(0,'button','track')
+setappdata(0,'isnew',false)
 
 
 function pushbutton_delete_Callback(hObject, eventdata, handles)
@@ -1101,7 +1065,8 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-cbtrackGUI_WingTracker
+setappdata(0,'button','wing')
+setappdata(0,'isnew',false)
 
 
 function pushbutton_skip_Callback(hObject, eventdata, handles)

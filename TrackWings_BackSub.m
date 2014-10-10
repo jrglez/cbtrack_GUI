@@ -8,7 +8,7 @@ dbkgd(~isarena) = 0;
 
 isbody_thresh = dbkgd >= params.mindbody;
 isbody = imdilate(isbody_thresh,params.se_dilate_body);
-if debugdata.DEBUG && debugdata.vis==2
+if debugdata.DEBUG && debugdata.vis==3
     DebugPlot_BackSub_IsX(isbody)
 end
 
@@ -18,12 +18,12 @@ iswing_low = ~isbody & dbkgd >= params.mindwing_low;
 iswing = imreconstruct(iswing_high,iswing_low,4);
 iswing = imopen(iswing,params.se_open_wing);
 iswing = imclose(iswing,params.se_open_wing);
-if debugdata.DEBUG && debugdata.vis==3
+if debugdata.DEBUG && debugdata.vis==4
     DebugPlot_BackSub_IsX(iswing)
 end
 
 isfore_thresh = imclose(isbody_thresh | iswing,params.se_dilate_body);
-if debugdata.DEBUG && debugdata.vis==4
+if debugdata.DEBUG && debugdata.vis==5
     DebugPlot_BackSub_IsX(isfore_thresh)
 end
 
@@ -34,7 +34,7 @@ npxfore_thresh = nnz(isfore_thresh);
 fore2dbkgd = dbkgd(isfore_thresh);
 fore2body = fore2dbkgd >= params.mindbody;
 
-if debugdata.DEBUG && debugdata.vis==5,
+if debugdata.DEBUG && debugdata.vis==6,
   DebugPlot_BackSub();
 end
 

@@ -216,54 +216,20 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-if debugdata.isnew
+isnew=debugdata.isnew;
+setappdata(0,'isnew',isnew)
+
+if isnew
+    setappdata(0,'P_stage','track1')
     if cbparams.track.dosave
         savetemp({'debugdata'})
     end
 end
-if getappdata(0,'singleexp')
-    P_stage=getappdata(0,'P_stage');       
-    if strcmp(P_stage,'track2')
-        if debugdata.isnew
-            if isappdata(0,'debugdata_WT')
-                rmappdata(0,'debugdata_WT')
-            end
-            if isappdata(0,'twing')
-                rmappdata(0,'twing')
-            end
-            trackdata=getappdata(0,'trackdata');
-            trackdata=rmfield(trackdata,{'trackwings_timestamp','trackwings_version','twing','perframedata','wingplotdata','perframeunits'});
-            trackdata.trx=rmfield(trackdata.trx,{'wing_anglel','wing_angler','xwingl','ywingl','xwingr','ywingr'});
-            setappdata(0,'trackdata',trackdata);
-            WriteParams
-        end
-        if cbparams.track.dotrackwings
-            CourtshipBowlTrack_GUI2
-        end
-        if getappdata(0,'iscancel') || getappdata(0,'isskip')
-            return
-        end
-    else
-        setappdata(0,'P_stage','track1')
-        if cbparams.track.dosave
-           savetemp({'P_stage'})
-        end
-        if debugdata.isnew
-            WriteParams
-        end
-        if cbparams.track.dotrack
-            if cbparams.track.DEBUG==1
-                cbtrackGUI_tracker_video
-            else
-                cbtrackGUI_tracker_NOvideo
-            end
-        end
-    end
-else
-    setappdata(0,'P_stage','track1')
-    WriteParams    
-end
 
+setappdata(0,'button','track')
+if ~getappdata(0,'singleexp')
+    setappdata('next',true)
+end
 
 function cbtrackGUI_ROI_ResizeFcn(hObject, eventdata, handles)
 GUIscale=getappdata(0,'GUIscale');
@@ -278,8 +244,12 @@ wing_params=get(handles.uipanel_set,'UserData');
 f=round(get(hObject,'Value'));
 set(hObject,'Value',f);
 visdata=getappdata(0,'visdata');
-if debugdata.vis==1
-    set(debugdata.him,'CData',visdata.frames{f});
+if debugdata.vis<=2
+    if debugdata.vis==1
+        set(debugdata.him,'CData',visdata.frames{f});
+    else
+        set(debugdata.him,'CData',visdata.dbkgd{f});
+    end
     if isfield(debugdata,'htext')
       delete(debugdata.htext(ishandle(debugdata.htext)));
     end
@@ -292,7 +262,7 @@ if debugdata.vis==1
     debugdata.htext = [];
     debugdata.hwing = [];
     debugdata.htrough = [];
-elseif debugdata.vis>1
+elseif debugdata.vis>2
     BG=getappdata(0,'BG');
     bgmed=BG.bgmed;
     roidata=getappdata(0,'roidata');
@@ -330,7 +300,7 @@ for i=1:numel(hslider)
     set(hslider(i),'SliderStep',[1/(maxs{i}-mins{i}),10/(maxs{i}-mins{i})])
 end
 
-if debugdata.vis>1
+if debugdata.vis>2
     f=get(handles.slider_frame,'Value');
     visdata=getappdata(0,'visdata');
     BG=getappdata(0,'BG');
@@ -387,7 +357,7 @@ for i=1:numel(hslider)
     set(hslider(i),'SliderStep',[1/(maxs{i}-mins{i}),10/(maxs{i}-mins{i})])
 end
 
-if debugdata.vis>1
+if debugdata.vis>2
     f=get(handles.slider_frame,'Value');
     visdata=getappdata(0,'visdata');
     BG=getappdata(0,'BG');
@@ -430,7 +400,7 @@ wing_params=get(handles.uipanel_set,'UserData');
 wing_params.mindwing_high=get(hObject,'Value');
 set(handles.edit_set_Hbgthresh,'String',num2str(wing_params.mindwing_high,'%.2f'));
 set(handles.uipanel_set,'UserData',wing_params);
-if debugdata.vis>1
+if debugdata.vis>2
     f=get(handles.slider_frame,'Value');
     visdata=getappdata(0,'visdata');
     BG=getappdata(0,'BG');
@@ -466,7 +436,7 @@ function slider_set_Lbgthresh_Callback(hObject, eventdata, handles)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.mindwing_low=get(hObject,'Value');
-if debugdata.vis>1
+if debugdata.vis>2
     f=get(handles.slider_frame,'Value');
     visdata=getappdata(0,'visdata');
     BG=getappdata(0,'BG');
@@ -494,8 +464,12 @@ wing_params=get(handles.uipanel_set,'UserData');
 debugdata.vis=get(hObject,'Value');
 f=get(handles.slider_frame,'Value');
 visdata=getappdata(0,'visdata');
-if debugdata.vis==1
-    set(debugdata.him,'CData',visdata.frames{f});
+if debugdata.vis<=2
+    if debugdata.vis==1
+        set(debugdata.him,'CData',visdata.frames{f});
+    else
+        set(debugdata.him,'CData',visdata.dbkgd{f});
+    end
     if isfield(debugdata,'htext')
       delete(debugdata.htext(ishandle(debugdata.htext)));
     end
@@ -508,7 +482,7 @@ if debugdata.vis==1
     debugdata.htext = [];
     debugdata.hwing = [];
     debugdata.htrough = [];
-elseif debugdata.vis>1
+elseif debugdata.vis>2
     BG=getappdata(0,'BG');
     bgmed=BG.bgmed;
     roidata=getappdata(0,'roidata');
@@ -553,7 +527,8 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-cbtrackGUI_BG
+setappdata(0,'button','BG')
+setappdata(0,'isnew',false)
 
 
 function pushbutton_ROIs_Callback(hObject, eventdata, handles)
@@ -572,8 +547,8 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-cbtrackGUI_ROI
-
+setappdata(0,'button','ROI')
+setappdata(0,'isnew',false)
 
 function pushbutton_WT_Callback(hObject, eventdata, handles)
 
@@ -594,16 +569,8 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-P_stage=getappdata(0,'P_stage');
-if strcmp(P_stage,'track2')
-    CourtshipBowlTrack_GUI2
-    if getappdata(0,'iscancel') || getappdata(0,'isskip')
-        return
-    end
-elseif strcmp(P_stage,'track1')
-    cbtrackGUI_tracker_video
-end
-
+setappdata(0,'button','track')
+setappdata(0,'isnew',false)
 
 
 function edit_set_minbody_Callback(hObject, eventdata, handles)
@@ -628,7 +595,7 @@ for i=1:numel(hslider)
     set(hslider(i),'SliderStep',[1/(maxs{i}-mins{i}),10/(maxs{i}-mins{i})])
 end
 
-if debugdata.vis>1
+if debugdata.vis>2
     f=get(handles.slider_frame,'Value');
     visdata=getappdata(0,'visdata');
     BG=getappdata(0,'BG');
@@ -654,7 +621,7 @@ function slider_set_minbody_Callback(hObject, eventdata, handles)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.mindbody=get(hObject,'Value');
-if debugdata.vis>1
+if debugdata.vis>2
     f=get(handles.slider_frame,'Value');
     visdata=getappdata(0,'visdata');
     BG=getappdata(0,'BG');
@@ -698,7 +665,7 @@ for i=1:numel(hslider)
     set(hslider(i),'SliderStep',[1/(maxs{i}-mins{i}),10/(maxs{i}-mins{i})])
 end
 
-if debugdata.vis>1
+if debugdata.vis>2
     f=get(handles.slider_frame,'Value');
     visdata=getappdata(0,'visdata');
     BG=getappdata(0,'BG');
@@ -724,7 +691,7 @@ function slider_set_minwing_Callback(hObject, eventdata, handles)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.min_single_wing_area=get(hObject,'Value');
-if debugdata.vis>1
+if debugdata.vis>2
     f=get(handles.slider_frame,'Value');
     visdata=getappdata(0,'visdata');
     BG=getappdata(0,'BG');
@@ -768,7 +735,7 @@ for i=1:numel(hslider)
     set(hslider(i),'SliderStep',[1/(maxs{i}-mins{i}),10/(maxs{i}-mins{i})])
 end
 
-if debugdata.vis>1
+if debugdata.vis>2
     f=get(handles.slider_frame,'Value');
     visdata=getappdata(0,'visdata');
     BG=getappdata(0,'BG');
@@ -794,7 +761,7 @@ function slider_set_wingin_Callback(hObject, eventdata, handles)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.wing_peak_min_frac_factor=get(hObject,'Value');
-if debugdata.vis>1
+if debugdata.vis>2
     f=get(handles.slider_frame,'Value');
     visdata=getappdata(0,'visdata');
     BG=getappdata(0,'BG');
@@ -831,7 +798,8 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-cbtrackGUI_tracker
+setappdata(0,'button','body')
+setappdata(0,'isnew',false)
 
 
 function edit_set_mincc_Callback(hObject, eventdata, handles)
@@ -856,7 +824,7 @@ for i=1:numel(hslider)
     set(hslider(i),'SliderStep',[1/(maxs{i}-mins{i}),10/(maxs{i}-mins{i})])
 end
 
-if debugdata.vis>1
+if debugdata.vis>2
     f=get(handles.slider_frame,'Value');
     visdata=getappdata(0,'visdata');
     BG=getappdata(0,'BG');
@@ -882,7 +850,7 @@ function slider_set_mincc_Callback(hObject, eventdata, handles)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.min_wingcc_area=get(hObject,'Value');
-if debugdata.vis>1
+if debugdata.vis>2
     f=get(handles.slider_frame,'Value');
     visdata=getappdata(0,'visdata');
     BG=getappdata(0,'BG');

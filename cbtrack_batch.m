@@ -183,7 +183,7 @@ for i=1:numel(expdirs)
                 s=sprintf('Results movie could not be created for experiment %s: %s\n\n',experiment,ME.message);
                 write_log(logfid2,experiment,s)
             case 'perframefeature_log'
-                logfid2=open_log('results_movie');
+                logfid2=open_log('perframefeature_log');
                 s=sprintf('PFF could not be computed for experiment %s: %s\n\n',experiment,ME.message);
                 write_log(logfid2,experiment,s)
             case 'AcC'

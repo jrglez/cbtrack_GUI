@@ -109,7 +109,8 @@ if ~cbparams.wingtrack.dosetwingtrack || ~getappdata(0,'singleexp')
 end
 
 set(handles.text_info,'String',{['Experiment ', experiment];'No frames tracked'})
- % Set slider
+
+% Set slider
 set(handles.slider_frame,'Value',1,'Min',1,'Max',2,'Enable','off')
 fcn_slider_frame = get(handles.slider_frame,'Callback');
 hlisten_frame=addlistener(handles.slider_frame,'ContinuousValueChange',fcn_slider_frame); %#ok<NASGU>
@@ -212,7 +213,6 @@ setappdata(0,'P_stage','track2')
 if cbparams.track.dosave
     savetemp({'trackdata'})
 end
-CourtshipBowlTrack_GUI2
 
 
 function cbtrackGUI_ROI_ResizeFcn(hObject, eventdata, handles)
@@ -336,10 +336,6 @@ elseif ISPAUSE
         end
         restart='';
         setappdata(0,'restart',restart)
-        CourtshipBowlTrack_GUI2
-        if getappdata(0,'iscancel') || getappdata(0,'isskip')
-            return
-        end
     end
 end
 
@@ -475,8 +471,8 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-cbtrackGUI_BG
-
+setappdata(0,'button','BG')
+setappdata(0,'isnew',false)
 
 function pushbutton_ROIs_Callback(hObject, eventdata, handles)
 %Save size
@@ -494,7 +490,8 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-cbtrackGUI_ROI
+setappdata(0,'button','ROI')
+setappdata(0,'isnew',false)
 
 
 function pushbutton_tracker_setup_Callback(hObject, eventdata, handles)
@@ -513,7 +510,8 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-cbtrackGUI_tracker
+setappdata(0,'button','body')
+setappdata(0,'isnew',false)
 
 function pushbutton_debuger_Callback(hObject, eventdata, handles)
 
@@ -537,8 +535,8 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-cbtrackGUI_WingTracker
-
+setappdata(0,'button','wing')
+setappdata(0,'isnew',false)
 
 
 function pushbutton_skip_Callback(hObject, eventdata, handles)

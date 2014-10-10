@@ -125,7 +125,7 @@ if isfield(trackdata,'twing')
     % Plot
     debugdata.haxes=handles.axes_wingtracker_video;
     debugdata.him=handles.video_img;
-    debugdata.vis=8;
+    debugdata.vis=9;
     debugdata.DEBUG=cbparams.track.DEBUG;
     debugdata.track=false;
     debugdata.play=false;
@@ -135,7 +135,7 @@ if isfield(trackdata,'twing')
 else
     debugdata.haxes=handles.axes_wingtracker_video;
     debugdata.him=handles.video_img;
-    debugdata.vis=8;
+    debugdata.vis=9;
     debugdata.DEBUG=cbparams.track.DEBUG;
     debugdata.track=false;
     debugdata.play=false;
@@ -326,6 +326,7 @@ elseif ISPAUSE
         logfid=open_log('track_log');
         s=sprintf('Wing tracking finished at %s for experiment %s...\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
         write_log(logfid,getappdata(0,'experiment'),s)
+        
         if logfid > 1,
             fclose(logfid);
         end
@@ -465,7 +466,8 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-cbtrackGUI_BG
+setappdata(0,'button','BG')
+setappdata(0,'isnew',false)
 
 
 function pushbutton_ROIs_Callback(hObject, eventdata, handles)
@@ -483,7 +485,8 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-cbtrackGUI_ROI
+setappdata(0,'button','ROI')
+setappdata(0,'isnew',false)
 
 
 function pushbutton_tracker_setup_Callback(hObject, eventdata, handles)
@@ -501,7 +504,8 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-cbtrackGUI_tracker
+setappdata(0,'button','body')
+setappdata(0,'isnew',false)
 
 
 
@@ -525,7 +529,8 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
 
-cbtrackGUI_WingTracker
+setappdata(0,'button','wing')
+setappdata(0,'isnew',false)
 
 
 function pushbutton_skip_Callback(hObject, eventdata, handles)

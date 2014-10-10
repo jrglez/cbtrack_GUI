@@ -57,6 +57,8 @@ roidata.isnew=true;
 setappdata(0,'cbparams',cbparams);
 setappdata(0,'roidata',roidata);
 setappdata(0,'P_stage','params')
+setappdata(0,'button','body')
+setappdata(0,'isnew',true)
 if cbparams.track.dosave
     savetemp({'roidata'})
 end
