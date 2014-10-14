@@ -444,16 +444,21 @@ function pushbutton_save_Callback(hObject, eventdata, handles)
 [tempfile,tempdir]=uiputfile('.mat');
 out=getappdata(0,'out');
 logfid=open_log('track_log');
-t=getappdata(0,'t');
+t=getappdata(0,'twing');
+trackdata=getappdata(0,'trackdata'); %#ok<*NASGU>
+debugdata_WT=getappdata(0,'debugdata_WT');
 tempfile = fullfile(tempdir,tempfile);
-s=sprintf('Saving temporary file after frames %i at %s...\n',t,datestr(now,'yyyymmddTHHMMSS'));
+old_out=out.temp_full;
+out.temp_full=tempfile;
+setappdata(0,'out',out)
+s=sprintf('Saving temporary file %s after frames %i at %s...\n',tempfile,t,datestr(now,'yyyymmddTHHMMSS'));
 write_log(logfid,getappdata(0,'experiment'),s)
-copyfile(out.temp_full,tempfile);
-save(tempfile,'trackdata','-append')
+savetemp('all')
+out.temp_full=old_out;
+setappdata(0,'out',out)
 if logfid > 1,
   fclose(logfid);
 end
-
 
 function pushbutton_BG_Callback(hObject, eventdata, handles)
 %Save size

@@ -240,6 +240,7 @@ for i=1:numel(expdirs)
                     else
                         if getappdata(0,'singleexp')
                             setappdata(0,'button','track')
+                            setappdata(0,'P_stage','track1')
                         else
                             setappdata(0,'next',true)
                         end
@@ -258,7 +259,9 @@ for i=1:numel(expdirs)
                 otherwise
                     setappdata(0,'next',true)
             end
-            savetemp([]);
+            if get(handles.checkbox_savetemp,'Value')
+                savetemp([]);
+            end
             if getappdata(0,'iscancel')
                 cancelar
                 return

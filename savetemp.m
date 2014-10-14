@@ -2,7 +2,7 @@ function savetemp(savelist)
 if strcmp(savelist,'all')
     savelist={'viewlog','expdir','moviefile','experiment',...
         'analysis_protocol','P_stage','GUIscale', 'cbparams','BG',...
-        'roidata','visdata','trackdata','debugdata'};
+        'roidata','visdata','trackdata','debugdata','debugdata_WT','t','twing'};
 end
 savelist2={'P_stage','cbparams','button'};
 out=getappdata(0,'out');

@@ -26,4 +26,6 @@ catch ME,
   end
 end
 setappdata(0,'P_stage','done')
-savetemp([]);
+if cbparams.track.dosave
+    savetemp([]);
+end

@@ -241,7 +241,7 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
           trackdata.perframeunits = wingperframeunits;
       else
           cbtrackGUI_WingTracker_video
-          if getappdata(0,'iscancel') || getappdata(0,'isskip')
+          if getappdata(0,'iscancel') || getappdata(0,'isskip') || ~strcmp(getappdata(0,'button'),'track')
               return
           end
           trackdata=getappdata(0,'trackdata');
@@ -258,7 +258,6 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
 end
 
 %% assign identities based on size of something
-
 
 stage = 'assignids'; 
 
@@ -511,7 +510,7 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
               trackdata.perframeunits = wingperframeunits;
           else
               cbtrackGUI_WingTracker_video
-              if getappdata(0,'iscancel') || getappdata(0,'isskip')
+              if getappdata(0,'iscancel') || getappdata(0,'isskip') || ~strcmp(getappdata(0,'button'),'track')
                   return
               end
               trackdata=getappdata(0,'trackdata');             

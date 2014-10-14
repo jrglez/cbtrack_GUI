@@ -44,7 +44,7 @@ roidata=getappdata(0,'roidata');
 s=sprintf('Starting secondary tracking at %s for experiment %s.\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
 write_log(logfid,experiment,s)
 trackdata=TrackTwoFlies_GUI_debug2(moviefile,bgmed,roidata,params,'restart',restart);
-if getappdata(0,'iscancel') || getappdata(0,'isskip')
+if getappdata(0,'iscancel') || getappdata(0,'isskip') || ~strcmp(getappdata(0,'button'),'track')
     return
 end
 trackdata.courtshipbowltrack_version = version;

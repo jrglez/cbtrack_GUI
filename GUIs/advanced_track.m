@@ -22,7 +22,7 @@ function varargout = advanced_track(varargin)
 
 % Edit the above text to modify the response to help advanced_track
 
-% Last Modified by GUIDE v2.5 28-May-2014 13:42:30
+% Last Modified by GUIDE v2.5 14-Oct-2014 18:00:53
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -267,3 +267,11 @@ uiresume(handles.figure1)
 function figure1_CloseRequestFcn(hObject, eventdata, handles)
 uiresume(handles.figure1);
 
+
+function edit_bgthresh_low_Callback(hObject, eventdata, handles)
+
+
+function edit_bgthresh_low_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end

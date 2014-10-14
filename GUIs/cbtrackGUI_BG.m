@@ -264,6 +264,8 @@ else
     set(handles.axes_BG,'XTick',[],'YTick',[])
     set(handles.cbtrackGUI_BG,'UserData',BG)
     set(handles.pushbutton_recalc,'UserData',tracking_params)
+    set(handles.pushbutton_manual,'Enable','on');
+    set(handles.pushbutton_auto,'Enable','on');
 end
 
 
@@ -526,39 +528,45 @@ function pushbutton_ROIs_DeleteFcn(hObject, eventdata, handles)
 function pushbutton_load_Callback(hObject, eventdata, handles)
 [file_BG, folder_BG]=open_files2('mat');
 if ~file_BG{1}==0
-    loadfile=fullfile(folder_BG,file_BG{1});
-    set(handles.text_load,'String',loadfile,'HorizontalAlignment','right')
-    BG.data=load(loadfile);
-    BG.data.isnew=true;
-    tracking_params=get(handles.pushbutton_recalc,'UserData');
-    tracking_params.bg_lastframe=BG.data.params.bg_lastframe;
-    tracking_params.bg_firstframe=BG.data.params.bg_firstframe;
-    tracking_params.bg_nframes=BG.data.params.bg_nframes;
-    tracking_params.bgmode=BG.data.params.bgmode;
-    tracking_params.computeBG=BG.data.params.computeBG;
-    BG.data.params=tracking_params;
+    try
+        loadfile=fullfile(folder_BG,file_BG{1});
+        set(handles.text_load,'String',loadfile,'HorizontalAlignment','right')
+        BG.data=load(loadfile);
+        BG.data.isnew=true;
+        tracking_params=get(handles.pushbutton_recalc,'UserData');
+        tracking_params.bg_lastframe=BG.data.params.bg_lastframe;
+        tracking_params.bg_firstframe=BG.data.params.bg_firstframe;
+        tracking_params.bg_nframes=BG.data.params.bg_nframes;
+        tracking_params.bgmode=BG.data.params.bgmode;
+        tracking_params.computeBG=BG.data.params.computeBG;
+        BG.data.params=tracking_params;
 
-    % Set parameters in the GUI
-    set(handles.edit_Nframes,'String',num2str(tracking_params.bg_nframes))
-    set(handles.edit_Lframe,'String',num2str(tracking_params.bg_lastframe))
-    set(handles.edit_Fframe,'String',num2str(tracking_params.bg_firstframe))
-    bgmodes={'LIGHTBKGD';'DARKBKGD';'OTHERBKGD'};
-    bgmode=find(strcmp(tracking_params.bgmode,bgmodes));
-    if isempty(bgmode)
-        bgmode=1;
-    end
-    set(handles.popupmenu_BGtype,'Value',bgmode)
-    bgmed=BG.data.bgmed;
-    set(imhandles(handles.axes_BG),'CData',bgmed);
-    set(hObject,'UserData',BG);
-    set(handles.pushbutton_recalc,'UserData',tracking_params)
-    out=getappdata(0,'out');
-    
-    logfid=open_log('bg_log');
-    s=sprintf('Loading background data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
-    write_log(logfid,getappdata(0,'experiment'),s)
-    if logfid > 1,
-      fclose(logfid);
+        % Set parameters in the GUI
+        set(handles.edit_Nframes,'String',num2str(tracking_params.bg_nframes))
+        set(handles.edit_Lframe,'String',num2str(tracking_params.bg_lastframe))
+        set(handles.edit_Fframe,'String',num2str(tracking_params.bg_firstframe))
+        bgmodes={'LIGHTBKGD';'DARKBKGD';'OTHERBKGD'};
+        bgmode=find(strcmp(tracking_params.bgmode,bgmodes));
+        if isempty(bgmode)
+            bgmode=1;
+        end
+        set(handles.popupmenu_BGtype,'Value',bgmode)
+        bgmed=BG.data.bgmed;
+        set(imhandles(handles.axes_BG),'CData',bgmed);
+        set(hObject,'UserData',BG);
+        set(handles.pushbutton_recalc,'UserData',tracking_params)
+        set(handles.pushbutton_manual,'Enable','off');
+        set(handles.pushbutton_auto,'Enable','off');
+        out=getappdata(0,'out');
+
+        logfid=open_log('bg_log');
+        s=sprintf('Loading background data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
+        write_log(logfid,getappdata(0,'experiment'),s)
+        if logfid > 1,
+          fclose(logfid);
+        end
+    catch
+        mymsgbox(50,190,14,'Helvetica','Background model could not be loaded','Error','error')
     end
 end
 

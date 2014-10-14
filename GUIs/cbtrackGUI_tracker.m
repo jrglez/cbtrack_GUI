@@ -838,7 +838,31 @@ setappdata(0,'isnew',false)
 
 
 function pushbutton_vid_Callback(hObject, eventdata, handles)
+roi_params=get(handles.edit_set_nframessample,'UserData');
+count=get(handles.pushbutton_set_count,'UserData');
+roidata=get(handles.uipanel_fxROI,'UserData');
+if isfield(roidata,'nflies_per_roi')
+    nflies_per_roi=roidata.nflies_per_roi;
+else
+    nflies_per_roi=[];
+end
+if all(~isnan(count.nflies_per_roi))
+    roidata.nflies_per_roi=count.nflies_per_roi;
+elseif ~isempty(roi_params.nflies_per_roi) && all(~isnan(roi_params.nflies_per_roi))
+    roidata.nflies_per_roi=roi_params.nflies_per_roi;
+else 
+    roidata.nflies_per_roi=2*ones(1,roidata.nrois);
+end
+setappdata(0,'roidata',roidata);
+
 video_params
+
+if isempty(nflies_per_roi)
+    roidata=rmfield(roidata,'nflies_per_roi');
+else
+    roidata.nflies_per_roi=nflies_per_roi;
+end
+setappdata(0,'roidata',roidata)
 
 
 function pushbutton_skip_Callback(hObject, eventdata, handles)

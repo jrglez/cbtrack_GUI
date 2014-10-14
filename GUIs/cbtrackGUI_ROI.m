@@ -82,7 +82,6 @@ manual.add=0; % 1 whena dding point to a ROI after removing any of the exitent o
 manual.pos_h=cell(0);
 manual.on=0;
 manual.delete=0;
-handles.texth=text(255,415,'','FontSize',16,'Color',[0 1 0],'HorizontalAlignment','center','units','pixels');    
 set(handles.text_exp,'FontSize',24,'HorizontalAlignment','center','units','pixels','FontUnits','pixels','String',experiment);
 list.text=cell(0); %list of selected points to display at listbox_manual
 list.ind=cell(0);
@@ -101,7 +100,7 @@ if find(strcmp(P_stage,P_stages))>find(strcmp(P_curr_stage,P_stages))
     if isfield(roidata,'manual')
         manual=roidata.manual;
     else
-        manual=[];
+        manual.pos=[];
     end
     if isfield(roidata,'list')
         list=roidata.list;
@@ -127,7 +126,13 @@ if find(strcmp(P_stage,P_stages))>find(strcmp(P_curr_stage,P_stages))
             set(handles.listbox_manual,'string',vertcat(list.text{:}))
         end
     end
-    set(handles.pushbutton_delete,'Enable','on')
+    if ~roidata.isall
+        set(handles.pushbutton_delete,'Enable','on')
+        if ~isempty(manual.pos)
+            set(handles.listbox_manual,'Enable','on')
+            set(handles.pushbutton_detect,'Enable','on');
+        end
+    end
     set(handles.pushbutton_detect,'UserData',roidata)
     if cbparams.track.dosettrack
         set(handles.pushbutton_tracker_setup,'Enable','on')
@@ -144,6 +149,8 @@ else
     if getappdata(0,'usefiles') && exist(loadfile,'file')
         try
             roidata=load(loadfile);
+            manual=roidata.manual;
+            list=roidata.list;
             logfid=open_log('roi_log');
             s=sprintf('Loading ROI data data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
             write_log(logfid,experiment,s)
@@ -171,7 +178,14 @@ else
                     set(handles.listbox_manual,'string',vertcat(list.text{:}))
                 end
             end
-            set(handles.pushbutton_delete,'Enable','on')
+            maual.detected=true;
+            if ~roidata.isall
+                set(handles.pushbutton_delete,'Enable','on')
+                if ~isempty(manual.pos)
+                    set(handles.listbox_manual,'Enable','on')
+                    set(handles.pushbutton_detect,'Enable','on');
+                end
+            end
         catch
             logfid=open_log('roi_log');
             s=sprintf('File %s could not be loaded.',loadfile);
@@ -187,6 +201,7 @@ else
                 params.roimus=[params.roimus.x',params.roimus.y'];
                 [handles,roidata] = DetectROIsGUI(bgmed,cbparams,params,handles);
                 roidata.ignore=params.ignorebowls;
+                set(handles.pushbutton_delete,'Enable','on')
             end
         end
     else
@@ -197,6 +212,8 @@ else
             params.roimus=[params.roimus.x',params.roimus.y'];
             [handles,roidata] = DetectROIsGUI(bgmed,cbparams,params,handles);
             roidata.ignore=params.ignorebowls;
+            set(handles.pushbutton_delete,'Enable','on')
+            manual.detected=true;
         end
     end
     roidata.isnew=true;
@@ -210,8 +227,6 @@ set(handles.edit_set_rot,'String', num2str(params.baserotateby))
 set(handles.edit_set_thres1,'String', num2str(params.cannythresh(1)))
 set(handles.edit_set_thres2,'String', num2str(params.cannythresh(2)))
 set(handles.edit_set_std,'String', num2str(params.cannysigma))
-
-set(handles.pushbutton_detect,'Enable','off')
 
 % Update handles structure
 set(handles.radiobutton_manual,'UserData',manual);
@@ -367,48 +382,57 @@ end
 function pushbutton_load_Callback(hObject, eventdata, handles)
 [file_ROI, folder_ROI]=open_files2('mat');
 if ~file_ROI{1}==0
-    set(handles.edit_load,'String',fullfile(folder_ROI,file_ROI{1}),'HorizontalAlignment','right')
-    manual=get(handles.radiobutton_manual,'UserData');
-    [handles,~,~,~]=deleterois(handles,manual);
-    set(handles.texth,'String','ROIs loaded from file'); 
-    roidata=load(fullfile(folder_ROI,file_ROI{1}));
-    manual=roidata.manual;
-    list=roidata.list;
-    colors = jet(roidata.nrois)*.7;
-    axes(handles.axes_ROI)
-    hold on
-    handles.hroisT=nan(roidata.nrois,1);
-    for i = 1:roidata.nrois,
-        ROIpos=[roidata.centerx(i)-roidata.radii(i),roidata.centery(i)-roidata.radii(i),2*roidata.radii(i),2*roidata.radii(i)];
-        handles.hrois(i,1)=imellipse(handles.axes_ROI,ROIpos);
-        handles.hrois(i,1).setFixedAspectRatioMode(1);
-        handles.hrois(i,1).setColor(colors(i,:));
-        handles.hroisT(i,1)=text(roidata.centerx(i),roidata.centery(i),['ROI: ',num2str(i)],...
-          'Color',colors(i,:),'HorizontalAlignment','center','VerticalAlignment','middle','Clipping','on');
-        if ~isempty(manual.pos)
-            for j=1:length(manual.pos{i})
-                manual.pos_h{i}(j)=plot(manual.pos{i}(j,1),manual.pos{i}(j,2),'rx');
+    try
+        set(handles.edit_load,'String',fullfile(folder_ROI,file_ROI{1}),'HorizontalAlignment','right')
+        manual=get(handles.radiobutton_manual,'UserData');
+        [handles,~,~,~]=deleterois(handles,manual);
+        set(handles.texth,'String','ROIs loaded from file'); 
+        roidata=load(fullfile(folder_ROI,file_ROI{1}));
+        manual=roidata.manual;
+        list=roidata.list;
+        colors = jet(roidata.nrois)*.7;
+        axes(handles.axes_ROI)
+        hold on
+        handles.hroisT=nan(roidata.nrois,1);
+        for i = 1:roidata.nrois,
+            ROIpos=[roidata.centerx(i)-roidata.radii(i),roidata.centery(i)-roidata.radii(i),2*roidata.radii(i),2*roidata.radii(i)];
+            handles.hrois(i,1)=imellipse(handles.axes_ROI,ROIpos);
+            handles.hrois(i,1).setFixedAspectRatioMode(1);
+            handles.hrois(i,1).setColor(colors(i,:));
+            handles.hroisT(i,1)=text(roidata.centerx(i),roidata.centery(i),['ROI: ',num2str(i)],...
+              'Color',colors(i,:),'HorizontalAlignment','center','VerticalAlignment','middle','Clipping','on');
+            if ~isempty(manual.pos)
+                for j=1:length(manual.pos{i})
+                    manual.pos_h{i}(j)=plot(manual.pos{i}(j,1),manual.pos{i}(j,2),'rx');
+                end
+                set(handles.listbox_manual,'string',vertcat(list.text{:}))
             end
-            set(handles.listbox_manual,'string',vertcat(list.text{:}))
         end
+        roidata.isnew=true;
+        if isfield(roidata,'nflies_per_roi')
+            roidata=rmfield(roidata,'nflies_per_roi');
+        end
+        params=get(handles.uipanel_settings,'Userdata');
+        roidata.params.dosetROI=params.dosetROI;
+        manual.on=0;
+        manual.detected=1;
+        manual.delete=0;
+        if ~roidata.isall
+            set(handles.pushbutton_delete,'Enable','on')
+            if ~isempty(manual.pos)
+                set(handles.listbox_manual,'Enable','on')
+                set(handles.pushbutton_detect,'Enable','on');
+            end
+        end
+
+        set(handles.pushbutton_delete,'String','Delete');
+        set(handles.radiobutton_manual,'UserData',manual)
+        set(handles.listbox_manual,'UserData',list);
+        set(handles.pushbutton_detect,'UserData',roidata);
+        set(handles.uipanel_settings,'Userdata',roidata.params)
+    catch
+        mymsgbox(50,190,14,'Helvetica','ROI data could not be loaded','error')
     end
-    roidata.isnew=true;
-    if isfield(roidata,'nflies_per_roi')
-        roidata=rmfield(roidata,'nflies_per_roi');
-    end
-    params=get(handles.uipanel_settings,'Userdata');
-    roidata.params.dosetROI=params.dosetROI;
-    manual.on=0;
-    manual.detected=1;
-    manual.delete=0;
-    set(handles.pushbutton_delete,'Enable','on')
-    set(handles.listbox_manual,'Enable','on')
-    set(handles.pushbutton_detect,'Enable','on');
-    set(handles.pushbutton_delete,'String','Delete');
-    set(handles.radiobutton_manual,'UserData',manual)
-    set(handles.listbox_manual,'UserData',list);
-    set(handles.pushbutton_detect,'UserData',roidata);
-    set(handles.uipanel_settings,'Userdata',roidata.params)
 end
 guidata(handles.cbtrackGUI_ROI, handles);
 
@@ -698,7 +722,7 @@ elseif eventdata.NewValue==handles.radiobutton_manual %The user clicks points of
     end
     if manual.roi==1 && manual.proi==0
         set(handles.texth,'String','Selecting ROI 1, point 1');   
-        msg_manual=mymsgbox(50,190,14,'Helvetica',{'Please, select at least trhee points in the at the edge of the first ROI.'; '  - Press ''Next ROI'' to select the next set of points.';'  - Click any ROI or point to remove it from the list';'  - Press ''Detect'' to finish'},'Manua detection','help','modal'); %#ok<NASGU>
+        msg_manual=mymsgbox(50,190,14,'Helvetica',{'Please, select at least three points in the at the edge of the first ROI.'; '  - Press ''Next ROI'' to select the next set of points.';'  - Click any ROI or point to remove it from the list';'  - Press ''Detect'' to finish'},'Manua detection','help','modal'); %#ok<NASGU>
     end
     manual.on=1;
     manual.delete=0;
@@ -771,11 +795,16 @@ if manual.on==1 && manual.delete==0
 elseif manual.delete==1 && manual.detected==1
     roidata=get(handles.pushbutton_detect,'UserData');
     pos_ij = get(handles.axes_ROI,'CurrentPoint'); 
-    dist2=(pos_ij(1,1)-roidata.centerx).^2+(pos_ij(1,2)-roidata.centery).^2;
+    new_position=nan(4,roidata.nrois);
+    for i=1:roidata.nrois
+        new_position(:,i)=handles.hrois(i).getPosition;
+    end
+    new_centerx=new_position(1,:)+new_position(3,:)./2;
+    new_centery=new_position(2,:)+new_position(4,:)./2;
+    new_radii=new_position(3,:)./2;
+    dist2=(pos_ij(1,1)-new_centerx).^2+(pos_ij(1,2)-new_centery).^2;
     [mindist2,nearROI]=min(dist2);
-    %%% aqui. Seguir con la lista. Usar el centro de los circulos (no de
-    %%% los rois) ver como conseguir el centro en l.261
-    if mindist2<=roidata.radii(nearROI)^2
+    if mindist2<=new_radii(nearROI)^2
         list=get(handles.listbox_manual,'UserData');
         manual=get(handles.radiobutton_manual,'UserData');
         rem_roi=nearROI;     
@@ -877,7 +906,7 @@ if strcmp('Yes',msg_clear)
     set(handles.radiobutton_manual,'UserData',manual);
     set(handles.pushbutton_detect,'UserData',roidata);
     set(handles.listbox_manual,'UserData',list);
-    guidata(handles.cbtrackGUI_ROI,handles)   
+    guidata(handles.cbtrackGUI_ROI,handles)
 %     set(handles.BG_img,'ButtonDownFcn',{@axes_ROI_ButtonDownFcn,handles});
 end
 

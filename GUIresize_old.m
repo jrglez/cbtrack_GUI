@@ -1,11 +1,16 @@
-function GUIsize(handles,hObject)
-GUIscale=getappdata(0,'GUIscale');
+function GUIscale=GUIresize(handles,hObject,GUIscale)
+new_pos_GUI=get(hObject,'position');
+if isempty(GUIscale)
+    old_pos_GUI=new_pos_GUI;
+else
+    old_pos_GUI=GUIscale.position;
+end
+rescalex=new_pos_GUI(3)/old_pos_GUI(3);
+rescaley=new_pos_GUI(4)/old_pos_GUI(4) ;
 
-if ~isempty(GUIscale)
+
+if rescalex~=1 || rescaley~=1
     h=fieldnames(handles);
-    rescalex=GUIscale.rescalex;
-    rescaley=GUIscale.rescaley;
-    set(hObject,'position',GUIscale.position)
     for i=2:length(h)
         obj_handle=handles.(h{i});
         if ~strcmp(h{i},'output')
@@ -14,23 +19,20 @@ if ~isempty(GUIscale)
                 if iscell(old_pos)
                     old_pos=cell2mat(old_pos);
                 end
-                if strcmp(get(obj_handle,'Type'),'figure') %figure
+                if ~isprop(obj_handle,'xTick') %not a figure
+                    new_pos=old_pos;
+                    new_pos(:,1:2:end)=old_pos(:,1:2:end)*rescalex;
+                    new_pos(:,2:2:end)=old_pos(:,2:2:end)*rescaley;
+                    for j=1:size(new_pos,1)
+                        set(obj_handle(j),'position',new_pos(j,:))
+                    end
+                elseif isprop(obj_handle,'xTick') %figure
                     rescale=min(rescalex,rescaley);
                     new_pos(:,1)=old_pos(:,1)*rescalex+(old_pos(:,3)*(rescalex-rescale)/2);
                     new_pos(:,2)=old_pos(:,2)*rescaley+(old_pos(:,4)*(rescaley-rescale)/2);
                     new_pos(:,[3,4])=old_pos(:,[3,4])*rescale;
                     for j=1:size(new_pos,1)
                         set(obj_handle(j),'position',new_pos(j,:))        
-                    end
-                elseif strcmp(get(obj_handle,'Type'),'text') %text
-                    rescale=min(rescalex,rescaley);
-                    new_pos=old_pos*rescale;
-                else
-                    new_pos=old_pos;
-                    new_pos(:,1:2:end)=old_pos(:,1:2:end)*rescalex;
-                    new_pos(:,2:2:end)=old_pos(:,2:2:end)*rescaley;
-                    for j=1:size(new_pos,1)
-                        set(obj_handle(j),'position',new_pos(j,:))
                     end
                 end
             end
@@ -42,18 +44,12 @@ if ~isempty(GUIscale)
                 new_fontsize=max(12,old_fontsize.*min(rescalex,rescaley));
                 for j=1:size(new_pos,1)
                     set(obj_handle(j),'FontSize',new_fontsize(j))
-                end                
+                end
             end
         end
         clear new_pos
         clear new_fontsize
     end
-elseif isempty(GUIscale)
-    GUIscale.position=get(hObject,'position');
-    GUIscale.rescalex=1;
-    GUIscale.rescaley=1;
-    if ~isfield(GUIscale,'original_position')
-        GUIscale.original_position=GUIscale.position;
-    end
-    setappdata(0,'GUIscale',GUIscale)
 end
+GUIscale.position=new_pos_GUI;
+

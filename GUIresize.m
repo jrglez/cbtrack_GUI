@@ -19,20 +19,23 @@ if rescalex~=1 || rescaley~=1
                 if iscell(old_pos)
                     old_pos=cell2mat(old_pos);
                 end
-                if ~isprop(obj_handle,'xTick') %not a figure
-                    new_pos=old_pos;
-                    new_pos(:,1:2:end)=old_pos(:,1:2:end)*rescalex;
-                    new_pos(:,2:2:end)=old_pos(:,2:2:end)*rescaley;
-                    for j=1:size(new_pos,1)
-                        set(obj_handle(j),'position',new_pos(j,:))
-                    end
-                elseif isprop(obj_handle,'xTick') %figure
+                if strcmp(get(obj_handle,'Type'),'figure') %figure
                     rescale=min(rescalex,rescaley);
                     new_pos(:,1)=old_pos(:,1)*rescalex+(old_pos(:,3)*(rescalex-rescale)/2);
                     new_pos(:,2)=old_pos(:,2)*rescaley+(old_pos(:,4)*(rescaley-rescale)/2);
                     new_pos(:,[3,4])=old_pos(:,[3,4])*rescale;
                     for j=1:size(new_pos,1)
                         set(obj_handle(j),'position',new_pos(j,:))        
+                    end
+                elseif strcmp(get(obj_handle,'Type'),'text') %text
+                    rescale=min(rescalex,rescaley);
+                    new_pos=old_pos*rescale;
+                else
+                    new_pos=old_pos;
+                    new_pos(:,1:2:end)=old_pos(:,1:2:end)*rescalex;
+                    new_pos(:,2:2:end)=old_pos(:,2:2:end)*rescaley;
+                    for j=1:size(new_pos,1)
+                        set(obj_handle(j),'position',new_pos(j,:))
                     end
                 end
             end

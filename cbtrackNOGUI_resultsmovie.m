@@ -22,4 +22,6 @@ if ~success
     end
 end
 setappdata(0,'P_stage','PFF')
-savetemp([]);
+if cbparams.track.dosave
+    savetemp([]);
+end
