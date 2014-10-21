@@ -123,7 +123,7 @@ if find(strcmp(P_stage,P_stages))>find(strcmp(P_curr_stage,P_stages))
             for j=1:length(manual.pos{i})
                 manual.pos_h{i}(j)=plot(manual.pos{i}(j,1),manual.pos{i}(j,2),'rx');
             end
-            set(handles.listbox_manual,'string',vertcat(list.text{:}))
+            set(handles.listbox_manual,'string',vertcat(list.text{:}),'Value',numel(vertcat(list.text{:})))
         end
     end
     if ~roidata.isall
@@ -175,7 +175,7 @@ else
                     for j=1:length(manual.pos{i})
                         manual.pos_h{i}(j)=plot(manual.pos{i}(j,1),manual.pos{i}(j,2),'rx');
                     end
-                    set(handles.listbox_manual,'string',vertcat(list.text{:}))
+                    set(handles.listbox_manual,'string',vertcat(list.text{:}),'Value',numel(vertcat(list.text{:})))
                 end
             end
             maual.detected=true;
@@ -405,7 +405,7 @@ if ~file_ROI{1}==0
                 for j=1:length(manual.pos{i})
                     manual.pos_h{i}(j)=plot(manual.pos{i}(j,1),manual.pos{i}(j,2),'rx');
                 end
-                set(handles.listbox_manual,'string',vertcat(list.text{:}))
+                set(handles.listbox_manual,'string',vertcat(list.text{:}),'Value',numel(vertcat(list.text{:})))
             end
         end
         roidata.isnew=true;
@@ -468,7 +468,7 @@ if manual.delete
     end
     if strcmp('Yes',msg_manual_lb) %remove selected point from the list and plot
         if rem_proi==0
-            set(handles.listbox_manual,'string',vertcat(list.text{:})) 
+            set(handles.listbox_manual,'string',vertcat(list.text{:}),'Value',numel(vertcat(list.text{:}))) 
             msg_manual_lb2=myquestdlg(14,'Helvetica',{'Would you like to select new points for this ROI?';' - ''Yes'' will maintain the same ROI number. You must select new ROI points';' - ''No'' will reasing the ROI numbers'},'Replace ROI points?','Yes','No','No'); 
             if isempty(msg_manual_lb2)
                 msg_manual_lb2='No';
@@ -595,7 +595,6 @@ end
 function pushbutton_detect_Callback(hObject, eventdata, handles)
 cbparams=getappdata(0,'cbparams');
 params=get(handles.uipanel_settings,'UserData');
-params.nROI=str2double(get(handles.edit_set_nROI,'String'));
 params.roidiameter_mm=str2double(get(handles.edit_set_ROId,'String'));
 if isnan(params.roidiameter_mm)
     params.roidiameter_mm=1;
@@ -638,6 +637,8 @@ else
         if isempty(params.maxdradius)
             params.maxdradius=ceil(params.meanroiradius/20);
         end
+        set([manual.pos_h{:}],'Color',[0 1 0])
+
         manual.detected=1;
         params.roimus=[xc,yc];
         params.ignorebowls=[];
@@ -646,16 +647,12 @@ else
         [handles,roidata] = DetectROIsGUI(bgmed,cbparams,params,handles);
         roidata.ignore=[];
         roidata.isnew=true;        
-        if ~isnan(params.nROI) && roidata.nrois~=params.nROI
-            mymsgbox(50,190,14,'Helvetica',{'The number of ROIs detected does not match the value set manualy'},'Warning','warn','modal')
-            params.nROI=roidata.nrois;
-        end
         manual.on=0;
         set(hObject,'UserData',roidata)
         set(handles.radiobutton_manual,'UserData',manual)
         set(handles.uipanel_settings,'Userdata',params)
         guidata(handles.cbtrackGUI_ROI,handles)
-    end  
+    end 
 end
 
 
@@ -672,6 +669,7 @@ else
     manual.proi(manual.roi)=0;
     set(handles.texth,'string',['Selecting ROI ', num2str(manual.roi),' point ', num2str(manual.proi(manual.roi)+1)])
     set(handles.radiobutton_manual,'UserData',manual);
+    set([manual.pos_h{:}],'Color',[0 1 0])
 end
 
 
@@ -749,12 +747,16 @@ function axes_ROI_ButtonDownFcn(hObject, eventdata, handles)
 %Gets the coordinates of the cliked point and ads it to the listbox_manual
 handles=guidata(hObject);
 manual=get(handles.radiobutton_manual,'UserData');
-if manual.on==1 && manual.delete==0
+pos_ij = get(handles.axes_ROI,'CurrentPoint');     
+xlim=get(handles.axes_ROI,'XLim');
+ylim=get(handles.axes_ROI,'YLim');
+isin=pos_ij(1,1)>=xlim(1)&&pos_ij(1,1)<=xlim(2)&&pos_ij(1,2)>=ylim(1)&&pos_ij(1,2)<=ylim(2);
+
+if manual.on==1 && manual.delete==0 && isin
     list=get(handles.listbox_manual,'UserData');
     pos=manual.pos;
     roi=manual.roi;
     proi=manual.proi(roi)+1;
-    pos_ij = get(handles.axes_ROI,'CurrentPoint');     
     pos{roi}(proi,:) = round(pos_ij(1,1:2));
 
     %Plot the selected point
@@ -789,12 +791,11 @@ if manual.on==1 && manual.delete==0
 
     %Update user and gui data
     guidata(hObject, handles);
-    set(handles.listbox_manual,'String',vertcat(list.text{:}))
+    set(handles.listbox_manual,'String',vertcat(list.text{:}),'Value',numel(vertcat(list.text{:})))
     set(handles.radiobutton_manual,'UserData',manual);
     set(handles.listbox_manual,'UserData',list);
 elseif manual.delete==1 && manual.detected==1
     roidata=get(handles.pushbutton_detect,'UserData');
-    pos_ij = get(handles.axes_ROI,'CurrentPoint'); 
     new_position=nan(4,roidata.nrois);
     for i=1:roidata.nrois
         new_position(:,i)=handles.hrois(i).getPosition;
@@ -813,7 +814,7 @@ elseif manual.delete==1 && manual.detected==1
             msg_manual_lb='No';
         end
         if strcmp('Yes',msg_manual_lb) %remove selected point from the list and plot
-            set(handles.listbox_manual,'string',vertcat(list.text{:})) 
+            set(handles.listbox_manual,'string',vertcat(list.text{:}),'Value',numel(vertcat(list.text{:}))) 
             msg_manual_lb2=myquestdlg(14,'Helvetica',{'Would you like to select new points for this ROI?';' - ''Yes'' will maintain the same ROI number. You must select new ROI points';' - ''No'' will reasing the ROI numbers'},'Replace ROI points?','Yes','No','No'); 
             if isempty(msg_manual_lb2)
                 msg_manual_lb2='No';
@@ -970,15 +971,6 @@ function pushbutton_advanced_Callback(hObject, eventdata, handles)
 temp_ROIparams=get(handles.uipanel_settings,'UserData');
 [new_ROIparams]=advanced_ROI(temp_ROIparams);
 set(handles.uipanel_settings,'UserData',new_ROIparams);
-
-
-function edit_set_nROI_Callback(hObject, eventdata, handles)
-
-
-function edit_set_nROI_CreateFcn(hObject, eventdata, handles)
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
 
 
 function cbtrackGUI_ROI_CloseRequestFcn(hObject, eventdata, handles)

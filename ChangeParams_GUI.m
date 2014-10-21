@@ -1,4 +1,4 @@
-function [isfore_in,cc_ind,flies_ind,trx] = ChangeParams_GUI(im,bgmed,dbkgd,roidata,nflies_per_roi,roiparams,tracking_params)
+function [isfore,cc_ind,flies_ind,trx] = ChangeParams_GUI(im,bgmed,dbkgd,roidata,nflies_per_roi,roiparams,tracking_params)
 % do background subtraction to count flies in each roi
 nrois = roidata.nrois;
 areassample = cell(nrois,1);
@@ -19,7 +19,6 @@ trxcurr = repmat(trxcurr,[1,nrois]);
 
 % threshold
 isfore = dbkgd >= tracking_params.bgthresh;
-isfore_in=isfore; isfore_in(~roidata.inrois_all)=1;
 
 for j = 1:nrois,
     if any(roidata.ignore==j),

@@ -18,11 +18,12 @@ DEBUG=cbparams.track.DEBUG;
 
 %% movie parameters
 out=getappdata(0,'out');
-cbparams.results_movie.tempdatadir=fullfile(out.folder,'temp_results_movie');
 resultsmovie_params = cbparams.results_movie;
 defaulttempdatadir = fullfile(out.folder,'temp_results_movie');
-if ~isfield(resultsmovie_params,'tempdatadir'),
+if ~isfield(resultsmovie_params,'tempdatadir') || isempty(resutlsmovie_params.tempdatadir),
   resultsmovie_params.tempdatadir = defaulttempdatadir;
+  cbparams.results_movie.tempdatadir = defaulttempdatadir;
+  setappdata(0,'cbparams',cbparams)
 elseif isunix
   [status1,res] = unix(sprintf('echo %s',resultsmovie_params.tempdatadir));
   if status1 == 0,
@@ -51,7 +52,11 @@ resultsmoviedata.experiment=experiment;
 [~,basename] = fileparts(expdir);
 moviefile = getappdata(0,'moviefile');
 trxfile = fullfile(out.folder,cbparams.dataloc.trx.filestr);
-avifilestr = sprintf('%s_%s',cbparams.dataloc.resultsavi.filestr,basename);
+if ~isfield(cbparams.dataloc,'resultsavi') || ~isfield(cbparams.dataloc.resultsavi,'filestr') || isempty(cbparams.dataloc.resultsavi.filestr)
+    avifilestr=sprintf('%s_%s','tracking_results_movie',basename);
+else
+    avifilestr = sprintf('%s_%s',cbparams.dataloc.resultsavi.filestr,basename);
+end
 avifile = fullfile(resultsmovie_params.tempdatadir,[avifilestr,'_temp.avi']);
 xvidfile = fullfile(out.folder,[avifilestr,'.avi']);
 

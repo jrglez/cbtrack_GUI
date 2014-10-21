@@ -416,7 +416,7 @@ if strcmp(msg_clear,'All')
     set(handles.pushbutton_accept,'Enable','off')
     set(handles.pushbutton_play,'Enable','off')
     set(handles.slider_frame,'Value',1,'Min',1,'Max',2,'SliderStep',[1/2,10/2],'Enable','off')
-    set(handles.text_info,'String',{['Experiment ',experiment];'Tracking wings: No frames trackedNo frames tracked'})
+    set(handles.text_info,'String',{['Experiment ',experiment];'Tracking wings: No frames tracked'})
     s=sprintf('All wing tracking data cleared at %s.\n',datestr(now,'yyyymmddTHHMMSS')');
     write_log(logfid,getappdata(0,'experiment'),s)
 elseif strcmp(msg_clear,'Current')

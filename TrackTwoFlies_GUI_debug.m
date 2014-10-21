@@ -101,7 +101,7 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
     write_log(logfid,getappdata(0,'experiment'),sprintf('Starting main tracking from frame %i at %s...\n',startframe,datestr(now,'yyyymmddTHHMMSS')));
     if ~params.DEBUG
       setappdata(0,'allow_stop',false)
-      hwait=waitbar(0,{['Experiment ',experiment];['Tracking: frame ',num2str(startframe),'(0 of ',num2str(nframes_track),')']},'CreateCancelBtn','cancel_waitbar');
+      hwait=waitbar(0,{['Experiment ',experiment];['Tracking bodies: frame ',num2str(startframe),'(0 of ',num2str(nframes_track),')']},'CreateCancelBtn','cancel_waitbar');
     end
     for t = startframe:min(params.lastframetrack,nframes),
       if ISPAUSE
@@ -172,13 +172,13 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
             end
           end
         end
-      set(handles.text_info,'String',{['Experiment ',experiment];['Tracking: frame ',num2str(t),' (',num2str(iframe),' of ',num2str(nframes_track),', ',num2str(iframe*100/nframes_track,'%.1f'),'%).']})  
+      set(handles.text_info,'String',{['Experiment ',experiment];['Tracking bodies: frame ',num2str(t),' (',num2str(iframe),' of ',num2str(nframes_track),', ',num2str(iframe*100/nframes_track,'%.1f'),'%).']})  
       else
         if getappdata(0,'iscancel') || getappdata(0,'isskip') || getappdata(0,'isstop')  
           trackdata=[];
           return
         end
-        waitbar(iframe/nframes_track,hwait,{['Experiment ',experiment];['Tracking: frame ',num2str(t),' (',num2str(iframe),' of ',num2str(nframes_track),')']});  
+        waitbar(iframe/nframes_track,hwait,{['Experiment ',experiment];['Tracking bodies: frame ',num2str(t),' (',num2str(iframe),' of ',num2str(nframes_track),')']});  
       end    
 
       if params.DEBUG || mod(t,1) == 0,

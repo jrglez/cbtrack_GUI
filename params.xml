@@ -8,52 +8,20 @@
 		filestr="movie.ufmf"
 		type="data_capture"/>
 	<metadata
-		essential="1"
+		essential="0"
 		filestr="Metadata.xml"
 		type="data_capture"/>
-	<ufmfdiagnostics
+	<main_log
 		essential="0"
-		filestr="ufmf_diagnostics.txt"
-		type="data_capture"/>
-	<ufmf_log
-		essential="0"
-		filestr=""
-		type="data_capture"/>
-	<quickstats
-		essential="0"
-		filestr="QuickStats.txt"
-		type="data_capture"/>
-	<quickstatsimage
-		essential="0"
-		filestr="QuickStats.png"
-		type="data_capture"/>
-	<temperature
-		essential="0"
-		filestr="temperature.txt"
-		type="data_capture"/>
-	<fbdc_params
-		essential="0"
-		filestr="FlyBowlDataCaptureParams_*.txt"
-		type="data_capture"/>
-	<fbdc_log
-		essential="0"
-		filestr=""
-		type="data_capture"/>
-	<success
-		essential="0"
-		filestr="SUCCESS"
-		type="data_capture"/>
-	<aborted
-		essential="-1"
-		filestr="ABORTED"
-		type="data_capture"/>
+		filestr="cblog.txt"
+		type="main"/>
 	<automaticchecksincomingresults
 		essential="0"
 		filestr="automatic_checks_incoming_results.txt"
 		type="auto_checks_incoming"/>
 	<automaticchecks_incoming_log
 		essential="0"
-		filestr=""
+		filestr="cblog.txt"
 		type="auto_checks_incoming"/>
 	<bgmat
 		essential="1"
@@ -65,7 +33,7 @@
 		type="bg"/>
 	<bg_log
 		essential="0"
-		filestr=""
+		filestr="cblog.txt"
 		type="bg"/>
 	<roidatamat
 		essential="1"
@@ -77,7 +45,7 @@
 		type="detect_rois"/>
 	<roi_log
 		essential="0"
-		filestr=""
+		filestr="cblog.txt"
 		type="detect_rois"/>
 	<trx
 		essential="1"
@@ -89,7 +57,7 @@
 		type="track"/>
 	<track_log
 		essential="0"
-		filestr=""
+		filestr="cblog.txt"
 		type="track"/>
 	<perframedir
 		essential="1"
@@ -97,13 +65,13 @@
 		type="compute_perframe_features"/>
 	<perframefeature_log
 		essential="0"
-		filestr=""
+		filestr="cblog.txt"
 		type="compute_perframe_features"/>
 	<perframefeaturedatamat
 		filestr="pffdata.mat"
 		type="compute_perframe_features"/>
 	<resultsavi
-		essential="1"
+		essential="0"
 		filestr="tracking_results_movie"
 		searchstr="tracking_results_movie*.avi"
 		type="results_movie"/>
@@ -113,7 +81,7 @@
 		type="results_movie"/>
 	<resultsmovie_log
 		essential="0"
-		filestr=""
+		filestr="cblog.txt"
 		type="results_movie"/>
 	<automaticcheckscompleteresults
 		essential="0"
@@ -121,68 +89,43 @@
 		type="auto_checks_complete"/>
 	<automaticchecks_complete_log
 		essential="0"
-		filestr=""
+		filestr="cblog.txt"
 		type="auto_checks_complete"/>
 </dataloc>
 
 <auto_checks_incoming
+	doAcI="1"
 	max_seconds_fliesloaded="Inf"
-	max_seconds_shiftflytemp="Inf"
-	max_temp="Inf"
-	max_tempdiff="Inf"
 	min_seconds_fliesloaded="0"
 	min_ufmf_nframes="5000"
-	required_metadata_fields="flag_aborted,flag_redo,seconds_fliesloaded,screen_type,screen_reason"
-	doAcI="1"/>
+	required_metadata_fields="flag_aborted,flag_redo,seconds_fliesloaded,screen_type,screen_reason"/>
 
 <detect_rois
 	baserotateby="0"
 	cannysigma="3"
 	cannythresh="0.03,0.06"
+	dosetROI="0"
 	maxdcenter="10"
 	maxdradius="10"
-	meanroiradius="112.961"
+	meanroiradius="109.583"
 	nbinscenter="21"
 	nbinsradius="21"
-	nflies_per_roi="2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2"
+	nflies_per_roi=""
 	nframessample="100"
-	roidiameter_mm="30.3">
+	roidiameter_mm="1">
 	<roimus
-		x="125.041,391.472,661.656,930.372,253.321,523.514,793.46,1061.87,117.242,385.071,656.151,925.965,248.949,518.014,787.857,1058.46"
-		y="117.677,118.321,120.038,123.27,350.046,351.94,354.819,357.318,582.058,585.142,588.244,589.737,817.223,820.385,821.952,821.331"/>
-	<roirows
-		a="1,2,3,4"
-		b="8,7,6,5"
-		c="9,10,11,12"
-		d="16,15,14,13"/>
-	<baserotatebyperrigbowl
-		rig1bowlA="0"
-		rig1bowlB="0"
-		rig1bowlC="0"
-		rig1bowlD="0"
-		rig2bowlA="0"
-		rig2bowlB="0"
-		rig2bowlC="0"
-		rig2bowlD="0"/>
-	<ignorebowls
-		rig1bowlA=""
-		rig1bowlB=""
-		rig1bowlC=""
-		rig1bowlD=""
-		rig2bowlA=""
-		rig2bowlB=""
-		rig2bowlC=""
-		rig2bowlD=""/>
-	dosetROI="0">
+		x=""
+		y=""/>
 </detect_rois>
 
 <track
-	DEBUG="1"
+	DEBUG="0"
 	assignidsby="size"
+	bg_firstframe="1"
 	bg_lastframe="1e+08"
 	bg_nframes="100"
 	bgmode="LIGHTBKGD"
-	bgthresh="98.5203"
+	bgthresh="110"
 	bgthresh_low="90"
 	choose_orientations_max_ecc_confident="0.5"
 	choose_orientations_max_velocity_angle_weight="0.18"
@@ -192,6 +135,9 @@
 	choose_orientations_weight_theta="0.82"
 	computeBG="1"
 	dosave="1"
+	dosetBG="0"
+	dosettrack="0"
+	dotrack="1"
 	dotrackwings="1"
 	err_dampen_pos="0.1"
 	err_dampen_priors="0.1"
@@ -204,18 +150,16 @@
 	gmmem_min_obsprior="0.2"
 	gmmem_nrestarts_firstframe="10"
 	gmmem_precision="0.01"
-	lastframetrack="100"
+	ignorebowls=""
+	lastframetrack="Inf"
 	minccarea="20"
 	typebigval="F"
 	typefield="sex"
 	typesmallval="M"
-	usemediandt="1"
-	dosetBG="0"
-	dosettrack="0"
-	dotrack="1"/>
+	usemediandt="1"/>
 
 <wingtrack
-	max_wing_angle_otherside="0.174533"
+	dosetwingtrack="0"
 	max_wingcc_dist="2.35619"
 	max_wingpx_angle="2.35619"
 	min_nonzero_wing_angle="0.174533"
@@ -227,42 +171,35 @@
 	nbins_dthetawing="50"
 	radius_dilate_body="1"
 	radius_open_wing="1"
-	wing_fit_method="peaks"
 	wing_frac_filter="0.25,0.5,0.25"
 	wing_min_peak_dist_bins="3"
 	wing_min_peak_threshold_frac="0"
-	wing_min_prior="0.25"
 	wing_peak_min_frac_factor="2"
-	wing_radius_quadfit_bins="1"
-	dosetwingtrack="0"/>
+	wing_radius_quadfit_bins="1"/>
 
 <compute_perframe_features
-	areasmooth_filterorder="1"
-	areasmooth_maxerrx="0.279077"
-	areasmooth_maxfreq="0.005"
-	areasmooth_outlierprctile="0.1"
 	dopff="1"
 	fov="3.14159"
 	max_dnose2ell_anglerange="127"
 	nbodylengths_near="2.5"
-	perframefns="a_mm,absanglefrom1to2_nose2ell,absdtheta,absdv_cor,absphidiff_anglesub,absphidiff_nose2ell,absthetadiff_anglesub,absthetadiff_nose2ell,angle_biggest_wing,angle_smallest_wing,angle2wall,anglefrom1to2_anglesub,anglefrom1to2_nose2ell,angleonclosestfly,anglesub,area,area_inmost_wing,area_outmost_wing,arena_angle,arena_r,b_mm,closestfly_anglesub,closestfly_center,closestfly_ell2nose,closestfly_nose2ell,corfrac_maj,corfrac_min,da,dangle_biggest_wing,dangle_smallest_wing,dangle2wall,danglesub,darea,darea_inmost_wing,darea_outmost_wing,db,dcenter,ddcenter,ddist2wall,decc,dell2nose,dist2wall,dmax_wing_angle,dmax_wing_area,dmin_wing_angle,dmin_wing_area,dnose2ell,dnose2ell_angle_30tomin30,dnose2ell_angle_min20to20,dnose2ell_angle_min30to30,dnose2tail,dnwingsdetected,dphi,dtheta,du_cor,du_ctr,du_tail,dv_cor,dv_ctr,dv_tail,dwing_angle_diff,dwing_angle_imbalance,ecc,flipdv_cor,magveldiff_anglesub,magveldiff_nose2ell,max_absdwing_angle,max_absdwing_area,max_dwing_angle_in,max_dwing_angle_out,max_wing_angle,max_wing_area,mean_wing_angle,mean_wing_area,min_absdwing_angle,min_absdwing_area,min_dwing_angle_in,min_dwing_angle_out,min_wing_angle,min_wing_area,nflies_close,nwingsdetected,phi,phisideways,velmag,velmag_ctr,velmag_nose,velmag_tail,veltoward_anglesub,veltoward_nose2ell,wing_angle_diff,wing_angle_imbalance,yaw"
-	thetafil="0.0625,0.25,0.375,0.25,0.0625"/>
+	perframefns=""/>
 
 <results_movie
 	dovideo="1"
 	endframes="-1,-1,1"
-	figpos="1,1,1806,1024"
+	figpos="1,1,1536,1024"
 	firstframes="0,0.5,-1"
 	fps="30"
 	middleframes="-1,0.5,-1"
 	nframes="500,500,500"
-	nzoomc="4"
-	nzoomr="8"
+	nzoomc="3"
+	nzoomr="6"
 	scalefactor="3"
 	taillength="25"
-	tempdatadir="/groups/branson/bransonlab/projects/CourtshipBowls/TempData_CourtshipBowlMakeResultsMovie"/>
+	tempdatadir=""/>
 
 <auto_checks_complete
+	doAcC="0"
 	max_nrois_0flies="Inf"
 	max_nrois_1fly="Inf"
 	max_nrois_2flies="16"
@@ -270,28 +207,6 @@
 	min_nrois="16"
 	min_nrois_0flies="0"
 	min_nrois_1fly="0"
-	min_nrois_2flies="14"
-	doAcC="1"/>
-
-<wing_track
-	max_wing_angle_otherside="0.174533"
-	max_wingcc_dist="2.35619"
-	max_wingpx_angle="2.35619"
-	min_nonzero_wing_angle="0.174533"
-	min_single_wing_area="10"
-	min_wingcc_area="3"
-	mindbody="100"
-	mindwing_high="50"
-	mindwing_low="30"
-	nbins_dthetawing="50"
-	radius_dilate_body="1"
-	radius_open_wing="1"
-	wing_fit_method="peaks"
-	wing_frac_filter="0.25,0.5,0.25"
-	wing_min_peak_dist_bins="3"
-	wing_min_peak_threshold_frac="0"
-	wing_min_prior="0.25"
-	wing_peak_min_frac_factor="2"
-	wing_radius_quadfit_bins="1"/>
+	min_nrois_2flies="14"/>
 
 </params>

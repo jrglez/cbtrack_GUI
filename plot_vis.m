@@ -17,7 +17,11 @@ switch visdata.plot
             delete(visdata.hell(ishandle(visdata.hell)))
         end
         visdata.hell=[];
-        set(handles.BG_img,'CData',visdata.isfore{f});
+        im=visdata.frames{f};
+        im_r=im; im_r(visdata.isfore{f})=min(255,im_r(visdata.isfore{f})*3);
+        im=repmat(im,1,1,3);
+        im(:,:,1)=min(255,im_r);
+        set(handles.BG_img,'CData',im);
     case 4
         if isfield(visdata,'hell') 
             delete(visdata.hell(ishandle(visdata.hell)))

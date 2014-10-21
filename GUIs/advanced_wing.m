@@ -22,7 +22,7 @@ function varargout = advanced_wing(varargin)
 
 % Edit the above text to modify the response to help advanced_wing
 
-% Last Modified by GUIDE v2.5 11-Jun-2014 09:16:39
+% Last Modified by GUIDE v2.5 15-Oct-2014 19:32:25
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -285,4 +285,3 @@ end
 set(handles.pushbutton_apply,'UserData',debugdata)
 
 uiresume(handles.figure1);
-

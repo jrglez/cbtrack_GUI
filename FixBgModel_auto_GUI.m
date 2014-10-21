@@ -46,3 +46,4 @@ while true,
   end    
   
 end
+delete(hroi)

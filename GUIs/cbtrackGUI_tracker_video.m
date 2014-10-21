@@ -113,7 +113,7 @@ set(handles.text_info,'String',{['Experiment ', experiment];'No frames tracked'}
 % Set slider
 set(handles.slider_frame,'Value',1,'Min',1,'Max',2,'Enable','off')
 fcn_slider_frame = get(handles.slider_frame,'Callback');
-hlisten_frame=addlistener(handles.slider_frame,'ContinuousValueChange',fcn_slider_frame); %#ok<NASGU>
+hlisten_frame=addlistener(handles.slider_frame,'ContinuousValueChange',fcn_slider_frame);
 
 if isappdata(0,'trackdata')
     trackdata=getappdata(0,'trackdata');
@@ -264,7 +264,7 @@ msg_cancel=myquestdlg(14,'Helvetica','Cancel current project? All setup options 
 if isempty(msg_cancel)
     msg_cancel='No';
 end
-fid_video=track.fid; %#ok<NASGU>
+fid_video=track.fid; 
 if strcmp('Yes',msg_cancel)
     setappdata(0,'iscancel',true)
     setappdata(0,'isskip',true)
@@ -289,7 +289,9 @@ elseif ISPAUSE
     set(handles.pushbutton_play,'Enable','off')
     set(handles.pushbutton_skip,'Enable','off');
     set(handles.slider_frame,'Enable','off')
+    
     CourtshipBowlTrack_GUI_debug(handles);
+    
     set(handles.pushbutton_save,'Enable','on')
     set(handles.pushbutton_clear,'Enable','on')
     set(handles.pushbutton_accept,'Enable','on')
@@ -422,7 +424,7 @@ if strcmp(msg_clear,'All')
 
      % Set slider
     set(handles.slider_frame,'Value',1,'Min',1,'Max',2,'SliderStep',[1/2,10/2])
-    set(handles.text_info,'String',{['Experiment ', experiment];'Tracking flies: No frames tracked'})
+    set(handles.text_info,'String',{['Experiment ', experiment];'Tracking bodies: No frames tracked'})
     s=sprintf('All tracking data cleared at %s.\n',datestr(now,'yyyymmddTHHMMSS')');
     write_log(logfid,getappdata(0,'experiment'),s)
 elseif strcmp(msg_clear,'Current')

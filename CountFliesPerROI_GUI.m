@@ -1,4 +1,4 @@
-function [nflies_per_roi,isfore_in,cc_ind,flies_ind,trx] = CountFliesPerROI_GUI(dbkgd,roidata,roiparams,tracking_params,dosetwingtrack)
+function [nflies_per_roi,isfore,cc_ind,flies_ind,trx] = CountFliesPerROI_GUI(dbkgd,roidata,roiparams,tracking_params,dosetwingtrack)
 
 nrois = roidata.nrois;
 
@@ -10,7 +10,6 @@ write_log(logfid,experiment,s)
 % do background subtraction to count flies in each roi
 areassample = cell(nrois,roiparams.nframessample);
 isfore=cell(1,roiparams.nframessample);
-isfore_in=cell(1,roiparams.nframessample);
 cc_ind=cell(nrois,roiparams.nframessample);
 flies_ind=cell(nrois,roiparams.nframessample);
 hwait=waitbar(0,{['Experiment ',experiment];['Counting flies: Analazing frame 0 of ', num2str(roiparams.nframessample)]},'CreateCancelBtn','cancel_waitbar');
@@ -18,7 +17,7 @@ hwait=waitbar(0,{['Experiment ',experiment];['Counting flies: Analazing frame 0 
 for i = 1:roiparams.nframessample,
   if getappdata(0,'iscancel') || getappdata(0,'isskip') || getappdata(0,'isstop')  
     nflies_per_roi = [];
-    isfore_in = [];
+    isfore = [];
     cc_ind = [];
     flies_ind = [];
     trx = [];
@@ -27,7 +26,6 @@ for i = 1:roiparams.nframessample,
   waitbar(i/roiparams.nframessample,hwait,{['Experiment ',experiment];['Counting flies: Analazing frame ',num2str(i),' of ', num2str(roiparams.nframessample)]});  
   % threshold
   isfore{i} = dbkgd{i} >= tracking_params.bgthresh;
-  isfore_in{i}=isfore{i}; isfore_in{i}(~roidata.inrois_all)=1;
 
   for j = 1:nrois,
     if any(roidata.ignore==j),
@@ -76,7 +74,7 @@ if dosetwingtrack
           return
         end
         waitbar(i/roiparams.nframessample,hwait,{['Experiment ',experiment];['Computing positions: Analazing frame ',num2str(i),' of ', num2str(roiparams.nframessample)]});
-        trx(:,i)=fit_to_ellipse_GUI(roidata,nflies_per_roi, dbkgd{i}, isfore_in{i},tracking_params);
+        trx(:,i)=fit_to_ellipse_GUI(roidata,nflies_per_roi, dbkgd{i}, isfore{i},tracking_params);
     end
     delete (hwait);
 end

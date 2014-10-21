@@ -101,6 +101,7 @@ while true,
   end    
   
 end
+delete(hroi)
 
 if fidfix > 0,
   fclose(fidfix);

@@ -39,7 +39,10 @@ if debugdata.DEBUG && debugdata.vis==6,
 end
 
     function DebugPlot_BackSub_IsX(X)
-      set(debugdata.him,'CData',xor(X,~isarena)*255);
+      imtmp=uint8(debugdata.im);
+      imtmp_r=imtmp; imtmp_r(X)=min(255,imtmp_r(X)*3);
+      imtmp=repmat(imtmp,1,1,3); imtmp(:,:,1)=imtmp_r;
+      set(debugdata.him,'CData',imtmp);
       if isfield(debugdata,'htext')
           delete(debugdata.htext(ishandle(debugdata.htext)));
       end
