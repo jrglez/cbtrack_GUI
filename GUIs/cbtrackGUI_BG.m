@@ -180,6 +180,7 @@ set(handles.axes_BG,'XTick',[],'YTick',[])
 axis equal
 
 set(handles.text_exp,'FontSize',24,'HorizontalAlignment','center','units','pixels','FontUnits','pixels','String',experiment);
+goodfs(handles.text_exp,experiment);
 
 % Update handles structure
 guidata(hObject, handles);

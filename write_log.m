@@ -14,6 +14,7 @@ if viewlog
     end
 
     set(h_log(1),'String',['Current experiment: ',s_exp])
+    goodfs(h_log(1),['Current experiment: ',s_exp]);
 
     curr_s=get(h_log(2),'String');
     if isempty(curr_s)

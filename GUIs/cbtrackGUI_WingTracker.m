@@ -89,6 +89,7 @@ if ~cbparams.track.dosettrack
 end
 
 set(handles.text_exp,'FontSize',24,'HorizontalAlignment','center','units','pixels','FontUnits','pixels','String',experiment);
+goodfs(handles.text_exp,experiment);
 
 set(handles.edit_set_Hbgthresh,'String',num2str(wing_params.mindwing_high));
 set(handles.slider_set_Hbgthresh,'Value',wing_params.mindwing_high,'Min',0,'Max',255);

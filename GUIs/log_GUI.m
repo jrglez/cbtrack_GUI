@@ -22,7 +22,7 @@ function varargout = log_GUI(varargin)
 
 % Edit the above text to modify the response to help log_GUI
 
-% Last Modified by GUIDE v2.5 18-Jun-2014 09:35:40
+% Last Modified by GUIDE v2.5 21-Oct-2014 17:18:04
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -79,6 +79,3 @@ end
 
 function figure1_CloseRequestFcn(hObject, eventdata, handles)
 delete(hObject);
-
-
-

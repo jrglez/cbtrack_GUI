@@ -61,7 +61,10 @@ uipos_y=linspace(175,75,nr);
 [uipos_X,uipos_Y]=meshgrid(uipos_x,uipos_y);
 handles.checkbox_all=NaN(size(pff_id));
 for i=1:length(pff_id)
-    handles.checkbox_all(i)=uicontrol('Style','checkbox','units','pixels','Position',[uipos_X(i),uipos_Y(i),200,25],'String',pff_id(i).name,'FontSize',12,'TooltipString',pff_id(i).description,'Value',pff_id(i).on);
+        handles.checkbox_all(i)=uicontrol('Style','checkbox','units','pixels',...
+        'Position',[uipos_X(i),uipos_Y(i),200,25],'String',pff_app(i).name,...
+        'FontName','Arial','FontSize',12,'TooltipString',pff_app(i).description,...
+        'Value',pff_app(i).on);
 end
 
 if all([pff_all(isid).on])

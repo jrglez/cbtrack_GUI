@@ -83,6 +83,8 @@ manual.pos_h=cell(0);
 manual.on=0;
 manual.delete=0;
 set(handles.text_exp,'FontSize',24,'HorizontalAlignment','center','units','pixels','FontUnits','pixels','String',experiment);
+goodfs(handles.text_exp,experiment);
+
 list.text=cell(0); %list of selected points to display at listbox_manual
 list.ind=cell(0);
 list.ind_mat=[]; %(ROI,point) index matrix
