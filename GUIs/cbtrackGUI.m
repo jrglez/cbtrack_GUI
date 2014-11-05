@@ -246,7 +246,8 @@ for i=1:numel(expdirs)
                         end
                     end
                 case 'track'
-                    if expparams{i}.track.DEBUG
+                    cbparams_temp=getappdata(0,'cbparams');
+                    if cbparams_temp.track.DEBUG
                         P_stage=getappdata(0,'P_stage');
                         if strcmp(P_stage,'track1');
                             cbtrackGUI_tracker_video

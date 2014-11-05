@@ -419,7 +419,7 @@ hold on;
 hax = gca;
 set(hax,'position',[0,0,1,1]);
 axis off;
-isdisplay = ispc || ~strcmpi(get(1,'XDisplay'),'nodisplay');
+isdisplay = ispc;% || ~strcmpi(get(1,'XDisplay'),'nodisplay');
 
 % corners of zoom boxes in plotted image coords
 if nzoom~=0

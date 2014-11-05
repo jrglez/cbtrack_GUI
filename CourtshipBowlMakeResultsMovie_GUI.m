@@ -20,7 +20,7 @@ DEBUG=cbparams.track.DEBUG;
 out=getappdata(0,'out');
 resultsmovie_params = cbparams.results_movie;
 defaulttempdatadir = fullfile(out.folder,'temp_results_movie');
-if ~isfield(resultsmovie_params,'tempdatadir') || isempty(resutlsmovie_params.tempdatadir),
+if ~isfield(resultsmovie_params,'tempdatadir') || isempty(resultsmovie_params.tempdatadir),
   resultsmovie_params.tempdatadir = defaulttempdatadir;
   cbparams.results_movie.tempdatadir = defaulttempdatadir;
   setappdata(0,'cbparams',cbparams)
