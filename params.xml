@@ -97,7 +97,7 @@
 	doAcI="1"
 	max_seconds_fliesloaded="Inf"
 	min_seconds_fliesloaded="0"
-	min_ufmf_nframes="5000"
+	min_ufmf_nframes="1"
 	required_metadata_fields="flag_aborted,flag_redo,seconds_fliesloaded,screen_type,screen_reason"/>
 
 <detect_rois
@@ -205,11 +205,11 @@
 	doAcC="0"
 	max_nrois_0flies="Inf"
 	max_nrois_1fly="Inf"
-	max_nrois_2flies="16"
+	max_nrois_2flies="Inf"
 	max_nrois_moreflies="0"
-	min_nrois="16"
+	min_nrois="1"
 	min_nrois_0flies="0"
 	min_nrois_1fly="0"
-	min_nrois_2flies="14"/>
+	min_nrois_2flies="1"/>
 
 </params>
