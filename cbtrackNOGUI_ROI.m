@@ -50,7 +50,7 @@ else
     end
 end
 if isempty(params.nflies_per_roi) || numel(params.nflies_per_roi)~=roidata.nrois
-    params.nflies_per_roi=2*roidata.nrois;
+    params.nflies_per_roi=2*ones(1,roidata.nrois);
     cbparams.detect_rois=params;
 end
 roidata.isnew=true;

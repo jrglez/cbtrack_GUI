@@ -22,7 +22,7 @@ function cbtrackGUI_BG(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_BG
 
-% Last Modified by GUIDE v2.5 03-Oct-2014 17:49:40
+% Last Modified by GUIDE v2.5 14-Nov-2014 21:33:14
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -102,15 +102,38 @@ else
             if logfid > 1,
               fclose(logfid);
             end
-            waitfor(mymsgbox(50,190,14,'Helvetica',{['File ', loadfile,' could not be loaded.'];'Trying to compute the background automatically'},'Warning','warn','modal'))
-            setappdata(0,'allow_stop',false)
-            BG.data=cbtrackGUI_EstimateBG(BG.expdir,BG.moviefile,tracking_params,'analysis_protocol',BG.analysis_protocol);
-            if getappdata(0,'iscancel') || getappdata(0,'isskip')
-                uiresume(handles.cbtrackGUI_BG)
-                if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
-                    delete(handles.cbtrackGUI_BG)
+            if tracking_params.computeBG
+                waitfor(mymsgbox(50,190,14,'Helvetica',{['File ', loadfile,' could not be loaded.'];'Trying to compute the background automatically'},'Warning','warn','modal'))
+                setappdata(0,'allow_stop',false)
+                BG.data=cbtrackGUI_EstimateBG(BG.expdir,BG.moviefile,tracking_params,'analysis_protocol',BG.analysis_protocol);
+                if getappdata(0,'iscancel') || getappdata(0,'isskip')
+                    uiresume(handles.cbtrackGUI_BG)
+                    if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
+                        delete(handles.cbtrackGUI_BG)
+                    end
+                    return
                 end
-                return
+            else
+                [readframe,~,fid,~] = get_readframe_fcn(getappdata(0,'moviefile')); %#ok<*NASGU>
+                im = readframe(1);
+                BG.data.cbestimatebg_version='Not computed';
+                BG.data.cbestimatebg_timestamp=datestr(now,TimestampFormat);
+                BG.data.analysis_protocol=getappdata(0,'analysis_protocol');
+                BG.data.bgmed=255*ones(size(im));
+                BG.data.bgmed=any_class(BG.data.bgmed,class(im));
+                BG.data.isnew=true;
+                if fid > 1,
+                    fclose(fid);
+                end
+                set(handles.text_Nframes,'Enable','off')
+                set(handles.edit_Nframes,'Enable','off')
+                set(handles.text_Lframe,'Enable','off')
+                set(handles.edit_Lframe,'Enable','off')
+                set(handles.pushbutton_recalc,'Enable','off')
+                set(handles.pushbutton_manual,'Enable','off')
+                set(handles.pushbutton_auto,'Enable','off')
+                set(handles.text_load,'Enable','off')
+                set(handles.pushbutton_load,'Enable','off')
             end
         end            
     elseif tracking_params.computeBG
@@ -625,7 +648,6 @@ if isfield(handles,'cbtrackGUI_BG') && ishandle(handles.cbtrackGUI_BG)
 end
 
 
-
 function edit_Fframe_Callback(hObject, eventdata, handles)
 
 
@@ -633,3 +655,31 @@ function edit_Fframe_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% function pushbutton_default_Callback(hObject, eventdata, handles)
+% expdir=getappdata(0,'expdir');
+% paramsfile=fullfile(expdir,'params.xml');
+% defaultparams=ReadXMLParams(paramsfile);
+% 
+% tracking_params=get(handles.pushbutton_recalc,'UserData');
+% tracking_params.bg_nframes=defaultparams.track.bg_nframes;
+% tracking_params.bg_firstframe=defaultparams.track.bg_firstframe;
+% tracking_params.bg_firstframe=defaultparams.track.bg_firstframe;
+% tracking_params.bg_lastframe=defaultparams.track.bg_lastframe;
+% tracking_params.computeBG=defaultparams.track.computeBG;
+% tracking_params.bgmode=defaultparams.track.bgmode;
+% 
+% set(handles.edit_Nframes,'String',num2str(tracking_params.bg_nframes))
+% set(handles.edit_Lframe,'String',num2str(tracking_params.bg_lastframe))
+% set(handles.edit_Fframe,'String',num2str(tracking_params.bg_firstframe))
+% set(handles.checkbox_BG,'Value',tracking_params.computeBG)
+% bgmodes={'LIGHTBKGD';'DARKBKGD';'OTHERBKGD'};
+% bgmode=find(strcmp(tracking_params.bgmode,bgmodes));
+% if isempty(bgmode)
+%     bgmode=1;
+% end
+% set(handles.popupmenu_BGtype,'Value',bgmode)
+% 
+% set(handles.pushbutton_recalc,'UserData',tracking_params)
+

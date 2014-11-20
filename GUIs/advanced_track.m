@@ -22,7 +22,7 @@ function varargout = advanced_track(varargin)
 
 % Edit the above text to modify the response to help advanced_track
 
-% Last Modified by GUIDE v2.5 14-Oct-2014 18:00:53
+% Last Modified by GUIDE v2.5 18-Nov-2014 10:21:21
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -275,3 +275,26 @@ function edit_bgthresh_low_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% function pushbutton_default_Callback(hObject, eventdata, handles)
+% expdir=getappdata(0,'expdir');
+% paramsfile=fullfile(expdir,'params.xml');
+% defaultparams=ReadXMLParams(paramsfile);
+% 
+% temp_Tparams=get(handles.figure1,'UserData');
+% params_fields=fieldnames(temp_Tparams);
+% handles_edits=findobj(struct2array(handles),'Style','edit');
+% handles_edits=unique(handles_edits);
+% tags_edits=get(handles_edits,'Tag');
+% tags_edits=cellfun(@(x) x(6:end),tags_edits,'UniformOutput',false);
+% common=intersect(tags_edits,params_fields);
+% edits_fields=cellfun(@(x) ['edit_',x],common,'UniformOutput',false);
+% for i=1:numel(common)
+%     temp_Tparams.(common{i})=defaultparams.track.(common{i});
+%     set(handles.(edits_fields{i}),'String',num2str(temp_Tparams.(common{i})));
+% end
+% 
+% set(handles.checkbox_usemediandt,'Value',temp_Tparams.usemediandt)
+% 
+% set(handles.figure1,'UserData',temp_Tparams)

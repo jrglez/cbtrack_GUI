@@ -290,6 +290,12 @@ for i=1:numel(uiend_name)
         'Enable',uiend_enable{i},'Callback',uiend_callback{i});
 end
 
+% handles.pusbutton_default=uicontrol('Style','pushbutton','Units','pixels',...
+%     'String','Default parameters','HorizontalAlignment','center',...
+%     'Position',[10 10 150 34],'FontUnits','pixels','FontName','Arial',...
+%     'FontSize',14,'FontWeight','bold','Enable','on',...
+%     'Callback',@pushbutton_default_Callback);
+ 
 uiset_name={'checkbox_dovideo';'text_FPS';'edit_FPS';'checkbox_nzoom';...
     'text_nzoom';'text_nr';'edit_nr';'text_nc';'edit_nc';'text_zoom';...
     'slider_zoom';'edit_zoom';'text_tailL';'edit_tailL';'text_nframes';...
@@ -309,8 +315,8 @@ uiset_string={'Make resutls video';'Frames per second';num2str(movie_params.fps)
     'Middle';num2str(movie_params.nframes(2));'End';num2str(movie_params.nframes(3));...
     'Video size';'Width';num2str(set_vidw);'Height';num2str(set_vidh);...
     'Manual fly selection';'Start';'Back';'Cancel'};
-uiset_value={movie_params.dovideo;[];[];1;[];[];[];[];[];[];scalefactor;[];[];...
-    [];[];[];[];[];[];[];[];[];[];[];[];[];[];[];[];[]};
+uiset_value={movie_params.dovideo;[];[];nzoom~=0;[];[];[];[];[];[];...
+    scalefactor;[];[];[];[];[];[];[];[];[];[];[];[];[];[];[];[];[];[];[]};
 uiset_x=[15;25;175;15;25;30;55;130;155;25;25;175;25;175;25;30;30;95;95;160;...
     160;25;30;55;130;155;25;25;90;155];
 uiset_y=guih-ymar2-[35;70;65;110;145;165;185;165;185;230;255;225;295;290;...
@@ -373,10 +379,8 @@ handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
 
-if nzoom~=0
-    set(handles.slider_zoom,'Min',1e-6,'Max',max_scalefactor+1.1e-6)
-else
-    set(handles.checkbox_nzoom,'Value',false)
+set(handles.slider_zoom,'Min',1e-6,'Max',max_scalefactor+1.1e-6)
+if nzoom==0
     checkbox_nzoom_Callback(handles.checkbox_nzoom, eventdata);
 end
 fcn_slider_zoom= get(handles.slider_zoom,'Callback');
@@ -543,7 +547,6 @@ end
 set(handles.text_resc,'String',resc_s);
 
 
-
 function edit_vidh_Callback(hObject, eventdata)
 handles=guidata(hObject);
 movie_params=get(handles.panel_set,'UserData');
@@ -570,7 +573,6 @@ axesh=axesh*resc;
 axesx=xmar1;
 axesy=ymar1+(maxaxesh-axesh)/2;
 
-set(handles.figure1,'Position',[guix,guiy,guiw,guih]);
 set(handles.axes_vid,'Position',[axesx,axesy,axesw,axesh]);
 axis(handles.axes_vid,'equal');
 set(hObject,'String',num2str(set_vidh,'%i'))
@@ -580,7 +582,6 @@ else
     resc_s={''};
 end  
 set(handles.text_resc,'String',resc_s);
-
 
 
 function checkbox_dovideo_Callback(hObject, eventdata)
@@ -862,7 +863,7 @@ guidata(hObject, handles);
 
 movie_params.scalefactor=scalefactor;
 movie_params.nzoomr=nzoomr;
-movie_params.nzoomr=nzoomc;
+movie_params.nzoomc=nzoomc;
 vid.zoomflies=zoomflies;
 vid.rowszoom=rowszoom;
 vid.boxradius=boxradius;
@@ -872,3 +873,9 @@ vid.x0=x0;
 vid.y0=y0;
 set(handles.panel_set,'UserData',movie_params);
 set(handles.axes_vid,'UserData',vid);
+
+
+% function pushbutton_default_Callback(hObject, eventdata)
+% handles=guidata(hObject);
+% 
+% video_params_OpeningFcn(handles.figure1, eventdata, handles, [])

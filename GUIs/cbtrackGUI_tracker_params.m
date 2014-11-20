@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_tracker_params(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_tracker_params
 
-% Last Modified by GUIDE v2.5 28-May-2014 13:39:55
+% Last Modified by GUIDE v2.5 11-Nov-2014 11:53:37
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;

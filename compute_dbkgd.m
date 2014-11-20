@@ -1,6 +1,6 @@
 function [im,dbkgd]=compute_dbkgd(readframe,nframes,nframessample,tracking_params,bgmed,inrois_all)
 experiment=getappdata(0,'experiment');
-framessample = round(linspace(tracking_params.bg_firstframe,min(nframes,tracking_params.bg_lastframe),nframessample));
+framessample = round(linspace(tracking_params.count_firstframe,min(nframes,tracking_params.count_lastframe),nframessample));
 im=cell(1,nframessample);
 dbkgd=cell(1,nframessample);
 

@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_ROI(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_ROI_temp
 
-% Last Modified by GUIDE v2.5 16-Jun-2014 08:30:43
+% Last Modified by GUIDE v2.5 18-Nov-2014 17:20:02
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -914,7 +914,6 @@ if strcmp('Yes',msg_clear)
 end
 
 
-
 function edit_set_std_Callback(hObject, eventdata, handles)
 
 
@@ -1099,3 +1098,28 @@ uiresume(handles.cbtrackGUI_ROI)
 if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
+
+
+% function pushbutton_default_Callback(hObject, eventdata, handles)
+% expdir=getappdata(0,'expdir');
+% paramsfile=fullfile(expdir,'params.xml');
+% defaultparams=ReadXMLParams(paramsfile);
+% 
+% params=get(handles.uipanel_settings,'Userdata');
+% params.roidiameter_mm=defaultparams.detect_rois.roidiameter_mm;
+% params.baserotateby=defaultparams.detect_rois.baserotateby;
+% params.cannythresh=defaultparams.detect_rois.cannythresh;
+% params.cannysigma=defaultparams.detect_rois.cannysigma;
+% params.maxdcenter=defaultparams.detect_rois.maxdcenter;
+% params.maxdradius=defaultparams.detect_rois.maxdradius;
+% params.nbinscenter=defaultparams.detect_rois.nbinscenter;
+% params.nbinsradius=defaultparams.detect_rois.nbinsradius;
+% params.meanroiradius=defaultparams.detect_rois.meanroiradius;
+% 
+% set(handles.edit_set_ROId,'String', num2str(params.roidiameter_mm))
+% set(handles.edit_set_rot,'String', num2str(params.baserotateby))
+% set(handles.edit_set_thres1,'String', num2str(params.cannythresh(1)))
+% set(handles.edit_set_thres2,'String', num2str(params.cannythresh(2)))
+% set(handles.edit_set_std,'String', num2str(params.cannysigma))
+% 
+% set(handles.uipanel_settings,'Userdata',params)

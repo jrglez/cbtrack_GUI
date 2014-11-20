@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_WingTracker(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_ROI_temp
 
-% Last Modified by GUIDE v2.5 11-Jun-2014 18:44:47
+% Last Modified by GUIDE v2.5 18-Nov-2014 17:17:49
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -880,3 +880,10 @@ uiresume(handles.cbtrackGUI_ROI)
 if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
+
+
+% function pushbutton_Callback(hObject, eventdata, handles)
+% debugdata=get(handles.axes_wingtracker,'UserData');
+% debugdata.isnew=false;
+% set(handles.axes_wingtracker,'UserData',debugdata);
+% cbtrackGUI_WingTracker_OpeningFcn(handles.cbtracGUI_ROI, eventdata, handles, [])

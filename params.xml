@@ -113,7 +113,7 @@
 	nbinsradius="21"
 	nflies_per_roi=""
 	nframessample="100"
-	roidiameter_mm="1">
+	roidiameter_mm="2">
 	<roimus
 		x=""
 		y=""/>
@@ -135,6 +135,8 @@
 	choose_orientations_velocity_angle_weight="0.03"
 	choose_orientations_weight_theta="0.82"
 	computeBG="1"
+	count_firstframe="1"
+	count_lastframe="1e+08"
 	dosave="1"
 	dosetBG="0"
 	dosettrack="0"
@@ -151,6 +153,7 @@
 	gmmem_min_obsprior="0.2"
 	gmmem_nrestarts_firstframe="10"
 	gmmem_precision="0.01"
+	ignorebowls=""
 	lastframetrack="Inf"
 	minccarea="20"
 	typebigval="F"
