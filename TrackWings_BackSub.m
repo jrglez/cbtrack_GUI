@@ -41,7 +41,7 @@ end
     function DebugPlot_BackSub_IsX(X)
       imtmp=uint8(debugdata.im);
       imtmp_r=imtmp; imtmp_r(X)=min(255,imtmp_r(X)*3);
-      imtmp=repmat(imtmp,1,1,3); imtmp(:,:,1)=imtmp_r;
+      imtmp=repmat(imtmp,[1,1,3]); imtmp(:,:,1)=imtmp_r;
       set(debugdata.him,'CData',imtmp);
       if isfield(debugdata,'htext')
           delete(debugdata.htext(ishandle(debugdata.htext)));
