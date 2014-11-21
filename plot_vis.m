@@ -18,7 +18,7 @@ switch visdata.plot
         end
         visdata.hell=[];
         im=double(visdata.frames{f});
-        im_r=im; im_r(visdata.isfore)=min(255,im_r(visdata.isfore)*1.5+89);
+        im_r=im; im_r(visdata.isfore{f})=min(255,im_r(visdata.isfore{f})*1.5+89);
         im=repmat(im,[1,1,3]);
         im(:,:,1)=im_r;
         im=uint8(im);
