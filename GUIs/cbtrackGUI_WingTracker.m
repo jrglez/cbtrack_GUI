@@ -221,7 +221,31 @@ isnew=debugdata.isnew;
 setappdata(0,'isnew',isnew)
 
 if isnew
-    setappdata(0,'P_stage','track1')
+    if isappdata(0,'twing') 
+        trackdata=getappdata(0,'trackdata');
+
+        trackdata.perframedata=[];
+        if isfield(trackdata,'twing')
+            trackdata=rmfield(trackdata,'twing');
+        end
+        if strcmp(cbparams.track.assignidsby,'wingsize') && cbparams.track.dotrackwings
+            trackdata.stage='trackwings1';
+        else
+            trackdata.stage='trackwings2';
+        end
+
+        if isappdata(0,'debugdata_WT')
+            rmappdata(0,'debugdata_WT')
+        end
+        if isappdata(0,'twing')
+            rmappdata(0,'twing')
+        end
+
+        setappdata(0,'trackdata',trackdata)
+        setappdata(0,'P_stage','track2')
+    else
+        setappdata(0,'P_stage','track1')
+    end
     if cbparams.track.dosave
         savetemp({'debugdata'})
     end
