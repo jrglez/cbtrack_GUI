@@ -630,9 +630,7 @@ else
         end
         params.roimus.x=xc;
         params.roimus.y=yc;
-        if isempty(params.meanroiradius)
-            params.meanroiradius=mean(radius);
-        end
+        params.meanroiradius=mean(radius);
         if isempty(params.maxdcenter)
             params.maxdcenter=ceil(params.meanroiradius/20);
         end
