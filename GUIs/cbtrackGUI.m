@@ -289,7 +289,7 @@ for i=1:numel(expdirs)
             case 'params'
                 log_type='track_log';
                 where='Body tracking parameters setup';
-            case 'wings_params'
+            case 'wing_params'
                 log_type='track_log';
                 where='Wing tracking parameters setup';
             case 'track1'
@@ -336,7 +336,7 @@ if get(handles.checkbox_dotrack,'Value') && ~getappdata(0,'singleexp')
         mysetappdata('expdir',expdirs{i},'experiment',experiment,'moviefile',moviefile{i},...
             'out',out{i},'analysis_protocol',analysis_protocol,'cbparams',expparams{i},...
             'BG',BG{i},'roidata',roidata{i},'P_stage','track1','iscancel',false,'isskip',false,...
-            'isstop',false);
+            'isstop',false,'button','track');
 
         try
             if expparams{i}.track.DEBUG
