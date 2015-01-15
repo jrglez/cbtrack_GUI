@@ -18,10 +18,11 @@ if isinteractive,
   matname = [matpath,matname];
 end
 
+logfid=open_log('resultsmovie_log');
 tmp = load(matname);
 if verbose,
   s=sprintf('loaded %s\n',matname);
-  write_log(1,getappdata(0,'experiment'),s)
+  write_log(logfid,getappdata(0,'experiment'),s)
 end
 if isfield(tmp,'pairtrx'),
   tmp.trx = tmp.pairtrx;
@@ -29,12 +30,12 @@ end
 if ~isfield(tmp,'trx'),
   if verbose,
     s=sprintf('no trx variable\n');
-    write_log(1,getappdata(0,'experiment'),s)
+    write_log(logfid,getappdata(0,'experiment'),s)
   end
   if isfield(tmp,'ntargets'),
     if verbose,
       s=sprintf('Ctrax output file; converting to trx file\n');
-      write_log(1,getappdata(0,'experiment'),s)
+      write_log(logfid,getappdata(0,'experiment'),s)
     end
     if ~exist('moviename','var'),
       moviename = '?';
@@ -42,7 +43,7 @@ if ~isfield(tmp,'trx'),
     %ds = datestr(now,30);
     if verbose,
       s=sprintf('Calling cleanup_ctrax_data\n');
-      write_log(1,getappdata(0,'experiment'),s)
+      write_log(logfid,getappdata(0,'experiment'),s)
     end
     [trx,matname,timestamps] = cleanup_ctrax_data(matname,moviename,tmp,'','dosave',dosave,'savename',savename,'annname',annname);
   else
@@ -52,7 +53,7 @@ if ~isfield(tmp,'trx'),
 else
   if verbose,
     s=sprintf('trx variable found\n');
-    write_log(1,getappdata(0,'experiment'),s)
+    write_log(logfid,getappdata(0,'experiment'),s)
   end
   trx = tmp.trx;
   
@@ -83,7 +84,7 @@ end
 % member functions can be weird
 if verbose,
   s=sprintf('Adding off\n');
-  write_log(1,getappdata(0,'experiment'),s)
+  write_log(logfid,getappdata(0,'experiment'),s)
 end
 for i = 1:length(trx),
   trx(i).off = -trx(i).firstframe + 1;
@@ -109,5 +110,5 @@ end
 succeeded = true;
 if verbose,
   s=sprintf('Done. returning from load_tracks\n');
-  write_log(1,getappdata(0,'experiment'),s)
+  write_log(logfid,getappdata(0,'experiment'),s)
 end

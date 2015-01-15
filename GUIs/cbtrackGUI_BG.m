@@ -22,7 +22,7 @@ function cbtrackGUI_BG(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_BG
 
-% Last Modified by GUIDE v2.5 14-Nov-2014 21:33:14
+% Last Modified by GUIDE v2.5 18-Nov-2014 18:02:00
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -103,7 +103,7 @@ else
               fclose(logfid);
             end
             if tracking_params.computeBG
-                waitfor(mymsgbox(50,190,14,'Helvetica',{['File ', loadfile,' could not be loaded.'];'Trying to compute the background automatically'},'Warning','warn','modal'))
+                waitfor(mymsgbox(50,190,14,'Helvetica',{['File ', loadfile,' could not be loaded.'];'Trying to compute the background automatically'},'Warning','warn','modal'))           
                 setappdata(0,'allow_stop',false)
                 BG.data=cbtrackGUI_EstimateBG(BG.expdir,BG.moviefile,tracking_params,'analysis_protocol',BG.analysis_protocol);
                 if getappdata(0,'iscancel') || getappdata(0,'isskip')
@@ -287,9 +287,9 @@ else
     imagesc(bgmed);
     set(handles.axes_BG,'XTick',[],'YTick',[])
     set(handles.cbtrackGUI_BG,'UserData',BG)
-    set(handles.pushbutton_recalc,'UserData',tracking_params)
     set(handles.pushbutton_manual,'Enable','on');
     set(handles.pushbutton_auto,'Enable','on');
+    set(handles.pushbutton_recalc,'UserData',tracking_params)
 end
 
 
@@ -361,9 +361,7 @@ if isnew
     if isappdata(0,'debugdata_WT')
         rmappdata(0,'debugdata_WT')
     end
-    if isappdata(0,'twing')
-        rmappdata(0,'twing')
-    end
+    
     BG.data.isnew=false;
     tracking_params=get(handles.pushbutton_recalc,'UserData');
     cbparams.track=tracking_params;
@@ -682,4 +680,3 @@ end
 % set(handles.popupmenu_BGtype,'Value',bgmode)
 % 
 % set(handles.pushbutton_recalc,'UserData',tracking_params)
-

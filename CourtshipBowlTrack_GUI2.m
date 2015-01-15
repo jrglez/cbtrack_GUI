@@ -29,6 +29,7 @@ restart = getappdata(0,'restart');
 if ~isfield(params,'DEBUG'),
   params.DEBUG = 0;
 end
+params.dotrackwings=1;
 if params.dotrackwings || strcmp(params.assignidsby,'wingsize'),
   params.wingtracking_params = cbparams.wingtrack;
 end
@@ -38,12 +39,12 @@ BG=getappdata(0,'BG');
 bgmed=BG.bgmed;
 
 %% load roi info
-roidata=getappdata(0,'roidata');
+roidata=getappdata(0,'roidata_rs');
 
 %% Secondary tracking
 s=sprintf('Starting secondary tracking at %s for experiment %s.\n',datestr(now,'yyyymmddTHHMMSS'),experiment);
 write_log(logfid,experiment,s)
-trackdata=TrackTwoFlies_GUI_debug2(moviefile,bgmed,roidata,params,'restart',restart);
+trackdata=Track2FliesWings2(moviefile,bgmed,roidata,params,'restart',restart);
 if getappdata(0,'iscancel') || getappdata(0,'isskip') || ~strcmp(getappdata(0,'button'),'track')
     return
 end
@@ -52,10 +53,23 @@ trackdata.courtshipbowltrack_timestamp = timestamp;
 trackdata.analysis_protocol = analysis_protocol;
 trackdata.experiment=experiment;
 trackdata.params = params;
-trx = trackdata.trx; %#ok<NASGU>
+trx = trackdata.trx; 
 timestamps = trackdata.timestamps; %#ok<NASGU>
 
 % trx
+% convert trx to the original size;
+for i=1:numel(trx)
+    trx(i).x = (trx(i).x-0.5)*cbparams.track.down_factor;
+    trx(i).y = (trx(i).y-0.5)*cbparams.track.down_factor;
+    trx(i).a = trx(i).a*cbparams.track.down_factor;
+    trx(i).b = trx(i).b*cbparams.track.down_factor;
+    if isfield(trx(i),'xwingl')
+        trx(i).xwingl = (trx(i).xwingl-0.5)*cbparams.track.down_factor;
+        trx(i).ywingl = (trx(i).ywingl-0.5)*cbparams.track.down_factor;
+        trx(i).xwingr = (trx(i).xwingr-0.5)*cbparams.track.down_factor;
+        trx(i).ywingr = (trx(i).ywingr-0.5)*cbparams.track.down_factor;
+    end
+end
 outfilename = fullfile(out.folder,cbparams.dataloc.trx.filestr);
 s=sprintf('Saving final traking results to file %s...\n',outfilename);
 write_log(logfid,experiment,s)
@@ -66,6 +80,12 @@ save(outfilename,'trx','timestamps');
 
 % perframe data
 perframedir = fullfile(out.folder,cbparams.dataloc.perframedir.filestr);
+trackdata.perframeunits = struct(...
+  'nwingsdetected',parseunits('unit'),...
+  'wing_areal',parseunits('px^2'),...
+  'wing_arear',parseunits('px^2'),...
+  'wing_trough_angle',parseunits('rad'));
+
 pfd_files=dir(perframedir);
 if ~isempty(pfd_files)
     delete(fullfile(perframedir,'*'))

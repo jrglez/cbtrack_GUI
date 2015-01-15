@@ -10,10 +10,11 @@ nflies = numel(flies);
 closestfly = cell(1,nflies);
 maxanglesub = cell(1,nflies);
 
+logfid=open_log('perframefeature_log');
 for i1 = 1:nflies,
   fly1 = flies(i1);
   s=sprintf('fly1 = %d\n',fly1);
-  write_log(1,getappdata(0,'experiment'),s)
+  write_log(logfid,getappdata(0,'experiment'),s)
   flies2 = flies(trx.roi(fly1)==trx.roi(flies));
   anglesub = nan(numel(flies2),trx(fly1).nframes);
   for i2 = 1:numel(flies2),
@@ -40,5 +41,8 @@ if dosave_d,
   end         
 end
 
+if logfid>1
+    flcose(logfid);
+end
 data = closestfly;
 units = parseunits('unit');

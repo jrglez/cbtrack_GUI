@@ -30,11 +30,18 @@ if nflies_per_roi == 1,
   end
   [y,x] = ind2sub(size(isforebb),idx);
   w = dbkgdbb(idx);
-  [mu,S] = weighted_mean_cov([x(:),y(:)],w);
+  if isempty(x) || isempty(y)
+    mu=nan(1,2);
+    S=nan(2);
+  else
+    [mu,S] = weighted_mean_cov([x(:),y(:)],w);
+  end
   [trxcurr.a(i),trxcurr.b(i),trxcurr.theta(i)] = cov2ell(S);
   trxcurr.x(i) = mu(1);
   trxcurr.y(i) = mu(2);
-  trxcurr.area(i) = numel(cc.PixelIdxList{i});
+  if ~isempty(cc.PixelIdxList)
+    trxcurr.area(i) = numel(cc.PixelIdxList{i});
+  end
   trxpriors(i) = 1;
   
   trxcurr.istouching = 0;
@@ -101,8 +108,8 @@ else
       
       % check that all went well
       if any(trxpriors <= params.gmmem_min_obsprior),
-
-        write_log(1,getappdata(0,'experiment'),sprintf('Bad prior found, trying to reinitialize\n'));
+        logfid=open_log('track_log');
+        write_log(logfid,getappdata(0,'experiment'),sprintf('Bad prior found, trying to reinitialize\n'));
         trxcurr.gmm_isbadprior = true;
 
         [mu1,S1,obspriors1,post1,nll1,mixprev1] = mygmm([x,y],2,...
@@ -112,7 +119,7 @@ else
           'weights',w);
 
         if nll1 <= nll,
-          write_log(1,getappdata(0,'experiment'),sprintf('Using results from reinitialization, which improve nll by %f\n',nll-nll1));
+          write_log(logfid,getappdata(0,'experiment'),sprintf('Using results from reinitialization, which improve nll by %f\n',nll-nll1));
           mu = mu1;
           S = S1;
           trxpriors = obspriors1(:)';
@@ -120,9 +127,12 @@ else
           nll = nll1;
           mixprev = mixprev1;
         else
-          write_log(1,getappdata(0,'experiment'),sprintf('Reinitialization does not improve nll.\n'));
+          write_log(logfid,getappdata(0,'experiment'),sprintf('Reinitialization does not improve nll.\n'));
         end
-       
+        
+        if logfid > 1,
+          fclose(logfid);
+        end
       end
     end
       

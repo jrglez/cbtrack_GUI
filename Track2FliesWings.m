@@ -1,8 +1,8 @@
-function trackdata = TrackTwoFlies_GUI_debug(handles,moviefile,bgmed,roidata,params,varargin)
+function trackdata = Track2FliesWings(handles,moviefile,bgmed,roidata,params,Wparams,varargin)
 global ISPAUSE
 trackdata=getappdata(0,'trackdata');
 
-version = '0.1.1';
+version = '0.1';
 timestamp = datestr(now,TimestampFormat);
 
 experiment=getappdata(0,'experiment');
@@ -42,49 +42,66 @@ if ~dorestart && any([~ISPAUSE,~isfield(trackdata,'trxx')]),
   trxa = nan(2,nrois,nframes_track);
   trxb = nan(2,nrois,nframes_track);
   trxtheta = nan(2,nrois,nframes_track);
+  trxwing_anglel = nan(2,nrois,nframes_track,2^2);
+  trxwing_angler = nan(2,nrois,nframes_track,2^2);
   trxarea = nan(2,nrois,nframes_track);
+  time_stamp = nan(1,nframes_track);
   istouching = nan(nrois,nframes_track);
   gmm_isbadprior = nan(nrois,nframes_track);
   trxpriors=nan(2,nrois,nframes_track);
   
-  pred = struct;
-  pred.mix = gmm(2,2,'full');
-  pred.x = nan(2,1);
-  pred.y = nan(2,1);
-  pred.theta = nan(2,1);
-  pred.area = nan(2,1);
-  pred.isfirstframe = true;
+  perframedata = struct('nwingsdetected',nan(2,nrois,nframes_track,2^2),...
+      'wing_areal',nan(2,nrois,nframes_track,2^2),'wing_arear',nan(2,nrois,nframes_track,2^2),...
+      'wing_trough_angle',nan(2,nrois,nframes_track,2^2));
+  
+  pred = struct('mix',gmm(2,2,'full'),'x',nan(2,1),'y',nan(2,1),'theta',nan(2,1),...
+      'area',nan(2,1),'isfirstframe',true);
   pred = repmat(pred,[1,nrois]);
   
-  trxcurr = struct;
-  trxcurr.x = nan(2,1);
-  trxcurr.y = nan(2,1);
-  trxcurr.a = nan(2,1);
-  trxcurr.b = nan(2,1);
-  trxcurr.theta = nan(2,1);
-  trxcurr.area = nan(2,1);
-  trxcurr.istouching = nan;
-  trxcurr.gmm_isbadprior = nan;
-  trxcurr.priors=nan(1,2);
+  trxcurr = struct('x',nan(2,1),'y',nan(2,1),'a',nan(2,1),'b',nan(2,1),...
+      'theta',nan(2,1),'area',nan(2,1),'wing_anglel',nan(2,1,2^2),...
+      'wing_angler',nan(2,1,2^2),'istouching',nan,'gmm_isbadprior',nan,'priors',nan(1,2));
   trxcurr = repmat(trxcurr,[1,roidata.nrois]);
+  
+  pfdatacurr = struct('nwingsdetected',nan(2,1,2^2),'wing_areal',nan(2,1,2^2),...
+      'wing_arear',nan(2,1,2^2),'wing_trough_angle',nan(2,1,2^2));
+  pfdatacurr = repmat(pfdatacurr,[1,roidata.nrois]);
+
   handles.hell = nan(2,nrois);
   handles.htrx = nan(2,nrois);
   handles.him = nan;
-elseif ISPAUSE || dorestart
+elseif dorestart || ISPAUSE
     trxx = trackdata.trxx;
     trxy = trackdata.trxy;
     trxa = trackdata.trxa;
     trxb = trackdata.trxb;
     trxtheta = trackdata.trxtheta;
+    trxwing_anglel = trackdata.trxwing_anglel;
+    trxwing_angler = trackdata.trxwing_angler;
     trxarea = trackdata.trxarea;
+    time_stamp = trackdata.time_stamp;
     istouching = trackdata.istouching;
     gmm_isbadprior = trackdata.gmm_isbadprior;
-    pred=trackdata.pred;
-    trxcurr=trackdata.trxcurr;  
+    pred = trackdata.pred;
+    trxcurr = trackdata.trxcurr; 
+    perframedata = trackdata.perframedata;
 end
-trackdata.tracktwoflies_version = version;
-trackdata.tracktwoflies_timestamp = timestamp;
+trackdata.trac2flieswings_version = version;
+trackdata.track2flieswing_timestamp = timestamp;
 
+%% set parameters
+% choose histogram bins for wing pixel angles for fitting wings
+Wparams.edges_dthetawing = linspace(-Wparams.max_wingpx_angle,Wparams.max_wingpx_angle,Wparams.nbins_dthetawing+1);
+Wparams.centers_dthetawing = (Wparams.edges_dthetawing(1:end-1)+Wparams.edges_dthetawing(2:end))/2;
+Wparams.wing_peak_min_frac = 1/Wparams.nbins_dthetawing*Wparams.wing_peak_min_frac_factor;
+
+% morphology structural elements
+params.se_open_body=strel('disk',params.radius_open_body);
+Wparams.se_dilate_body = strel('disk',Wparams.radius_dilate_body);
+Wparams.se_open_wing = strel('disk',Wparams.radius_open_wing);
+
+% for sub-bin accuracy in fitting the wings
+Wparams.subbin_x = (-Wparams.wing_radius_quadfit_bins:Wparams.wing_radius_quadfit_bins)';    
 %% loop over frames
 
 stage = 'maintracking'; 
@@ -96,59 +113,82 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
     else
       startframe = params.firstframetrack;
     end
+    
     ISPAUSE=false;
 
     write_log(logfid,getappdata(0,'experiment'),sprintf('Starting main tracking from frame %i at %s...\n',startframe,datestr(now,'yyyymmddTHHMMSS')));
     if ~params.DEBUG
       setappdata(0,'allow_stop',false)
-      hwait=waitbar(0,{['Experiment ',experiment];['Tracking bodies: frame ',num2str(startframe),'(0 of ',num2str(nframes_track),')']},'CreateCancelBtn','cancel_waitbar');
+      hwait=waitbar(0,{['Experiment ',experiment];['Tracking flies: frame ',num2str(startframe),'(0 of ',num2str(nframes_track),')']},'CreateCancelBtn','cancel_waitbar');
     end
+    
+    vign = getappdata(0,'vign');
+    bgmed=double(bgmed);
+    
+    % Set normalization matrix
+    if params.normalize
+        normalize=bgmed;
+    else
+        normalize=ones(size(bgmed));
+    end
+    
     for t = startframe:min(params.lastframetrack,nframes),
       if ISPAUSE
           write_log(logfid,getappdata(0,'experiment'),sprintf('Main tracking paused at frame %i at %s...\n',t,datestr(now,'yyyymmddTHHMMSS'))); %#ok<UNRCH>
           break; 
       end
       iframe = t - params.firstframetrack + 1;
-
       if mod(iframe,1000) == 0,
         write_log(logfid,getappdata(0,'experiment'),sprintf('Frame %d / %d\n',iframe,nframes_track));
       end
 
       % read in frame
-      im = readframe(t);
-
-      % subtract off background
-      switch params.bgmode,
-        case DARKBKGD,
-          dbkgd = imsubtract(im,bgmed);
-        case LIGHTBKGD,
-          dbkgd = imsubtract(bgmed,im);
-        case OTHERBKGD,
-          dbkgd = imabsdiff(im,bgmed);
+      try
+        [im,time_stamp(iframe)] = readframe(t);
+      catch
+        im = readframe(t);
       end
+      
+      % resize, equalize and de-vignet
+      if any(params.eq_method==[1,2])
+          H0=getappdata(0,'H0');
+          im=histeq(uint8(im),H0);
+      elseif params.eq_method==3
+          im=eq_image(im);
+      end
+      im=double(im)./vign;
+      im_rs = imresize(im,1/params.down_factor);
 
-      % threshold
-      isfore = dbkgd >= params.bgthresh;
+      [dbkgd,isfore_body,iswing,isfore_wing] = TrackFlyWings_BackSub(im,bgmed,params,Wparams,normalize);
 
       % track this frame
       trxprev = trxcurr;
+      pffdataprev = pfdatacurr;
       % waitbar(t/min(params.lastframetrack,nframes),hwait, ['Tracking frame ',num2str(t),' of ', num2str(min(params.lastframetrack,nframes))]);
-      [trxcurr,pred] = TrackTwoFliesOneFrame_GUI(dbkgd,isfore,pred,trxprev,roidata,params);
+      [trxcurr,pred,pfdatacurr] = Track2FliesWings1Frame(im_rs,dbkgd,isfore_body,iswing,isfore_wing,pred,trxprev,pffdataprev,roidata,params,Wparams);
 
       trxx(:,:,iframe) = cat(2,trxcurr.x);
       trxy(:,:,iframe) = cat(2,trxcurr.y);
       trxa(:,:,iframe) = cat(2,trxcurr.a);
       trxb(:,:,iframe) = cat(2,trxcurr.b);
+      trxwing_anglel(:,:,iframe,:) = cat(2,trxcurr.wing_anglel);
+      trxwing_angler(:,:,iframe,:) = cat(2,trxcurr.wing_angler);
       trxtheta(:,:,iframe) = cat(2,trxcurr.theta);
       trxarea(:,:,iframe) = cat(2,trxcurr.area);
       istouching(:,iframe) = cat(1,trxcurr.istouching);
       gmm_isbadprior(:,iframe) = cat(1,trxcurr.gmm_isbadprior);
       trxpriors(:,:,iframe)=cat(1,trxcurr.priors)';
+      
+      perframedata.nwingsdetected(:,:,iframe,:) = cat(2,pfdatacurr.nwingsdetected);
+      perframedata.wing_areal(:,:,iframe,:) = cat(2,pfdatacurr.wing_areal);
+      perframedata.wing_arear(:,:,iframe,:) = cat(2,pfdatacurr.wing_arear);
+      perframedata.wing_trough_angle(:,:,iframe,:) = cat(2,pfdatacurr.wing_trough_angle);
+      
       % plot
 
       if params.DEBUG,
          hold on
-        set(handles.video_img,'CData',im);
+        set(handles.video_img,'CData',im_rs);
         isnewplot = false;
         title(num2str(t));
 
@@ -172,13 +212,13 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
             end
           end
         end
-      set(handles.text_info,'String',{['Experiment ',experiment];['Tracking bodies: frame ',num2str(t),' (',num2str(iframe),' of ',num2str(nframes_track),', ',num2str(iframe*100/nframes_track,'%.1f'),'%).']})  
+      set(handles.text_info,'String',{['Experiment ',experiment];['Tracking flies: frame ',num2str(t),' (',num2str(iframe),' of ',num2str(nframes_track),', ',num2str(iframe*100/nframes_track,'%.1f'),'%).']})  
       else
         if getappdata(0,'iscancel') || getappdata(0,'isskip') || getappdata(0,'isstop')  
           trackdata=[];
           return
         end
-        waitbar(iframe/nframes_track,hwait,{['Experiment ',experiment];['Tracking bodies: frame ',num2str(t),' (',num2str(iframe),' of ',num2str(nframes_track),')']});  
+        waitbar(iframe/nframes_track,hwait,{['Experiment ',experiment];['Tracking flies: frame ',num2str(t),' (',num2str(iframe),' of ',num2str(nframes_track),')']});  
       end    
 
       if params.DEBUG || mod(t,1) == 0,
@@ -186,20 +226,24 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
       end
       
       if mod(iframe,5000) == 0,
-            trackdata.t=t;
-            trackdata.trxx=trxx; 
-            trackdata.trxy=trxy;
-            trackdata.trxa=trxa;
-            trackdata.trxb=trxb;
-            trackdata.trxtheta=trxtheta;
-            trackdata.trxarea=trxarea;
-            trackdata.istouching=istouching;
-            trackdata.gmm_isbadprior=gmm_isbadprior;
-            trackdata.pred=pred;
-            trackdata.trxcurr=trxcurr; 
-            trackdata.trxpriors=trxpriors;
-            trackdata.headerinfo=headerinfo;
-            trackdata.stage=stage;
+            trackdata.t = t;
+            trackdata.trxx = trxx; 
+            trackdata.trxy = trxy;
+            trackdata.trxa = trxa;
+            trackdata.trxb = trxb;
+            trackdata.trxtheta = trxtheta;
+            trackdata.trxwing_anglel = trxwing_anglel;
+            trackdata.trxwing_angler = trxwing_angler;
+            trackdata.trxarea = trxarea;
+            trackdata.time_stamp = time_stamp;
+            trackdata.istouching = istouching;
+            trackdata.gmm_isbadprior = gmm_isbadprior;
+            trackdata.pred = pred;
+            trackdata.trxcurr = trxcurr; 
+            trackdata.trxpriors = trxpriors;
+            trackdata.headerinfo = headerinfo;
+            trackdata.stage = stage;
+            trackdata.perframedata = perframedata;
             if cbparams.track.dosave
                 save(out.temp_full,'trackdata','-append')
             end
@@ -210,27 +254,31 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
     if exist('hwait','var') && ishandle(hwait)
         delete(hwait)
     end
-    trackdata.t=t-(t~=min(params.lastframetrack,nframes));
+    trackdata.t = t-(t~=min(params.lastframetrack,nframes));
 
-    trackdata.trxx=trxx; 
-    trackdata.trxy=trxy;
-    trackdata.trxa=trxa;
-    trackdata.trxb=trxb;
-    trackdata.trxtheta=trxtheta;
-    trackdata.trxarea=trxarea;
-    trackdata.istouching=istouching;
-    trackdata.gmm_isbadprior=gmm_isbadprior;
-    trackdata.pred=pred;
-    trackdata.trxcurr=trxcurr; 
-    trackdata.trxpriors=trxpriors;
-    trackdata.headerinfo=headerinfo;
-    trackdata.stage=stage;
+    trackdata.trxx = trxx; 
+    trackdata.trxy = trxy;
+    trackdata.trxa = trxa;
+    trackdata.trxb = trxb;
+    trackdata.trxtheta = trxtheta;
+    trackdata.trxwing_anglel = trxwing_anglel;
+    trackdata.trxwing_angler = trxwing_angler;
+    trackdata.trxarea = trxarea;
+    trackdata.time_stamp = time_stamp;
+    trackdata.istouching = istouching;
+    trackdata.gmm_isbadprior = gmm_isbadprior;
+    trackdata.pred = pred;
+    trackdata.trxcurr = trxcurr; 
+    trackdata.trxpriors = trxpriors;
+    trackdata.headerinfo = headerinfo;
+    trackdata.stage = stage;
+    trackdata.perframedata = perframedata;
 end
 
 %% clean up
 
 % write_log(logfid,getappdata(0,'experiment'),sprintf('Clean up...\n');
-if params.DEBUG && ishandle(handles.cbtrackGUI_ROI)
+if params.DEBUG
     guidata(handles.cbtrackGUI_ROI,handles)
 end
 

@@ -10,7 +10,10 @@ trackdata.trxy(:,:,iframe+1:end)=nan;
 trackdata.trxa(:,:,iframe+1:end)=nan;
 trackdata.trxb(:,:,iframe+1:end)=nan;
 trackdata.trxtheta(:,:,iframe+1:end)=nan;
+trackdata.trxwing_anglel(:,:,iframe+1,:)=nan;
+trackdata.trxwing_angler(:,:,iframe+1,:)=nan;
 trackdata.trxarea(:,:,iframe+1:end)=nan;
+trackdata.time_stamp(1,iframe+1:end)=nan;
 trackdata.istouching(:,iframe+1:end)=nan;
 trackdata.gmm_isbadprior(:,iframe+1:end)=nan;
 trackdata.trxpriors(:,:,iframe+1:end)=nan;
@@ -36,7 +39,7 @@ for i=1:nrois
     pred(i).y = (2-params.err_dampen_pos)*trxcurr(i).y - (1-params.err_dampen_pos)*trxprev(i).y;
     dtheta = modrange(trxcurr(i).theta-trxprev(i).theta,-pi/2,pi/2);
     pred(i).theta = trxcurr(i).theta+(1-params.err_dampen_theta)*dtheta;
-    pred(i).mix.priors = (1-params.err_dampen_priors)*trackdata.trxpriors(:,i,iframe) + params.err_dampen_priors*.5;
+    pred(i).mix.priors = (1-params.err_dampen_priors)*trackdata.trxpriors(:,i,iframe)' + params.err_dampen_priors*.5;
     % set centres, covars to predicted positions
     pred(i).mix.centres = [pred(i).x,pred(i).y];
     pred(i).mix.covars = axes2cov(trxcurr(i).a,trxcurr(i).b,pred(i).theta);
@@ -47,6 +50,10 @@ for i=1:nrois
 end
 trackdata.trxcurr=trxcurr;
 trackdata.pred=pred;
+trackdata.perframedata.nwingsdetected(:,:,iframe+1,:)=nan;
+trackdata.perframedata.wing_areal(:,:,iframe+1,:)=nan;
+trackdata.perframedata.wing_arear(:,:,iframe+1,:)=nan;
+trackdata.perframedata.wing_trough_angle(:,:,iframe+1,:)=nan;
 setappdata(0,'trackdata',trackdata);
 
 

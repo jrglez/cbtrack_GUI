@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_tracker_video(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_ROI_temp
 
-% Last Modified by GUIDE v2.5 11-Jun-2014 18:51:12
+% Last Modified by GUIDE v2.5 16-Jun-2014 08:37:45
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -62,7 +62,7 @@ roidata=getappdata(0,'roidata');
 [track.readframe,track.nframes,track.fid,track.headerinfo] = get_readframe_fcn(moviefile);
 cbparams.track.lastframetrack=(min(cbparams.track.lastframetrack,track.nframes));
 cbparams.track.nframetrack=cbparams.track.lastframetrack-cbparams.track.firstframetrack+1;
-frame=track.readframe(cbparams.track.firstframetrack);
+frame=firstimage(track.readframe(cbparams.track.firstframetrack),cbparams.track);
 aspect_ratio=size(frame,2)/size(frame,1);
 pos1=get(handles.axes_tracker_video,'position'); %axes 1 position
 
@@ -111,7 +111,7 @@ end
 set(handles.text_info,'String',{['Experiment ', experiment];'No frames tracked'})
 
 % Set slider
-set(handles.slider_frame,'Value',1,'Min',1,'Max',2,'Enable','off')
+set(handles.slider_frame,'Value',1,'Min',1,'Max',2,'SliderStep',[.01,.1],'Enable','off')
 fcn_slider_frame = get(handles.slider_frame,'Callback');
 hlisten_frame=addlistener(handles.slider_frame,'ContinuousValueChange',fcn_slider_frame);
 
@@ -119,14 +119,15 @@ if isappdata(0,'trackdata')
     trackdata=getappdata(0,'trackdata');
     set(handles.pushbutton_start,'String','CONTINUE')
     iframe = trackdata.t - cbparams.track.firstframetrack + 1;
-    set(handles.slider_frame,'Value',iframe,'Min',1,'Max',iframe,'Enable','on')
+    set(handles.slider_frame,'Value',iframe,'Min',1,'Max',iframe,'SliderStep',[.01,.1],'Enable','on')
     % Plot
     
-    frame=track.readframe(trackdata.t);
+    frame=firstimage(track.readframe(trackdata.t),cbparams.track);
     set(handles.video_img,'CData',frame);
     handles.hell=NaN(2,roidata.nrois);
     handles.htrx=NaN(2,roidata.nrois);
     flycolors = {'r','b'};
+    hold on
     for roii = 1:roidata.nrois,
         roibb = roidata.roibbs(roii,:);
         offx = roibb(1)-1;
@@ -136,13 +137,15 @@ if isappdata(0,'trackdata')
             handles.htrx(i,roii) = plot(squeeze(trackdata.trxx(i,roii,max(iframe-30,1):iframe)+offx),squeeze(trackdata.trxy(i,roii,max(iframe-30,1):iframe)+offy),[flycolors{i},'.-']);
         end
     end
+    hold off
     currf=trackdata.t;    
     ilastf=get(handles.slider_frame,'Max');
     set(handles.text_info,'String',{['Experiment ', experiment];['Displaying frame ',num2str(currf),'. ',num2str(ilastf),' of ',num2str(cbparams.track.nframetrack),' (',num2str(ilastf*100/cbparams.track.nframetrack,'%.1f'),'%) tracked.']})  
     set(handles.pushbutton_accept,'Enable','on');
     setappdata(0,'t',trackdata.t)
 end
-    
+
+
 hslider=unique(findobj('Style','slider'));
 mins=get(hslider,'Min');
 maxs=get(hslider,'Max');
@@ -191,16 +194,6 @@ restart='';
 setappdata(0,'restart',restart)
 
 cbparams=getappdata(0,'cbparams');
-out=getappdata(0,'out');
-logfid=open_log('track_log');
-t=getappdata(0,'t');
-finalfile = fullfile(out.folder,cbparams.dataloc.trx.filestr);
-s=sprintf('Saving tracking results up to frame %i at %s...\n',t,datestr(now,'yyyymmddTHHMMSS'));
-write_log(logfid,getappdata(0,'experiment'),s)
-CourtshipBowlTrack_GUI_save(finalfile,t)
-if logfid > 1,
-  fclose(logfid);
-end
 
 setappdata(0,'iscancel',false)
 setappdata(0,'isskip',false)
@@ -233,7 +226,7 @@ trackdata=getappdata(0,'trackdata');
 cbparams=getappdata(0,'cbparams');
 track=get(handles.pushbutton_start,'UserData');
 f = iframe + cbparams.track.firstframetrack - 1;
-frame=track.readframe(f);
+frame=firstimage(track.readframe(f),cbparams.track);
 set(handles.video_img,'CData',frame);
 for roii = 1:roidata.nrois,
   roibb = roidata.roibbs(roii,:);
@@ -289,9 +282,7 @@ elseif ISPAUSE
     set(handles.pushbutton_play,'Enable','off')
     set(handles.pushbutton_skip,'Enable','off');
     set(handles.slider_frame,'Enable','off')
-    
     CourtshipBowlTrack_GUI_debug(handles);
-    
     set(handles.pushbutton_save,'Enable','on')
     set(handles.pushbutton_clear,'Enable','on')
     set(handles.pushbutton_accept,'Enable','on')
@@ -304,40 +295,10 @@ elseif ISPAUSE
     t=getappdata(0,'t');
     icurrf=t-cbparams.track.firstframetrack+1;
     ilastf=icurrf;
-    set(handles.slider_frame,'Value',icurrf,'Min',1,'Max',ilastf,'SliderStep',[1/(ilastf),10/ilastf],'Enable','on')
+    set(handles.slider_frame,'Value',icurrf,'Min',1,'Max',ilastf,'SliderStep',[1/ilastf,10/ilastf],'Enable','on')
     set(handles.text_info,'String',{['Experiment ', experiment];['Displaying frame ',num2str(t),'. ',num2str(ilastf),' of ',num2str(cbparams.track.nframetrack),' (',num2str(ilastf*100/cbparams.track.nframetrack,'%.1f'),'%) tracked.']})  
     if ~ISPAUSE
-        GUIscale=getappdata(0,'GUIscale');
-        new_pos=get(handles.cbtrackGUI_ROI,'position'); 
-        old_pos=GUIscale.original_position;
-        GUIscale.rescalex=new_pos(3)/old_pos(3);
-        GUIscale.rescaley=new_pos(4)/old_pos(4);
-        GUIscale.position=new_pos;
-        setappdata(0,'GUIscale',GUIscale)
-
-        experiment=getappdata(0,'experiment');
-        out=getappdata(0,'out');
-        logfid=open_log('track_log');
-        s={sprintf('Main tracking finished at %s for experiment %s...\n',datestr(now,'yyyymmddTHHMMSS'),experiment);...
-            sprintf('Saving tracking results up to frame %i...\n',t)};
-        write_log(logfid,getappdata(0,'experiment'),s)
-        finalfile = fullfile(out.folder,cbparams.dataloc.trx.filestr);
-        CourtshipBowlTrack_GUI_save(finalfile,t)
-        
-        setappdata(0,'P_stage','track2')
-        if cbparams.track.dosave
-            savetemp({'trackdata'})
-        end
-        
-        uiresume(handles.cbtrackGUI_ROI)
-        if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
-            delete(handles.cbtrackGUI_ROI)
-        end
-        if logfid > 1,
-            fclose(logfid);
-        end
-        restart='';
-        setappdata(0,'restart',restart)
+        pushbutton_accept_Callback(handles.pushbutton_accept, [], handles)
     end
 end
 
@@ -360,7 +321,6 @@ elseif ~ISPLAYING
     track=get(handles.pushbutton_start,'UserData');
     t=getappdata(0,'t');
     ilastf=t-cbparams.track.firstframetrack+1;
-    cbparams=getappdata(0,'cbparams');
     roidata=getappdata(0,'roidata');
     trackdata=getappdata(0,'trackdata');
     tic;
@@ -371,7 +331,7 @@ elseif ~ISPLAYING
         end
         f=j+cbparams.track.firstframetrack-1;
         set(handles.text_info,'String',{['Experiment ',experiment];['Displaying frame ',num2str(f),'. ',num2str(ilastf),' of ',num2str(cbparams.track.nframetrack),' (',num2str(ilastf*100/cbparams.track.nframetrack,'%.1f'),'%) tracked.']})  
-        frame=track.readframe(f);
+        frame=firstimage(track.readframe(f),cbparams.track);
         set(handles.video_img,'CData',frame);
         for roii = 1:roidata.nrois,
             roibb = roidata.roibbs(roii,:);
@@ -403,7 +363,7 @@ if strcmp(msg_clear,'All')
     cbparams=getappdata(0,'cbparams');
 
     track=get(handles.pushbutton_start,'UserData');
-    frame=track.readframe(cbparams.track.firstframetrack);
+    frame=firstimage(track.readframe(cbparams.track.firstframetrack),cbparams.track);
     set(handles.video_img,'CData',frame);
     if isfield(handles,'hell') 
         delete(handles.hell(ishandle(handles.hell)))
@@ -446,7 +406,7 @@ function pushbutton_save_Callback(hObject, eventdata, handles)
 [tempfile,tempdir]=uiputfile('.mat');
 out=getappdata(0,'out');
 logfid=open_log('track_log');
-t=getappdata(0,'twing');
+t=getappdata(0,'t');
 trackdata=getappdata(0,'trackdata'); %#ok<*NASGU>
 debugdata_WT=getappdata(0,'debugdata_WT');
 tempfile = fullfile(tempdir,tempfile);
@@ -461,6 +421,7 @@ setappdata(0,'out',out)
 if logfid > 1,
   fclose(logfid);
 end
+
 
 function pushbutton_BG_Callback(hObject, eventdata, handles)
 %Save size
@@ -480,6 +441,7 @@ end
 
 setappdata(0,'button','BG')
 setappdata(0,'isnew',false)
+
 
 function pushbutton_ROIs_Callback(hObject, eventdata, handles)
 %Save size
@@ -520,6 +482,7 @@ end
 setappdata(0,'button','body')
 setappdata(0,'isnew',false)
 
+
 function pushbutton_debuger_Callback(hObject, eventdata, handles)
 
 
@@ -553,3 +516,21 @@ uiresume(handles.cbtrackGUI_ROI)
 if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
     delete(handles.cbtrackGUI_ROI)
 end
+
+
+function frame=firstimage(frame,tracking_params)
+vign=getappdata(0,'vign');
+% Equalize histogram using different methods (1 and 2 requires a
+% reference histogram H0)
+if any(tracking_params.eq_method==[1,2])
+  H0=getappdata(0,'H0');
+  frame=histeq(uint8(frame),H0);
+elseif tracking_params.eq_method==3
+  frame=eq_image(frame);
+end
+
+% Devignet and normalize
+frame = double(frame)./vign;
+frame = imresize(frame,1/tracking_params.down_factor);
+
+

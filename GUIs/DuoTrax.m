@@ -1,35 +1,35 @@
-function varargout = cbtrackGUI(varargin)
-% CBTRACKGUI MATLAB code for cbtrackGUI.fig
-%      CBTRACKGUI, by itself, creates a new CBTRACKGUI or raises the existing
+function varargout = DuoTrax(varargin)
+% DUOTRAX MATLAB code for DuoTrax.fig
+%      DUOTRAX, by itself, creates a new DUOTRAX or raises the existing
 %      singleton*.
 %
-%      H = CBTRACKGUI returns the handle to a new CBTRACKGUI or the handle to
+%      H = DUOTRAX returns the handle to a new DUOTRAX or the handle to
 %      the existing singleton*.
 %
-%      CBTRACKGUI('CALLBACK',hObject,eventData,handles,...) calls the local
-%      function named CALLBACK in CBTRACKGUI.M with the given input arguments.
+%      DUOTRAX('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in DUOTRAX.M with the given input arguments.
 %
-%      CBTRACKGUI('Property','Value',...) creates a new CBTRACKGUI or raises the
+%      DUOTRAX('Property','Value',...) creates a new DUOTRAX or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
-%      applied to the GUI before cbtrackGUI_OpeningFcn gets called.  An
+%      applied to the GUI before DuoTrax_OpeningFcn gets called.  An
 %      unrecognized property name or invalid value makes property application
-%      stop.  All inputs are passed to cbtrackGUI_OpeningFcn via varargin.
+%      stop.  All inputs are passed to DuoTrax_OpeningFcn via varargin.
 %
 %      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
 %      instance to run (singleton)".
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Edit the above text to modify the response to help cbtrackGUI
+% Edit the above text to modify the response to help DuoTrax
 
-% Last Modified by GUIDE v2.5 02-Oct-2014 17:33:47
+% Last Modified by GUIDE v2.5 13-Jan-2015 15:04:22
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @cbtrackGUI_OpeningFcn, ...
-                   'gui_OutputFcn',  @cbtrackGUI_OutputFcn, ...
+                   'gui_OpeningFcn', @DuoTrax_OpeningFcn, ...
+                   'gui_OutputFcn',  @DuoTrax_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
@@ -44,19 +44,19 @@ end
 % End initialization code - DO NOT EDIT
 
 
-function cbtrackGUI_OpeningFcn(hObject, eventdata, handles, varargin)
-% Choose default command line output for cbtrackGUI
+function DuoTrax_OpeningFcn(hObject, eventdata, handles, varargin)
+% Choose default command line output for DuoTrax
 handles.output = hObject;
 
-funpath=fileparts(which('cbtrackGUI_files'));
-cbtrack_path=genpath(funpath(1:end-4));
-addpath(cbtrack_path);
+funpath=fileparts(fileparts(which('DuoTrax')));
+DuoTrax_path=genpath(funpath);
+addpath(DuoTrax_path);
 
 % Update handles structure
 guidata(hObject, handles);
 
 
-function varargout = cbtrackGUI_OutputFcn(hObject, eventdata, handles) 
+function varargout = DuoTrax_OutputFcn(hObject, eventdata, handles) 
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 
@@ -109,8 +109,8 @@ if get(handles.checkbox_restart,'Value')
     else
         load(restart);
         appdatalist={'isnew','button','usefiles','viewlog','h_log','expdir','experiment','moviefile','out',...
-    'analysis_protocol','P_stage','cbparams','restart','GUIscale','startframe','endframe','BG','roidata',...
-    'visdata','debugdata_WT','pff_all','t','trackdata','iscancel','isskip','allow_stop','isstop','twing'};
+    'analysis_protocol','P_stage','cbparams','restart','GUIscale','startframe','endframe','vign','H0','BG','roidata',...
+    'roidata_rs','visdata','debugdata_WT','pff_all','t','trackdata','iscancel','isskip','allow_stop','isstop'};
         for i=1:length(appdatalist)
             if exist(appdatalist{i},'var')
                 setappdata(0,appdatalist{i},eval(appdatalist{i}))
@@ -341,6 +341,7 @@ if get(handles.checkbox_dotrack,'Value') && ~getappdata(0,'singleexp')
         try
             if expparams{i}.track.DEBUG
                 cbtrackGUI_tracker_video
+                CourtshipBowlTrack_GUI2
             else
                 cbtrackGUI_tracker_NOvideo
             end
@@ -360,9 +361,6 @@ if get(handles.checkbox_dotrack,'Value') && ~getappdata(0,'singleexp')
             end
             if isappdata(0,'debugdata_WT')
                 rmappdata(0,'debugdata_WT')
-            end
-            if isappdata(0,'twing')
-                rmappdata(0,'twing')
             end
 
         catch ME

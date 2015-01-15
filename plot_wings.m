@@ -3,22 +3,16 @@ trackdata=getappdata(0,'trackdata');
 
 hvis=get(get(debugdata.haxes,'Parent'),'HandleVisibility');
 set(get(debugdata.haxes,'Parent'),'HandleVisibility','on')
-imtmp = repmat(frame(:),[1,3]);
 trx=trackdata.trx;
 nflies=numel(trx);
 
-idxfore_thresh=trackdata.wingplotdata.idxfore_thresh{iframe};
-fore2flywing=trackdata.wingplotdata.fore2flywing{iframe};
-for dfly = 1:nflies,
-  idx1 = idxfore_thresh(fore2flywing==dfly);
-  imtmp(idx1,:) = min(bsxfun(@plus,imtmp(idx1,:)*3,255*debugdata.colors(dfly,:))/4,255);
-end
-[nr,nc,~] = size(frame);
-
-set(debugdata.him,'CData',uint8(reshape(imtmp,[nr,nc,3])));
+set(debugdata.him,'CData',frame);
 
 if isfield(debugdata,'htext')
     delete(debugdata.htext(ishandle(debugdata.htext)));
+end
+if isfield(debugdata,'hfly'),
+  delete(debugdata.hfly(ishandle(debugdata.hfly)));
 end
 if isfield(debugdata,'hwing'),
   delete(debugdata.hwing(ishandle(debugdata.hwing)));
@@ -27,8 +21,13 @@ if isfield(debugdata,'htrough'),
   delete(debugdata.htrough(ishandle(debugdata.htrough)));
 end
 debugdata.htext = [];
+debugdata.hfly = [];
 debugdata.hwing = [];
 debugdata.htrough = [];
+
+if ~isfield(debugdata,'color') || isempty(debugdata.colors)
+        debugdata.colors=lines(nflies);
+end
 
 hold on
 for dfly = 1:nflies,
@@ -38,6 +37,7 @@ for dfly = 1:nflies,
   x=trx(dfly).x(iframe); 
   y=trx(dfly).y(iframe);
   a=trx(dfly).a(iframe);
+  b=trx(dfly).b(iframe);
   theta=trx(dfly).theta(iframe);
   wing_anglel=trx(dfly).wing_anglel(iframe);
   wing_angler=trx(dfly).wing_angler(iframe);
@@ -50,6 +50,7 @@ for dfly = 1:nflies,
   ywing([1,3]) = y + 4*a*sin(theta+pi+wing_angles);
   xtrough = x+2*a*cos(theta+pi+wing_trough_angle);
   ytrough = y+2*a*sin(theta+pi+wing_trough_angle);
+  debugdata.hfly(end+1) = drawflyo(x,y,theta,a,b,'color',debugdata.colors(dfly,:),'Parent',debugdata.haxes);
   debugdata.hwing(end+1) = plot(xwing,ywing,'.-','color',debugdata.colors(dfly,:),'Parent',debugdata.haxes);
   debugdata.htrough(end+1) = plot(xtrough,ytrough,'x','color',debugdata.colors(dfly,:),'Parent',debugdata.haxes);
 

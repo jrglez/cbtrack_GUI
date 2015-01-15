@@ -22,7 +22,7 @@ function varargout = advanced_wing(varargin)
 
 % Edit the above text to modify the response to help advanced_wing
 
-% Last Modified by GUIDE v2.5 15-Oct-2014 19:32:25
+% Last Modified by GUIDE v2.5 15-Oct-2014 19:33:29
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -217,14 +217,12 @@ temp_Wparams.wing_frac_filter=[str2double(get(handles.edit_wing_frac_filter1,'St
     str2double(get(handles.edit_wing_frac_filter2,'String')),...
     str2double(get(handles.edit_wing_frac_filter3,'String'))];
 
-if debugdata.vis>2
+if debugdata.vis>3
     f=debugdata.f;
     BG=getappdata(0,'BG');
     bgmed=BG.bgmed;
     visdata=getappdata(0,'visdata');
-    roidata=getappdata(0,'roidata');
-    isarena=roidata.inrois_all;
-    debugdata=TrackWingsSingle_GUI(visdata.trx(:,f),bgmed,isarena,temp_Wparams,visdata.frames{f},debugdata);
+    debugdata=TrackWingsSingle_GUI(visdata.trxW(:,f),bgmed,temp_Wparams,visdata.framesW{f},visdata.dbkgdW{f},debugdata);
 end
 debugdata=rmfield(debugdata,'f');
 
@@ -256,14 +254,12 @@ temp_Wparams.wing_frac_filter=[str2double(get(handles.edit_wing_frac_filter1,'St
     str2double(get(handles.edit_wing_frac_filter2,'String')),...
     str2double(get(handles.edit_wing_frac_filter3,'String'))];
 
-if debugdata.vis>2
+if debugdata.vis>3
     f=debugdata.f;
     BG=getappdata(0,'BG');
     bgmed=BG.bgmed;
     visdata=getappdata(0,'visdata');
-    roidata=getappdata(0,'roidata');
-    isarena=roidata.inrois_all;
-    debugdata=TrackWingsSingle_GUI(visdata.trx(:,f),bgmed,isarena,temp_Wparams,visdata.frames{f},debugdata);
+    debugdata=TrackWingsSingle_GUI(visdata.trxW(:,f),bgmed,temp_Wparams,visdata.framesW{f},visdata.dbkgdW{f},debugdata);
 end
 
 set(handles.pushbutton_apply,'UserData',debugdata)
@@ -272,14 +268,12 @@ set(handles.pushbutton_apply,'UserData',debugdata)
 function figure1_CloseRequestFcn(hObject, eventdata, handles)
 temp_Wparams=get(handles.figure1,'UserData');
 debugdata=get(handles.pushbutton_apply,'UserData');
-if debugdata.vis>2
+if debugdata.vis>3
     f=debugdata.f;
     BG=getappdata(0,'BG');
     bgmed=BG.bgmed;
     visdata=getappdata(0,'visdata');
-    roidata=getappdata(0,'roidata');
-    isarena=roidata.inrois_all;
-    debugdata=TrackWingsSingle_GUI(visdata.trx(:,f),bgmed,isarena,temp_Wparams,visdata.frames{f},debugdata);
+    debugdata=TrackWingsSingle_GUI(visdata.trxW(:,f),bgmed,isarena,temp_Wparams,visdata.framesW{f},visdata.dbkgfW{f},debugdata);
 end
 
 set(handles.pushbutton_apply,'UserData',debugdata)

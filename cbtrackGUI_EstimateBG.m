@@ -42,7 +42,7 @@ s=sprintf('Computing background model for %s...\n',experiment);
 write_log(logfid,experiment,s)
 buffer = readframe(1);
 buffer = repmat(buffer,[1,1,tracking_params.bg_nframes]);
-frames = round(linspace(tracking_params.bg_firstframe,min(nframes,tracking_params.bg_lastframe),tracking_params.bg_nframes));
+frames = round(linspace(1,min(nframes,tracking_params.bg_lastframe),tracking_params.bg_nframes));
 hwait=waitbar(0,{['Experiment ',experiment];['Reading frame 0 of ', num2str(tracking_params.bg_nframes)]},'CreateCancelBtn','cancel_waitbar');
 for i = 1:tracking_params.bg_nframes,
   if getappdata(0,'iscancel') || getappdata(0,'isskip') || getappdata(0,'isstop')
@@ -51,12 +51,21 @@ for i = 1:tracking_params.bg_nframes,
   end
   t = frames(i);
   buffer(:,:,i) = readframe(t);
+%   bufferi = readframe(t);
+%   if any(tracking_params.eq_method==[1,2])
+%     H0=getappdata(0,'H0');
+%     bufferi=histeq(uint8(bufferi),H0);
+%   elseif tracking_params.eq_method==3
+%     bufferi=eq_image(bufferi);
+%   end
+%   bufferi = double(bufferi)./vign;
+%   buffer(:,:,i) = bufferi;
   waitbar(i/tracking_params.bg_nframes,hwait,{['Experiment ',experiment];['Reading frame ', num2str(i),' of ', num2str(tracking_params.bg_nframes)]});
 end
 delete(hwait)
 hwait=waitbar(0,['Computing background model for experiment ''',experiment,'''']);
 bgmed = median(single(buffer),3);
-bgmed=any_class(bgmed,im_class);
+bgmed = any_class(bgmed,im_class);
 
 waitbar(1,hwait);
 bgdata.bgmed=bgmed;

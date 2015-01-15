@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_WingTracker(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_ROI_temp
 
-% Last Modified by GUIDE v2.5 18-Nov-2014 17:17:49
+% Last Modified by GUIDE v2.5 03-Dec-2014 17:36:19
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -51,10 +51,11 @@ GUIsize(handles,hObject)
 experiment=getappdata(0,'experiment');
 cbparams=getappdata(0,'cbparams');
 roi_params=cbparams.detect_rois;
+tracking_params=cbparams.track;
 wing_params=cbparams.wingtrack;
 roidata=getappdata(0,'roidata');
 visdata=getappdata(0,'visdata');
-frame=visdata.frames{1};
+frame=visdata.framesW{1};
 aspect_ratio=size(frame,2)/size(frame,1);
 pos1=get(handles.axes_wingtracker,'position'); %axes 1 position
 
@@ -92,17 +93,29 @@ set(handles.text_exp,'FontSize',24,'HorizontalAlignment','center','units','pixel
 goodfs(handles.text_exp,experiment);
 
 set(handles.edit_set_Hbgthresh,'String',num2str(wing_params.mindwing_high));
-set(handles.slider_set_Hbgthresh,'Value',wing_params.mindwing_high,'Min',0,'Max',255);
+if tracking_params.normalize
+    set(handles.slider_set_Hbgthresh,'Value',wing_params.mindwing_high,'Min',0,'Max',1);
+else
+    set(handles.slider_set_Hbgthresh,'Value',wing_params.mindwing_high,'Min',0,'Max',255);
+end
 fcn_slider_Hbgthresh = get(handles.slider_set_Hbgthresh,'Callback');
 hlisten_Hbgthresh=addlistener(handles.slider_set_Hbgthresh,'ContinuousValueChange',fcn_slider_Hbgthresh); %#ok<NASGU>
 
 set(handles.edit_set_Lbgthresh,'String',num2str(wing_params.mindwing_low));
-set(handles.slider_set_Lbgthresh,'Value',wing_params.mindwing_low,'Min',0,'Max',wing_params.mindwing_high-1);
+if tracking_params.normalize
+    set(handles.slider_set_Lbgthresh,'Value',wing_params.mindwing_low,'Min',0,'Max',wing_params.mindwing_high-0.001);
+else
+    set(handles.slider_set_Lbgthresh,'Value',wing_params.mindwing_low,'Min',0,'Max',wing_params.mindwing_high-1);
+end
 fcn_slider_Lbgthresh = get(handles.slider_set_Lbgthresh,'Callback');
 hlisten_Lbgthresh=addlistener(handles.slider_set_Lbgthresh,'ContinuousValueChange',fcn_slider_Lbgthresh); %#ok<NASGU>
 
 set(handles.edit_set_minbody,'String',num2str(wing_params.mindbody));
-set(handles.slider_set_minbody,'Value',wing_params.mindbody,'Min',0,'Max',255);
+if tracking_params.normalize
+    set(handles.slider_set_minbody,'Value',wing_params.mindbody,'Min',0,'Max',1);
+else
+    set(handles.slider_set_minbody,'Value',wing_params.mindbody,'Min',0,'Max',255);
+end    
 fcn_slider_minbody = get(handles.slider_set_minbody,'Callback');
 hlisten_minbody=addlistener(handles.slider_set_minbody,'ContinuousValueChange',fcn_slider_minbody); %#ok<NASGU>
 
@@ -127,16 +140,16 @@ set(handles.slider_frame,'Value',1,'Min',1,'Max',nframessample,'SliderStep',[1/(
 fcn_slider_frame = get(handles.slider_frame,'Callback');
 hlisten_frame=addlistener(handles.slider_frame,'ContinuousValueChange',fcn_slider_frame); %#ok<NASGU>
 
-hslider=unique(findobj('Style','slider'));
-mins=get(hslider,'Min');
-maxs=get(hslider,'Max');
-if ~isa(mins,'cell')
-    mins=num2cell(mins);
-    maxs=num2cell(maxs);
-end
-for i=1:numel(hslider)
-    set(hslider(i),'SliderStep',[1/(maxs{i}-mins{i}),10/(maxs{i}-mins{i})])
-end
+% hslider=unique(findobj('Style','slider'));
+% mins=get(hslider,'Min');
+% maxs=get(hslider,'Max');
+% if ~isa(mins,'cell')
+%     mins=num2cell(mins);
+%     maxs=num2cell(maxs);
+% end
+% for i=1:numel(hslider)
+%     set(hslider(i),'SliderStep',[1/(maxs{i}-mins{i}),10/(maxs{i}-mins{i})])
+% end
 
 % Plot ROIs
 nROI=roidata.nrois;
@@ -221,31 +234,17 @@ isnew=debugdata.isnew;
 setappdata(0,'isnew',isnew)
 
 if isnew
-    if isappdata(0,'twing') 
-        trackdata=getappdata(0,'trackdata');
-
-        trackdata.perframedata=[];
-        if isfield(trackdata,'twing')
-            trackdata=rmfield(trackdata,'twing');
-        end
-        if strcmp(cbparams.track.assignidsby,'wingsize') && cbparams.track.dotrackwings
-            trackdata.stage='trackwings1';
-        else
-            trackdata.stage='trackwings2';
-        end
-
-        if isappdata(0,'debugdata_WT')
-            rmappdata(0,'debugdata_WT')
-        end
-        if isappdata(0,'twing')
-            rmappdata(0,'twing')
-        end
-
-        setappdata(0,'trackdata',trackdata)
-        setappdata(0,'P_stage','track2')
-    else
-        setappdata(0,'P_stage','track1')
+    if isappdata(0,'t')
+        rmappdata(0,'t')
     end
+    if isappdata(0,'trackdata')
+        rmappdata(0,'trackdata')
+    end
+    if isappdata(0,'debugdata_WT')
+        rmappdata(0,'debugdata_WT')
+    end
+
+    setappdata(0,'P_stage','track1')
     if cbparams.track.dosave
         savetemp({'debugdata'})
     end
@@ -253,8 +252,9 @@ end
 
 setappdata(0,'button','track')
 if ~getappdata(0,'singleexp')
-    setappdata('next',true)
+    setappdata(0,'next',true)
 end
+
 
 function cbtrackGUI_ROI_ResizeFcn(hObject, eventdata, handles)
 GUIscale=getappdata(0,'GUIscale');
@@ -271,12 +271,15 @@ set(hObject,'Value',f);
 visdata=getappdata(0,'visdata');
 if debugdata.vis<=2
     if debugdata.vis==1
-        set(debugdata.him,'CData',visdata.frames{f});
+        set(debugdata.him,'CData',visdata.framesW{f});
     else
-        set(debugdata.him,'CData',visdata.dbkgd{f});
+        set(debugdata.him,'CData',visdata.dbkgdW{f});
     end
     if isfield(debugdata,'htext')
       delete(debugdata.htext(ishandle(debugdata.htext)));
+    end
+    if isfield(debugdata,'hfly'),
+      delete(debugdata.hwing(ishandle(debugdata.hwing)));
     end
     if isfield(debugdata,'hwing'),
       delete(debugdata.hwing(ishandle(debugdata.hwing)));
@@ -287,14 +290,10 @@ if debugdata.vis<=2
     debugdata.htext = [];
     debugdata.hwing = [];
     debugdata.htrough = [];
+    set(handles.axes_wingtracker,'UserData',debugdata);
 elseif debugdata.vis>2
-    BG=getappdata(0,'BG');
-    bgmed=BG.bgmed;
-    roidata=getappdata(0,'roidata');
-    isarena=roidata.inrois_all;
-    debugdata=TrackWingsSingle_GUI(visdata.trx(:,f),bgmed,isarena,wing_params,visdata.frames{f},debugdata);
+    updateframe(debugdata,visdata.trxW(:,f),wing_params,visdata.framesW{f},visdata.dbkgdW{f},handles);
 end
-set(handles.axes_wingtracker,'UserData',debugdata);
 
 
 function slider_frame_CreateFcn(hObject, eventdata, handles)
@@ -307,50 +306,12 @@ function edit_set_Hbgthresh_Callback(hObject, eventdata, handles)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.mindwing_high=str2double(get(hObject,'String'));
-if wing_params.mindwing_high>get(handles.slider_set_Hbgthresh,'Max')
-    wing_params.mindwing_high=get(handles.slider_set_Hbgthresh,'Max');
-    set(hObject,'String',num2str(get(handles.slider_set_Hbgthresh,'Max')))
-elseif wing_params.mindwing_high<get(handles.slider_set_Hbgthresh,'Min')
-    wing_params.mindwing_high=get(handles.slider_set_Hbgthresh,'Min');
-    set(hObject,'String',num2str(get(handles.slider_set_Hbgthresh,'Min')))
-end
-hslider=unique(findobj('Style','slider'));
-mins=get(hslider,'Min');
-maxs=get(hslider,'Max');
-if ~isa(mins,'cell')
-    mins=num2cell(mins);
-    maxs=num2cell(maxs);
-end
-for i=1:numel(hslider)
-    set(hslider(i),'SliderStep',[1/(maxs{i}-mins{i}),10/(maxs{i}-mins{i})])
-end
-
-if debugdata.vis>2
-    f=get(handles.slider_frame,'Value');
-    visdata=getappdata(0,'visdata');
-    BG=getappdata(0,'BG');
-    bgmed=BG.bgmed;
-    roidata=getappdata(0,'roidata');
-    isarena=roidata.inrois_all;
-    debugdata=TrackWingsSingle_GUI(visdata.trx(:,f),bgmed,isarena,wing_params,visdata.frames{f},debugdata);
-    debugdata.isnew=1;
-end
-debugdata.isnew=true;
-set(handles.axes_wingtracker,'UserData',debugdata);
+f=get(handles.slider_frame,'Value');
+visdata=getappdata(0,'visdata');
+updateframe(debugdata,visdata.trxW(:,f),wing_params,visdata.framesW{f},visdata.dbkgdW{f},handles);
 set(handles.slider_set_Hbgthresh,'Value',wing_params.mindwing_high);
 set(handles.slider_set_Lbgthresh,'Value',min(get(handles.slider_set_Lbgthresh,'Value'),wing_params.mindwing_high),'Max',wing_params.mindwing_high);
 set(handles.edit_set_Lbgthresh,'String',num2str(min(str2double(get(handles.edit_set_Lbgthresh,'String')),wing_params.mindwing_high)));
-hslider=unique(findobj('Style','slider'));
-mins=get(hslider,'Min');
-maxs=get(hslider,'Max');
-if ~isa(mins,'cell')
-    mins=num2cell(mins);
-    maxs=num2cell(maxs);
-end
-for i=1:numel(hslider)
-    set(hslider(i),'SliderStep',[1/(maxs{i}-mins{i}),10/(maxs{i}-mins{i})])
-end
-
 set(handles.uipanel_set,'UserData',wing_params);
 
 
@@ -364,36 +325,9 @@ function edit_set_Lbgthresh_Callback(hObject, eventdata, handles)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.mindwing_low=str2double(get(hObject,'String'));
-if wing_params.mindwing_low>get(handles.slider_set_Lbgthresh,'Max')
-    wing_params.mindwing_low=get(handles.slider_set_Lbgthresh,'Max');
-    set(hObject,'String',num2str(get(handles.slider_set_Lbgthresh,'Max')))
-elseif wing_params.mindwing_low<get(handles.slider_set_Lbgthresh,'Min')
-    wing_params.mindwing_low=get(handles.slider_set_Lbgthresh,'Min');
-    set(hObject,'String',num2str(get(handles.slider_set_Lbgthresh,'Min')))
-end
-hslider=unique(findobj('Style','slider'));
-mins=get(hslider,'Min');
-maxs=get(hslider,'Max');
-if ~isa(mins,'cell')
-    mins=num2cell(mins);
-    maxs=num2cell(maxs);
-end
-for i=1:numel(hslider)
-    set(hslider(i),'SliderStep',[1/(maxs{i}-mins{i}),10/(maxs{i}-mins{i})])
-end
-
-if debugdata.vis>2
-    f=get(handles.slider_frame,'Value');
-    visdata=getappdata(0,'visdata');
-    BG=getappdata(0,'BG');
-    bgmed=BG.bgmed;
-    roidata=getappdata(0,'roidata');
-    isarena=roidata.inrois_all;
-    debugdata=TrackWingsSingle_GUI(visdata.trx(:,f),bgmed,isarena,wing_params,visdata.frames{f},debugdata);
-    debugdata.isnew=1;
-end
-debugdata.isnew=true;
-set(handles.axes_wingtracker,'UserData',debugdata);
+f=get(handles.slider_frame,'Value');
+visdata=getappdata(0,'visdata');
+updateframe(debugdata,visdata.trxW(:,f),wing_params,visdata.framesW{f},visdata.dbkgdW{f},handles);
 set(handles.slider_set_Lbgthresh,'Value',wing_params.mindwing_low);
 set(handles.uipanel_set,'UserData',wing_params);
 
@@ -423,32 +357,12 @@ function slider_set_Hbgthresh_Callback(hObject, eventdata, handles)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.mindwing_high=get(hObject,'Value');
+f=get(handles.slider_frame,'Value');
+visdata=getappdata(0,'visdata');
+updateframe(debugdata,visdata.trxW(:,f),wing_params,visdata.framesW{f},visdata.dbkgdW{f},handles);
 set(handles.edit_set_Hbgthresh,'String',num2str(wing_params.mindwing_high,'%.2f'));
-set(handles.uipanel_set,'UserData',wing_params);
-if debugdata.vis>2
-    f=get(handles.slider_frame,'Value');
-    visdata=getappdata(0,'visdata');
-    BG=getappdata(0,'BG');
-    bgmed=BG.bgmed;
-    roidata=getappdata(0,'roidata');
-    isarena=roidata.inrois_all;
-    debugdata=TrackWingsSingle_GUI(visdata.trx(:,f),bgmed,isarena,wing_params,visdata.frames{f},debugdata);
-    debugdata.isnew=1;
-end
-debugdata.isnew=true;
-set(handles.axes_wingtracker,'UserData',debugdata);
 set(handles.slider_set_Lbgthresh,'Value',min(get(handles.slider_set_Lbgthresh,'Value'),wing_params.mindwing_high),'Max',wing_params.mindwing_high);
 set(handles.edit_set_Lbgthresh,'String',num2str(min(str2double(get(handles.edit_set_Lbgthresh,'String')),wing_params.mindwing_high),'%.2f'));
-hslider=unique(findobj('Style','slider'));
-mins=get(hslider,'Min');
-maxs=get(hslider,'Max');
-if ~isa(mins,'cell')
-    mins=num2cell(mins);
-    maxs=num2cell(maxs);
-end
-for i=1:numel(hslider)
-    set(hslider(i),'SliderStep',[1/(maxs{i}-mins{i}),10/(maxs{i}-mins{i})])
-end
 
 
 function slider_set_Hbgthresh_CreateFcn(hObject, eventdata, handles)
@@ -461,18 +375,9 @@ function slider_set_Lbgthresh_Callback(hObject, eventdata, handles)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.mindwing_low=get(hObject,'Value');
-if debugdata.vis>2
-    f=get(handles.slider_frame,'Value');
-    visdata=getappdata(0,'visdata');
-    BG=getappdata(0,'BG');
-    bgmed=BG.bgmed;
-    roidata=getappdata(0,'roidata');
-    isarena=roidata.inrois_all;
-    debugdata=TrackWingsSingle_GUI(visdata.trx(:,f),bgmed,isarena,wing_params,visdata.frames{f},debugdata);
-    debugdata.isnew=1;
-end
-debugdata.isnew=true;
-set(handles.axes_wingtracker,'UserData',debugdata);
+f=get(handles.slider_frame,'Value');
+visdata=getappdata(0,'visdata');
+updateframe(debugdata,visdata.trxW(:,f),wing_params,visdata.framesW{f},visdata.dbkgdW{f},handles);
 set(handles.edit_set_Lbgthresh,'String',num2str(wing_params.mindwing_low,'%.2f'));
 set(handles.uipanel_set,'UserData',wing_params);
 
@@ -489,14 +394,18 @@ wing_params=get(handles.uipanel_set,'UserData');
 debugdata.vis=get(hObject,'Value');
 f=get(handles.slider_frame,'Value');
 visdata=getappdata(0,'visdata');
+frame=visdata.framesW{f};
 if debugdata.vis<=2
     if debugdata.vis==1
-        set(debugdata.him,'CData',visdata.frames{f});
+        set(debugdata.him,'CData',frame);
     else
-        set(debugdata.him,'CData',visdata.dbkgd{f});
+        set(debugdata.him,'CData',visdata.dbkgdW{f});
     end
     if isfield(debugdata,'htext')
       delete(debugdata.htext(ishandle(debugdata.htext)));
+    end
+    if isfield(debugdata,'hfly'),
+      delete(debugdata.hwing(ishandle(debugdata.hwing)));
     end
     if isfield(debugdata,'hwing'),
       delete(debugdata.hwing(ishandle(debugdata.hwing)));
@@ -507,15 +416,10 @@ if debugdata.vis<=2
     debugdata.htext = [];
     debugdata.hwing = [];
     debugdata.htrough = [];
+    set(handles.axes_wingtracker,'UserData',debugdata)
 elseif debugdata.vis>2
-    BG=getappdata(0,'BG');
-    bgmed=BG.bgmed;
-    roidata=getappdata(0,'roidata');
-    isarena=roidata.inrois_all;
-    debugdata=TrackWingsSingle_GUI(visdata.trx(:,f),bgmed,isarena,wing_params,visdata.frames{f},debugdata);
-    debugdata.isnew=1;
+    updateframe(debugdata,visdata.trxW(:,f),wing_params,visdata.framesW{f},visdata.dbkgdW{f},handles);
 end
-set(handles.axes_wingtracker,'UserData',debugdata)
 
 
 function popupmenu_vis_CreateFcn(hObject, eventdata, handles)
@@ -529,7 +433,7 @@ temp_Wparams=get(handles.uipanel_set,'UserData');
 f=get(handles.slider_frame,'Value');
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 [new_Wparams,debugdata]=advanced_wing(temp_Wparams,f,debugdata);
-if ~isequal(temp_Wparams,new_Wparams)
+if ~isequaln(temp_Wparams,new_Wparams)
     debugdata.isnew=true;
 end
 set(handles.axes_wingtracker,'UserData',debugdata);
@@ -556,6 +460,7 @@ setappdata(0,'button','BG')
 setappdata(0,'isnew',false)
 
 
+
 function pushbutton_ROIs_Callback(hObject, eventdata, handles)
 %Save size
 GUIscale=getappdata(0,'GUIscale');
@@ -574,6 +479,7 @@ end
 
 setappdata(0,'button','ROI')
 setappdata(0,'isnew',false)
+
 
 function pushbutton_WT_Callback(hObject, eventdata, handles)
 
@@ -602,36 +508,9 @@ function edit_set_minbody_Callback(hObject, eventdata, handles)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.mindbody=str2double(get(hObject,'String'));
-if wing_params.mindbody>get(handles.slider_set_minbody,'Max')
-    wing_params.mindbody=get(handles.slider_set_minbody,'Max');
-    set(hObject,'String',num2str(get(handles.slider_set_minbody,'Max')))
-elseif wing_params.mindbody<get(handles.slider_set_minbody,'Min')
-    wing_params.mindbody=get(handles.slider_set_minbody,'Min');
-    set(hObject,'String',num2str(get(handles.slider_set_minbody,'Min')))
-end
-hslider=unique(findobj('Style','slider'));
-mins=get(hslider,'Min');
-maxs=get(hslider,'Max');
-if ~isa(mins,'cell')
-    mins=num2cell(mins);
-    maxs=num2cell(maxs);
-end
-for i=1:numel(hslider)
-    set(hslider(i),'SliderStep',[1/(maxs{i}-mins{i}),10/(maxs{i}-mins{i})])
-end
-
-if debugdata.vis>2
-    f=get(handles.slider_frame,'Value');
-    visdata=getappdata(0,'visdata');
-    BG=getappdata(0,'BG');
-    bgmed=BG.bgmed;
-    roidata=getappdata(0,'roidata');
-    isarena=roidata.inrois_all;
-    debugdata=TrackWingsSingle_GUI(visdata.trx(:,f),bgmed,isarena,wing_params,visdata.frames{f},debugdata);
-    debugdata.isnew=1;
-end
-debugdata.isnew=true;
-set(handles.axes_wingtracker,'UserData',debugdata);
+f=get(handles.slider_frame,'Value');
+visdata=getappdata(0,'visdata');
+updateframe(debugdata,visdata.trxW(:,f),wing_params,visdata.framesW{f},visdata.dbkgdW{f},handles);
 set(handles.slider_set_minbody,'Value',wing_params.mindbody);
 set(handles.uipanel_set,'UserData',wing_params);
 
@@ -646,18 +525,9 @@ function slider_set_minbody_Callback(hObject, eventdata, handles)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.mindbody=get(hObject,'Value');
-if debugdata.vis>2
-    f=get(handles.slider_frame,'Value');
-    visdata=getappdata(0,'visdata');
-    BG=getappdata(0,'BG');
-    bgmed=BG.bgmed;
-    roidata=getappdata(0,'roidata');
-    isarena=roidata.inrois_all;
-    debugdata=TrackWingsSingle_GUI(visdata.trx(:,f),bgmed,isarena,wing_params,visdata.frames{f},debugdata);
-    debugdata.isnew=1;
-end
-debugdata.isnew=true;
-set(handles.axes_wingtracker,'UserData',debugdata);
+f=get(handles.slider_frame,'Value');
+visdata=getappdata(0,'visdata');
+updateframe(debugdata,visdata.trxW(:,f),wing_params,visdata.framesW{f},visdata.dbkgdW{f},handles);
 set(handles.edit_set_minbody,'String',num2str(wing_params.mindbody,'%.2f'));
 set(handles.uipanel_set,'UserData',wing_params);
 
@@ -672,36 +542,9 @@ function edit_set_minwing_Callback(hObject, eventdata, handles)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.min_single_wing_area=str2double(get(hObject,'String'));
-if wing_params.min_single_wing_area>get(handles.slider_set_minwing,'Max')
-    wing_params.min_single_wing_area=get(handles.slider_set_minwing,'Max');
-    set(hObject,'String',num2str(get(handles.slider_set_minwing,'Max')))
-elseif wing_params.min_single_wing_area<get(handles.slider_set_minwing,'Min')
-    wing_params.min_single_wing_area=get(handles.slider_set_minwing,'Min');
-    set(hObject,'String',num2str(get(handles.slider_set_minwing,'Min')))
-end
-hslider=unique(findobj('Style','slider'));
-mins=get(hslider,'Min');
-maxs=get(hslider,'Max');
-if ~isa(mins,'cell')
-    mins=num2cell(mins);
-    maxs=num2cell(maxs);
-end
-for i=1:numel(hslider)
-    set(hslider(i),'SliderStep',[1/(maxs{i}-mins{i}),10/(maxs{i}-mins{i})])
-end
-
-if debugdata.vis>2
-    f=get(handles.slider_frame,'Value');
-    visdata=getappdata(0,'visdata');
-    BG=getappdata(0,'BG');
-    bgmed=BG.bgmed;
-    roidata=getappdata(0,'roidata');
-    isarena=roidata.inrois_all;
-    debugdata=TrackWingsSingle_GUI(visdata.trx(:,f),bgmed,isarena,wing_params,visdata.frames{f},debugdata);
-    debugdata.isnew=1;
-end
-debugdata.isnew=true;
-set(handles.axes_wingtracker,'UserData',debugdata);
+f=get(handles.slider_frame,'Value');
+visdata=getappdata(0,'visdata');
+updateframe(debugdata,visdata.trxW(:,f),wing_params,visdata.framesW{f},visdata.dbkgdW{f},handles);
 set(handles.slider_set_minwing,'Value',wing_params.min_single_wing_area);
 set(handles.uipanel_set,'UserData',wing_params);
 
@@ -716,18 +559,9 @@ function slider_set_minwing_Callback(hObject, eventdata, handles)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.min_single_wing_area=get(hObject,'Value');
-if debugdata.vis>2
-    f=get(handles.slider_frame,'Value');
-    visdata=getappdata(0,'visdata');
-    BG=getappdata(0,'BG');
-    bgmed=BG.bgmed;
-    roidata=getappdata(0,'roidata');
-    isarena=roidata.inrois_all;
-    debugdata=TrackWingsSingle_GUI(visdata.trx(:,f),bgmed,isarena,wing_params,visdata.frames{f},debugdata);
-    debugdata.isnew=1;
-end
-debugdata.isnew=true;
-set(handles.axes_wingtracker,'UserData',debugdata);
+f=get(handles.slider_frame,'Value');
+visdata=getappdata(0,'visdata');
+updateframe(debugdata,visdata.trxW(:,f),wing_params,visdata.framesW{f},visdata.dbkgdW{f},handles);
 set(handles.edit_set_minwing,'String',num2str(wing_params.min_single_wing_area,'%.2f'));
 set(handles.uipanel_set,'UserData',wing_params);
 
@@ -742,36 +576,9 @@ function edit_set_wingin_Callback(hObject, eventdata, handles)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.wing_peak_min_frac_factor=str2double(get(hObject,'String'));
-if wing_params.wing_peak_min_frac_factor>get(handles.slider_set_wingin,'Max')
-    wing_params.wing_peak_min_frac_factor=get(handles.slider_set_wingin,'Max');
-    set(hObject,'String',num2str(get(handles.slider_set_wingin,'Max')))
-elseif wing_params.min_single_wing_area<get(handles.slider_set_wingin,'Min')
-    wing_params.wing_peak_min_frac_factor=get(handles.slider_set_wingin,'Min');
-    set(hObject,'String',num2str(get(handles.slider_set_wingin,'Min')))
-end
-hslider=unique(findobj('Style','slider'));
-mins=get(hslider,'Min');
-maxs=get(hslider,'Max');
-if ~isa(mins,'cell')
-    mins=num2cell(mins);
-    maxs=num2cell(maxs);
-end
-for i=1:numel(hslider)
-    set(hslider(i),'SliderStep',[1/(maxs{i}-mins{i}),10/(maxs{i}-mins{i})])
-end
-
-if debugdata.vis>2
-    f=get(handles.slider_frame,'Value');
-    visdata=getappdata(0,'visdata');
-    BG=getappdata(0,'BG');
-    bgmed=BG.bgmed;
-    roidata=getappdata(0,'roidata');
-    isarena=roidata.inrois_all;
-    debugdata=TrackWingsSingle_GUI(visdata.trx(:,f),bgmed,isarena,wing_params,visdata.frames{f},debugdata);
-    debugdata.isnew=1;
-end
-debugdata.isnew=true;
-set(handles.axes_wingtracker,'UserData',debugdata);
+f=get(handles.slider_frame,'Value');
+visdata=getappdata(0,'visdata');
+updateframe(debugdata,visdata.trxW(:,f),wing_params,visdata.framesW{f},visdata.dbkgdW{f},handles);
 set(handles.slider_set_wingin,'Value',wing_params.wing_peak_min_frac_factor);
 set(handles.uipanel_set,'UserData',wing_params);
 
@@ -786,18 +593,9 @@ function slider_set_wingin_Callback(hObject, eventdata, handles)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.wing_peak_min_frac_factor=get(hObject,'Value');
-if debugdata.vis>2
-    f=get(handles.slider_frame,'Value');
-    visdata=getappdata(0,'visdata');
-    BG=getappdata(0,'BG');
-    bgmed=BG.bgmed;
-    roidata=getappdata(0,'roidata');
-    isarena=roidata.inrois_all;
-    debugdata=TrackWingsSingle_GUI(visdata.trx(:,f),bgmed,isarena,wing_params,visdata.frames{f},debugdata);
-    debugdata.isnew=1;
-end
-debugdata.isnew=true;
-set(handles.axes_wingtracker,'UserData',debugdata);
+f=get(handles.slider_frame,'Value');
+visdata=getappdata(0,'visdata');
+updateframe(debugdata,visdata.trxW(:,f),wing_params,visdata.framesW{f},visdata.dbkgdW{f},handles);
 set(handles.edit_set_wingin,'String',num2str(wing_params.wing_peak_min_frac_factor,'%.2f'));
 set(handles.uipanel_set,'UserData',wing_params);
 
@@ -831,37 +629,10 @@ function edit_set_mincc_Callback(hObject, eventdata, handles)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.min_wingcc_area=str2double(get(hObject,'String'));
-if wing_params.min_wingcc_area>get(handles.slider_set_mincc,'Max')
-    wing_params.min_wingcc_area=get(handles.slider_set_mincc,'Max');
-    set(hObject,'String',num2str(get(handles.slider_set_mincc,'Max')))
-elseif wing_params.min_wingcc_area<get(handles.slider_set_mincc,'Min')
-    wing_params.min_wingcc_area=get(handles.slider_set_mincc,'Min');
-    set(hObject,'String',num2str(get(handles.slider_set_mincc,'Min')))
-end
-hslider=unique(findobj('Style','slider'));
-mins=get(hslider,'Min');
-maxs=get(hslider,'Max');
-if ~isa(mins,'cell')
-    mins=num2cell(mins);
-    maxs=num2cell(maxs);
-end
-for i=1:numel(hslider)
-    set(hslider(i),'SliderStep',[1/(maxs{i}-mins{i}),10/(maxs{i}-mins{i})])
-end
-
-if debugdata.vis>2
-    f=get(handles.slider_frame,'Value');
-    visdata=getappdata(0,'visdata');
-    BG=getappdata(0,'BG');
-    bgmed=BG.bgmed;
-    roidata=getappdata(0,'roidata');
-    isarena=roidata.inrois_all;
-    debugdata=TrackWingsSingle_GUI(visdata.trx(:,f),bgmed,isarena,wing_params,visdata.frames{f},debugdata);
-    debugdata.isnew=1;
-end
-debugdata.isnew=true;
-set(handles.axes_wingtracker,'UserData',debugdata);
-set(handles.slider_set_mincc,'Value',wing_params.min_single_wing_area);
+f=get(handles.slider_frame,'Value');
+visdata=getappdata(0,'visdata');
+updateframe(debugdata,visdata.trxW(:,f),wing_params,visdata.framesW{f},visdata.dbkgdW{f},handles);
+set(handles.slider_set_mincc,'Value',wing_params.min_wingcc_area);
 set(handles.uipanel_set,'UserData',wing_params);
 
 
@@ -875,18 +646,9 @@ function slider_set_mincc_Callback(hObject, eventdata, handles)
 debugdata=get(handles.axes_wingtracker,'UserData'); 
 wing_params=get(handles.uipanel_set,'UserData');
 wing_params.min_wingcc_area=get(hObject,'Value');
-if debugdata.vis>2
-    f=get(handles.slider_frame,'Value');
-    visdata=getappdata(0,'visdata');
-    BG=getappdata(0,'BG');
-    bgmed=BG.bgmed;
-    roidata=getappdata(0,'roidata');
-    isarena=roidata.inrois_all;
-    debugdata=TrackWingsSingle_GUI(visdata.trx(:,f),bgmed,isarena,wing_params,visdata.frames{f},debugdata);
-    debugdata.isnew=1;
-end
-debugdata.isnew=true;
-set(handles.axes_wingtracker,'UserData',debugdata);
+f=get(handles.slider_frame,'Value');
+visdata=getappdata(0,'visdata');
+updateframe(debugdata,visdata.trxW(:,f),wing_params,visdata.framesW{f},visdata.dbkgdW{f},handles);
 set(handles.edit_set_mincc,'String',num2str(wing_params.min_wingcc_area,'%.2f'));
 set(handles.uipanel_set,'UserData',wing_params);
 
@@ -906,8 +668,31 @@ if isfield(handles,'cbtrackGUI_ROI') && ishandle(handles.cbtrackGUI_ROI)
 end
 
 
-% function pushbutton_Callback(hObject, eventdata, handles)
-% debugdata=get(handles.axes_wingtracker,'UserData');
-% debugdata.isnew=false;
-% set(handles.axes_wingtracker,'UserData',debugdata);
-% cbtrackGUI_WingTracker_OpeningFcn(handles.cbtracGUI_ROI, eventdata, handles, [])
+function updateframe(debugdata,trxW,wing_params,frameW,dbkgdW,handles)
+if wing_params.min_wingcc_area>get(handles.slider_set_mincc,'Max')
+    wing_params.min_wingcc_area=get(handles.slider_set_mincc,'Max');
+    set(hObject,'String',num2str(get(handles.slider_set_mincc,'Max')))
+elseif wing_params.min_wingcc_area<get(handles.slider_set_mincc,'Min')
+    wing_params.min_wingcc_area=get(handles.slider_set_mincc,'Min');
+    set(hObject,'String',num2str(get(handles.slider_set_mincc,'Min')))
+end
+% hslider=unique(findobj('Style','slider'));
+% mins=get(hslider,'Min');
+% maxs=get(hslider,'Max');
+% if ~isa(mins,'cell')
+%     mins=num2cell(mins);
+%     maxs=num2cell(maxs);
+% end
+% for i=1:numel(hslider)
+%     set(hslider(i),'SliderStep',[1/(maxs{i}-mins{i}),10/(maxs{i}-mins{i})])
+% end
+% 
+if debugdata.vis>2
+    BG=getappdata(0,'BG');
+    bgmed=BG.bgmed;
+    debugdata=TrackWingsSingle_GUI(trxW,bgmed,wing_params,frameW,dbkgdW,debugdata);
+    debugdata.isnew=1;
+end
+debugdata.isnew=true;
+set(handles.axes_wingtracker,'UserData',debugdata);
+set(handles.edit_set_mincc,'String',num2str(wing_params.min_wingcc_area,'%.2f'));

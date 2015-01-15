@@ -1,7 +1,7 @@
 appdatalist={'isnew','button','next','viewlog','h_log','expdir','experiment','moviefile','out',...
     'analysis_protocol','P_stage','cbparams','restart','GUIscale',...
-    'startframe','endframe','BG','roidata','visdata','debugdata_WT',...
-    'pff_all','t','trackdata','iscancel','isskip','allow_stop','isstop','twing'};
+    'startframe','endframe','vign','H0','BG','roidata','roidata_rs','visdata','debugdata_WT',...
+    'pff_all','t','trackdata','iscancel','isskip','allow_stop','isstop','grayscale'};
 out=getappdata(0,'out');
 experiment=getappdata(0,'experiment');
 if ~isempty(out)
@@ -36,5 +36,10 @@ if ~isempty(all_files)
         end
     end
 end
+
+funpath=fileparts(fileparts(which('DuoTrax')));
+DuoTrax_path=genpath(funpath);
+rmpath(DuoTrax_path);
+
 clear
 clearvars -global

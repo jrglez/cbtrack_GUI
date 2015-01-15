@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_tracker_params(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_tracker_params
 
-% Last Modified by GUIDE v2.5 11-Nov-2014 11:53:37
+% Last Modified by GUIDE v2.5 28-May-2014 13:39:55
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -47,6 +47,10 @@ end
 function cbtrackGUI_tracker_params_OpeningFcn(hObject, eventdata, handles, varargin)
 % Set parameters in the gui
 temp_Tparams=varargin{1};
+handles_tracker=varargin{2};
+vign=get(handles_tracker.pushbutton_trset,'UserData');
+H0=get(handles_tracker.edit_set_first,'UserData');
+
 set(handles.checkbox_debug,'Value',temp_Tparams.DEBUG)
 set(handles.edit_duration_initial,'String',num2str(temp_Tparams.firstframetrack))
 set(handles.edit_duration_final,'String',num2str(temp_Tparams.lastframetrack))
@@ -61,6 +65,10 @@ elseif strcmp(temp_Tparams.assignidsby,'wingsize')
 end
 
 set(handles.figure1,'UserData',temp_Tparams)
+set(handles.pushbutton_accept,'UserData',handles_tracker)
+set(handles.pushbutton_cancel,'UserData',temp_Tparams)
+set(handles.pushbutton_advanced,'UserData',vign)
+set(handles.checkbox_wings,'UserData',H0)
 
 % Choose default command line output for cbtrackGUI_tracker_params
 handles.output = hObject;
@@ -72,6 +80,9 @@ uiwait(handles.figure1);
 
 function varargout = cbtrackGUI_tracker_params_OutputFcn(hObject, eventdata, handles) 
 varargout{1} = get(handles.figure1,'UserData');
+varargout{2} = get(handles.pushbutton_advanced,'UserData');
+varargout{3} = get(handles.checkbox_wings,'UserData');
+
 if isfield(handles,'figure1') && ishandle(handles.figure1)
     delete(handles.figure1)
 end
@@ -97,8 +108,12 @@ end
 
 function pushbutton_advanced_Callback(hObject, eventdata, handles)
 temp_Tparams=get(handles.figure1,'UserData');
-temp_Tparams=advanced_track(temp_Tparams);
+handles_tracker=get(handles.pushbutton_accept,'UserData');
+[temp_Tparams,vign,H0]=advanced_track(temp_Tparams,handles_tracker);
 set(handles.figure1,'UserData',temp_Tparams)
+set(handles.pushbutton_advanced,'UserData',vign)
+set(handles.checkbox_wings,'UserData',H0)
+
 
 
 function checkbox_wings_Callback(hObject, eventdata, handles)
@@ -158,6 +173,18 @@ function uipanel_ID_SelectionChangeFcn(hObject, eventdata, handles)
 
 
 function figure1_CloseRequestFcn(hObject, eventdata, handles)
+old_Tparams=get(handles.pushbutton_cancel,'UserData');
+handles_tracker=get(handles.pushbutton_accept,'UserData');
+update_fh=handles_tracker.update_fh;
+visdata=handles_tracker.visdata;
+vign=get(handles_tracker.pushbutton_trset,'UserData');
+H0=get(handles_tracker.edit_set_first,'UserData');
+
+update_fh(handles_tracker,old_Tparams,visdata,vign,H0);
+
+set(handles.figure1,'UserData',old_Tparams)
+set(handles.pushbutton_advanced,'UserData',vign)
+set(handles.checkbox_wings,'UserData',H0)
 uiresume(handles.figure1);
 
 

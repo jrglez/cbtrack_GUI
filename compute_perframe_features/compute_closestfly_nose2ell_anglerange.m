@@ -16,10 +16,11 @@ mind = cell(1,nflies);
 anglerange1 = anglerange(1);
 anglerange2 = modrange(anglerange(2),anglerange(1),anglerange(1)+2*pi);
 
+logfid=open_log('perframefeature_log');
 for i1 = 1:nflies,
   fly1 = flies(i1);
   s=sprintf('fly1 = %d\n',fly1);
-  write_log(1,getappdata(0,'experiment'),s)
+  write_log(logfid,getappdata(0,'experiment'),s)
 
   flies2 = flies(trx.roi(fly1)==trx.roi(flies));
   
@@ -95,5 +96,8 @@ if dosave_d,
   save(filename,'data','units');
 end
 
+if logfid>1
+    fclose(logfid);
+end
 data = closestfly;
 units = parseunits('unit');

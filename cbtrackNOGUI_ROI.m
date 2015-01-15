@@ -5,6 +5,10 @@ loadfile=fullfile(out.folder,cbparams.dataloc.roidatamat.filestr);
 if getappdata(0,'usefiles') && exist(loadfile,'file')
     try
         roidata=load(loadfile);
+        if isfield(roidata,'nframes_per_roi')
+            roidata=rmfield(roidata,'nflies_per_roi');
+        end
+        
         logfid=open_log('roi_log');
         s=sprintf('Loading ROI data data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
         write_log(logfid,getappdata(0,'experiment'),s)

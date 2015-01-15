@@ -1,4 +1,4 @@
-function [debugdata,trxcurr]=TrackWingsSingle_GUI(trxcurr,bgmodel,isarena,params,im,debugdata)
+function [debugdata,trxcurr]=TrackWingsSingle_GUI(trxcurr,bgmodel,params,im,dbkgd,debugdata)
 
 % choose histogram bins for wing pixel angles for fitting wings
 params.edges_dthetawing = linspace(-params.max_wingpx_angle,params.max_wingpx_angle,params.nbins_dthetawing+1);
@@ -32,13 +32,11 @@ end
 
 %% start tracking
   % fit this frame
-im=double(im);
 debugdata.im = im;
 debugdata.track=0;
-bgmodel=double(bgmodel);
-[iswing,isfore_thresh,idxfore_thresh,npxfore_thresh,fore2body,debugdata] = TrackWings_BackSub(im,bgmodel,isarena,params,debugdata);
+[iswing,isfore_thresh,idxfore_thresh,npxfore_thresh,fore2body,debugdata] = TrackWings_BackSub_setup(double(dbkgd),bgmodel,params,debugdata);
 if debugdata.vis>6
-    [fore2flywing,dthetawing,trxcurr,debugdata] = TrackWings_SegmentFlies_GUI(im,isfore_thresh,idxfore_thresh,npxfore_thresh,fore2body,iswing,...
+    [fore2flywing,dthetawing,trxcurr,debugdata] = TrackWings_SegmentFlies_GUI(double(im),isfore_thresh,idxfore_thresh,npxfore_thresh,fore2body,iswing,...
       trxcurr,params,XGRID,YGRID,debugdata);
   if debugdata.vis==9
         [wingtrxcurr,debugdata] = TrackWings_FitWings_GUI(fore2flywing,dthetawing,idxfore_thresh,trxcurr,params,debugdata);

@@ -132,7 +132,11 @@ if ischar(resultsmovie_params.nzoomr) || ischar(resultsmovie_params.nzoomc),
   end  
 end
 
-boxradius=round(0.5*(floor(nr/resultsmovie_params.nzoomr)/resultsmovie_params.scalefactor)-1);
+if resultsmovie_params.nzoomr~=0
+    boxradius=round(0.5*(floor(nr/resultsmovie_params.nzoomr)/resultsmovie_params.scalefactor)-1);
+else
+    boxradius=0;
+end
 
 %% choose colors for each fly
 
@@ -255,36 +259,36 @@ cmd = sprintf('mencoder %s -o %s -ovc xvid -xvidencopts fixed_quant=4 -vf scale=
 status = system(cmd);
 if status ~= 0,
   s=sprintf('*****\n');
-  write_log(1,experiment,s)
+  write_log(logfid,experiment,s)
   warning('Failed to compress avi to %s',xvidfile);
   s=sprintf('Need to run:\n');
-  write_log(1,experiment,s)
+  write_log(logfid,experiment,s)
   s=sprintf('%s\n',cmd);
-  write_log(1,experiment,s)
+  write_log(logfid,experiment,s)
   cmd2 = sprintf('mencoder %s -o %s -ovc xvid -xvidencopts fixed_quant=4 -vf flip -msglevel all=2\n',...
     tmpfile,xvidfile);
   s=sprintf('then\n');
-  write_log(1,experiment,s)
-  write_log(1,experiment,cmd2)  
+  write_log(logfid,experiment,s)
+  write_log(logfid,experiment,cmd2)  
   s=sprintf('then delete %s %s %s\n',tmpfile,avifile,subtitlefile);
-  write_log(1,experiment,s)
+  write_log(logfid,experiment,s)
   s=sprintf('*****\n');
-  write_log(1,experiment,s)
+  write_log(logfid,experiment,s)
 else
   cmd = sprintf('mencoder %s -o %s -ovc xvid -xvidencopts fixed_quant=4 -vf flip -msglevel all=2\n',...
     tmpfile,xvidfile);
   status = system(cmd);
   if status ~= 0,
     s=sprintf('*****\n');
-    write_log(1,experiment,s)
+    write_log(logfid,experiment,s)
     warning('Failed to add subtitles to %s',xvidfile);
     s=sprintf('Need to run:\n');
-    write_log(1,experiment,s)
-    write_log(1,experiment,cmd)
+    write_log(logfid,experiment,s)
+    write_log(logfid,experiment,cmd)
     s=sprintf('then delete %s %s %s\n',tmpfile,avifile,subtitlefile);
-    write_log(1,experiment,s)
+    write_log(logfid,experiment,s)
     s=sprintf('*****\n');
-    write_log(1,experiment,s)
+    write_log(logfid,experiment,s)
   else
     delete(tmpfile);
     delete(avifile);

@@ -14,9 +14,13 @@ for i = 1:numel(fns),
   for n = ns,
     filename = obj.GetPerFrameFile(fn,n);
     if exist(filename,'file'),
+      logfid=open_log('perframefeature_log');
       s=sprintf('Deleting per-frame data file %s\n',filename);
-      write_log(1,getappdata(0,'experiment'),s)
+      write_log(logfid,getappdata(0,'experiment'),s)
       delete(filename);
+      if logfid > 1,
+        fclose(logfid);
+      end
     end
     
     % clear from cache
@@ -25,7 +29,6 @@ for i = 1:numel(fns),
       obj.datacached{n}(j) = [];
       obj.fnscached{n}(j) = [];
       obj.nfnscached(n) = obj.nfnscached(n)-1;
-    end
-    
+    end    
   end
 end

@@ -18,7 +18,7 @@ bgfixdata.xs = {};
 bgfixdata.ys = {};
 msg_correct=mymsgbox(50,190,14,'Helvetica','Please, select the regions you wish to correct. Press ''Correct'' when you are done.','Correct','help','modal'); %#ok<NASGU>
 
-
+im_class = class(readframe(1));
 
 while true,
   
@@ -61,7 +61,7 @@ while true,
     fs = unique(round(linspace(startframe,endframe,tracking_params.bg_nframes)));
   end
   
-  buffer = readframe(1);
+  buffer = double(readframe(1));
   buffer = buffer(inroi);
   buffer = repmat(buffer,[1,numel(fs)]);
   for i = 1:numel(fs),
@@ -102,6 +102,8 @@ while true,
   
 end
 delete(hroi)
+
+bgmed = any_class(bgmed,im_class);
 
 if fidfix > 0,
   fclose(fidfix);

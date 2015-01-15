@@ -22,7 +22,7 @@ function varargout = cbtrackGUI_ROI(varargin)
 
 % Edit the above text to modify the response to help cbtrackGUI_ROI_temp
 
-% Last Modified by GUIDE v2.5 18-Nov-2014 17:20:02
+% Last Modified by GUIDE v2.5 17-Nov-2014 17:09:49
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -82,6 +82,7 @@ manual.add=0; % 1 whena dding point to a ROI after removing any of the exitent o
 manual.pos_h=cell(0);
 manual.on=0;
 manual.delete=0;
+handles.texth=text(255,415,'','FontSize',16,'Color',[0 1 0],'HorizontalAlignment','center','units','pixels');    
 set(handles.text_exp,'FontSize',24,'HorizontalAlignment','center','units','pixels','FontUnits','pixels','String',experiment);
 goodfs(handles.text_exp,experiment);
 
@@ -151,8 +152,20 @@ else
     if getappdata(0,'usefiles') && exist(loadfile,'file')
         try
             roidata=load(loadfile);
-            manual=roidata.manual;
-            list=roidata.list;
+            if isfield(roidata,'nframes_per_roi')
+                roidata=rmfield(roidata,'nflies_per_roi');
+            end
+            
+            if ~isfield(roidata,'manual')
+                roidata.manual = manual;
+            else
+                manual=roidata.manual;
+            end
+            if ~isfield(roidata,'list')
+                roidata.list = list;
+            else
+                list=roidata.list;
+            end
             logfid=open_log('roi_log');
             s=sprintf('Loading ROI data data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
             write_log(logfid,experiment,s)
@@ -316,9 +329,7 @@ if isnew
     if isappdata(0,'debugdata_WT')
         rmappdata(0,'debugdata_WT')
     end
-    if isappdata(0,'twing')
-        rmappdata(0,'twing')
-    end
+    
     roidata.isnew=false;
     roidata.manual=manual;
     roidata.list=list;
@@ -652,7 +663,7 @@ else
         set(handles.radiobutton_manual,'UserData',manual)
         set(handles.uipanel_settings,'Userdata',params)
         guidata(handles.cbtrackGUI_ROI,handles)
-    end 
+    end  
 end
 
 
@@ -912,6 +923,7 @@ if strcmp('Yes',msg_clear)
 end
 
 
+
 function edit_set_std_Callback(hObject, eventdata, handles)
 
 
@@ -1066,7 +1078,6 @@ else
     set(hObject,'String','Delete')
 end
 set(handles.radiobutton_manual,'UserData',manual)
-
 
 
 function pushbutton_WT_Callback(hObject, eventdata, handles)

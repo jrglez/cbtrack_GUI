@@ -41,8 +41,18 @@ trx.AddExpDir(out.folder,'openmovie',false);
 %% compute per-frame features
 
 if isempty(perframefns),
-  if ~isempty(perframe_params.perframefns)
+  if ~isempty(perframe_params.perframefns) && cbparams.track.dotrack
     perframefns = perframe_params.perframefns;
+    if cbparams.track.dotrackwings
+        wingfns = {'dangle_biggest_wing';'dangle_smallest_wing';'darea_inmost_wing';...
+            'darea_outmost_wing';'dmax_wing_angle';'dmax_wing_area';...
+            'dmin_wing_angle';'dmin_wing_area';'dwing_angle_diff';...
+            'dwing_angle_imbalance';'max_absdwing_angle';'max_absdwing_area';...
+            'max_dwing_angle_in';'max_dwing_angle_out';'min_absdwing_angle';...
+            'min_absdwing_area';'min_dwing_angle_in';'min_dwing_angle_out'};
+        [~,iswingfn] = intersect(perframefns,wingfns);
+        perframefns(iswingfn) = [];
+    end
   else
     perframefns = {};
   end

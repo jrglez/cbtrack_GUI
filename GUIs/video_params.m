@@ -22,7 +22,7 @@ function varargout = video_params(varargin)
 
 % Edit the above text to modify the response to help video_params
 
-% Last Modified by GUIDE v2.5 16-Jun-2014 16:45:56
+% Last Modified by GUIDE v2.5 17-Dec-2014 18:23:34
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -57,16 +57,18 @@ moviefile=getappdata(0,'moviefile');
 cbparams=getappdata(0,'cbparams');
 BG=getappdata(0,'BG');
 roidata=getappdata(0,'roidata');
+movie_params=varargin{1};
+vign=varargin{2};
+H0=varargin{3};
 
 nflies_per_roi=roidata.nflies_per_roi;
 
 %%% Detect flies
 f=cbparams.track.firstframetrack;
-[readframe] = get_readframe_fcn(moviefile);
-[im,dbkgd]=compute_dbkgd(readframe,1,1,cbparams.track,BG.bgmed,roidata.inrois_all);
-im=im{1};
-dbkgd=dbkgd{1};
-[~,~,~,trx] = ChangeParams_GUI(readframe(1),BG.bgmed,dbkgd,roidata,nflies_per_roi,cbparams.detect_rois,cbparams.track);
+[readframe,~,fid] = get_readframe_fcn(moviefile);
+im=readframe(f);
+[~,dbkgd,~,~,~,trx] =...
+    ChangeParams_GUI(readframe(f),roidata,nflies_per_roi,cbparams.track,vign,H0,6);
 trx2=struct('x',[],'y',[],'a',[],'b',[],'theta',[]);
 trx2=repmat(trx2,[sum(nflies_per_roi),1]);
 k=1;
@@ -91,7 +93,6 @@ maxaxesw=scrw-2*xmar0-xmar1-xmar2;
 maxaxesh=scrh-2*ymar0-ymar1-ymar2;
 [imh,imw]=size(im);
 
-movie_params=cbparams.results_movie;
 nzoomc=movie_params.nzoomc;
 nzoomr=movie_params.nzoomr;
 if ~isnumeric(nzoomr) || isempty(nzoomr) || ~isnumeric(nzoomc) || isempty(nzoomc),    
@@ -152,7 +153,21 @@ axis(handles.axes_vid,[0.5,vidw+0.5,0.5,vidh+0.5]);
 colormap('gray')
 
 debugdata.vis=9; debugdata.DEBUG=0; debugdata.track=0; debugdata.vid=1; 
-[~,trx]=TrackWingsSingle_GUI(trx,BG.bgmed,roidata.inrois_all,cbparams.wingtrack,readframe(f),debugdata);
+[~,trx]=TrackWingsSingle_GUI(trx,BG.bgmed,cbparams.wingtrack,readframe(f),dbkgd,debugdata);
+% convert trx to the original size;
+for i=1:numel(trx)
+    trx(i).x = (trx(i).x-0.5)*cbparams.track.down_factor;
+    trx(i).y = (trx(i).y-0.5)*cbparams.track.down_factor;
+    trx(i).a = trx(i).a*cbparams.track.down_factor;
+    trx(i).b = trx(i).b*cbparams.track.down_factor;
+    if isfield(trx(i),'xwingl')
+        trx(i).xwingl = (trx(i).xwingl-0.5)*cbparams.track.down_factor;
+        trx(i).ywingl = (trx(i).ywingl-0.5)*cbparams.track.down_factor;
+        trx(i).xwingr = (trx(i).xwingr-0.5)*cbparams.track.down_factor;
+        trx(i).ywingr = (trx(i).ywingr-0.5)*cbparams.track.down_factor;
+    end
+end
+
 doplotwings = cbparams.track.dotrackwings && all(isfield(trx,{'xwingl','ywingl','xwingr','ywingr'}));
 scalefactor = movie_params.scalefactor;
 
@@ -254,6 +269,9 @@ for fly = 1:nflies,
   end
 end
 
+if fid>1
+    fclose(fid);
+end
 
 %%% Create uiobjects
 handles.text_resc=uicontrol('Style','text','Units','Pixels',...
@@ -295,7 +313,7 @@ end
 %     'Position',[10 10 150 34],'FontUnits','pixels','FontName','Arial',...
 %     'FontSize',14,'FontWeight','bold','Enable','on',...
 %     'Callback',@pushbutton_default_Callback);
- 
+
 uiset_name={'checkbox_dovideo';'text_FPS';'edit_FPS';'checkbox_nzoom';...
     'text_nzoom';'text_nr';'edit_nr';'text_nc';'edit_nc';'text_zoom';...
     'slider_zoom';'edit_zoom';'text_tailL';'edit_tailL';'text_nframes';...
@@ -335,15 +353,10 @@ uiset_alignment={'left','left','center','left','left','center','center','center'
     'center','center','center','left','center','center','center','center'};
 uiset_fs=repmat(14,[numel(uiset_name),1]); uiset_fs(1)=16;
 uiset_BG=repmat([0.929 0.929 0.929],[numel(uiset_name),1]); uiset_BG(strcmp(uiset_style,'edit'),:)=1;
-if movie_params.dovideo
-    uiset_enable={'on';'on';'on';'on';'on';'on';'on';'on';'on';'on';'on';'on';...
+uiset_enable={'on';'on';'on';'on';'on';'on';'on';'on';'on';'on';'on';'on';...
         'on';'on';'on';'on';'on';'on';'on';'on';'on';'on';'on';'on';'on';...
         'on';'off';'off';'off';'off'};
-else
-    uiset_enable={'on';'off';'off';'off';'off';'off';'off';'off';'off';'off';'off';...
-        'off';'off';'off';'off';'off';'off';'off';'off';'off';'off';'off';...
-        'off';'off';'off';'off';'off';'off';'off';'off'};
-end
+
 uiset_callback={@checkbox_dovideo_Callback;@text_FPS_Callback;...
     @edit_FPS_Callback;@checkbox_nzoom_Callback; @text_zoom_Callback;...
     @text_nr_Callback;@reset_nzoom;@text_nc_Callback;...
@@ -374,12 +387,16 @@ for i=1:numel(uiset_style)
     'Enable',uiset_enable{i},'BackgroundColor',uiset_BG(i,:),...
     'Callback',uiset_callback{i},'TooltipString',uiset_tip{i});
 end
+if ~cbparams.track.dotrack
+    set(handles.checkbox_dovideo,'Value',false,'Enable','off')
+    movie_params.dovideo = 0;
+end
 
 handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
 
-set(handles.slider_zoom,'Min',1e-6,'Max',max_scalefactor+1.1e-6)
+set(handles.slider_zoom,'Min',0,'Max',max_scalefactor+1e-6)
 if nzoom==0
     checkbox_nzoom_Callback(handles.checkbox_nzoom, eventdata);
 end
@@ -403,12 +420,17 @@ vid.x0=x0;
 vid.y0=y0;
 vid.doplotwings=doplotwings;
 set(handles.panel_set,'UserData',movie_params);
+set(handles.pushbutton_accept,'UserData',movie_params);
 set(handles.axes_vid,'UserData',vid);
 set(handles.figure1,'UserData',vidscale);
 
+uiwait(handles.figure1)
+
 function varargout = video_params_OutputFcn(hObject, eventdata, handles) 
 % Get default command line output from handles structure
-varargout{1} = handles.output;
+movie_params=get(handles.pushbutton_accept,'UserData');
+varargout{1} = movie_params;
+delete(handles.figure1)
 
 
 function figure1_CreateFcn(hObject, eventdata, handles) %#ok<*DEFNU,*INUSD>
@@ -585,29 +607,14 @@ set(handles.text_resc,'String',resc_s);
 
 
 function checkbox_dovideo_Callback(hObject, eventdata)
-handles=guidata(hObject);
-uiset_name={'checkbox_dovideo';'text_FPS';'edit_FPS';'text_nzoom';'text_nr';...
-    'edit_nr';'text_nc';'edit_nc';'text_zoom';'slider_zoom';'edit_zoom';...
-    'text_tailL';'edit_tailL';'text_nframes';'text_nframesI';...
-    'edit_nframesI';'text_nframesM';'edit_nframesM';'text_nframesF';...
-    'edit_nframesF';'text_size';'text_vidw';'edit_vidw';'text_vidh';'edit_vidh';};
-if get(hObject,'Value')
-    for i=2:numel(uiset_name)
-        set(handles.(uiset_name{i}),'Enable','on')
-    end
-else
-    for i=2:numel(uiset_name)
-        set(handles.(uiset_name{i}),'Enable','off')
-    end
-end
-        
+
+
 function pushbutton_cancel_Callback(hObject, eventdata)
 handles=guidata(hObject);
-delete(handles.figure1)
+uiresume(handles.figure1)
 
 function pushbutton_accept_Callback(hObject, eventdata)
 handles=guidata(hObject);
-cbparams=getappdata(0,'cbparams');
 movie_params=get(handles.panel_set,'UserData');
 
 movie_params.dovideo=get(handles.checkbox_dovideo,'Value');
@@ -619,10 +626,9 @@ movie_params.taillength=str2double(get(handles.edit_tailL,'String'));
 movie_params.nframes=[str2double(get(handles.edit_nframesI,'String')),str2double(get(handles.edit_nframesM,'String')),str2double(get(handles.edit_nframesF,'String'))];
 movie_params.figpos=[1,1,str2double(get(handles.edit_vidw,'String')),str2double(get(handles.edit_vidh,'String'))];
 
-cbparams.results_movie=movie_params;
-setappdata(0,'cbparams',cbparams);
+set(handles.pushbutton_accept,'UserData',movie_params);
 
-delete(handles.figure1)
+uiresume(handles.figure1)
 
 
 function edit_FPS_Callback(hObject, eventdata)
@@ -874,8 +880,11 @@ vid.y0=y0;
 set(handles.panel_set,'UserData',movie_params);
 set(handles.axes_vid,'UserData',vid);
 
-
 % function pushbutton_default_Callback(hObject, eventdata)
 % handles=guidata(hObject);
 % 
 % video_params_OpeningFcn(handles.figure1, eventdata, handles, [])
+
+
+function figure1_CloseRequestFcn(hObject, eventdata, handles)
+uiresume(handles.figure1);

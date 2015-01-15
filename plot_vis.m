@@ -1,24 +1,24 @@
-function plot_vis(handles,visdata,f)
+function plot_vis(handles,visdata)
 switch visdata.plot
     case 1
         if isfield(visdata,'hell') 
             delete(visdata.hell(ishandle(visdata.hell)))
         end
         visdata.hell=[];
-        set(handles.BG_img,'CData',visdata.frames{f});
+        set(handles.BG_img,'CData',visdata.frame_rs);
     case 2
         if isfield(visdata,'hell') 
             delete(visdata.hell(ishandle(visdata.hell)))
         end
         visdata.hell=[];
-        set(handles.BG_img,'CData',visdata.dbkgd{f});
+        set(handles.BG_img,'CData',visdata.dbkgd);
     case 3
         if isfield(visdata,'hell') 
             delete(visdata.hell(ishandle(visdata.hell)))
         end
         visdata.hell=[];
-        im=double(visdata.frames{f});
-        im_r=im; im_r(visdata.isfore{f})=min(255,im_r(visdata.isfore{f})*1.5+89);
+        im=double(visdata.frame_rs);
+        im_r=im; im_r(visdata.isfore)=min(255,im_r(visdata.isfore)*1.5+89);
         im=repmat(im,[1,1,3]);
         im(:,:,1)=im_r;
         im=uint8(im);
@@ -30,11 +30,11 @@ switch visdata.plot
         visdata.hell=[];
         
         nROI=size(visdata.cc_ind,1);
-        nc=size(visdata.frames{f},2);
-        nr=size(visdata.frames{f},1);
-        imtmp = repmat(double(visdata.frames{f}(:)),[1,3]);
+        nc=size(visdata.frame_rs,2);
+        nr=size(visdata.frame_rs,1);
+        imtmp = repmat(double(visdata.frame_rs(:)),[1,3]);
         for i=1:nROI
-            cc_ind=visdata.cc_ind{i,f};
+            cc_ind=visdata.cc_ind{i};
             if ~isempty(cc_ind)
                 ncc=length(cc_ind);
                 colors_cc=hsv(ncc)*0.7;
@@ -53,11 +53,11 @@ switch visdata.plot
         visdata.hell=[];
         
         nROI=size(visdata.cc_ind,1);
-        nc=size(visdata.frames{f},2);
-        nr=size(visdata.frames{f},1);
-        imtmp = repmat(double(visdata.frames{f}(:)),[1,3]);
+        nc=size(visdata.frame_rs,2);
+        nr=size(visdata.frame_rs,1);
+        imtmp = repmat(double(visdata.frame_rs(:)),[1,3]);
         for i=1:nROI
-            flies_ind=visdata.flies_ind{i,f};
+            flies_ind=visdata.flies_ind{i};
             if ~isempty(flies_ind)
                 ncc=length(flies_ind);
                 colors_cc=hsv(ncc)*0.7;
@@ -74,12 +74,12 @@ switch visdata.plot
             delete(visdata.hell(ishandle(visdata.hell)))
         end
         visdata.hell=[];
-        set(handles.BG_img,'CData',visdata.frames{f});
+        set(handles.BG_img,'CData',visdata.frame_rs);
         nROI=size(visdata.trx,1);
         l=0;
         hold(handles.axes_tracker,'on')
         for i=1:nROI
-            trx=visdata.trx{i,f};
+            trx=visdata.trx{i};
             if ~isempty(trx)
                 nell=length(trx.x);
                 colors_ell=hsv(nell)*0.7;
@@ -91,4 +91,8 @@ switch visdata.plot
         end
         hold(handles.axes_tracker,'off')
 end
+[nr,nc]=size(visdata.frame_rs);
+axis(handles.axes_tracker,[0.5 nc 0.5 nr])
+axis(handles.axes_tracker,'equal')
+
 set(handles.popupmenu_vis,'UserData',visdata)

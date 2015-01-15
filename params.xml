@@ -108,7 +108,7 @@
 	ignorebowls=""
 	maxdcenter="10"
 	maxdradius="10"
-	meanroiradius="109.583"
+	meanroiradius="111.807"
 	nbinscenter="21"
 	nbinsradius="21"
 	nflies_per_roi=""
@@ -120,7 +120,7 @@
 </detect_rois>
 
 <track
-	DEBUG="0"
+	DEBUG="1"
 	assignidsby="size"
 	bg_firstframe="1"
 	bg_lastframe="1e+08"
@@ -134,6 +134,7 @@
 	choose_orientations_min_jump_speed="30"
 	choose_orientations_velocity_angle_weight="0.03"
 	choose_orientations_weight_theta="0.82"
+	choose_orientations_weight_Warea="0.0"
 	computeBG="1"
 	count_firstframe="1"
 	count_lastframe="1e+08"
@@ -142,6 +143,8 @@
 	dosettrack="0"
 	dotrack="1"
 	dotrackwings="1"
+	down_factor="1"
+	eq_method="0"
 	err_dampen_pos="0.1"
 	err_dampen_priors="0.1"
 	err_dampen_theta="0.8"
@@ -154,12 +157,15 @@
 	gmmem_nrestarts_firstframe="10"
 	gmmem_precision="0.01"
 	ignorebowls=""
-	lastframetrack="Inf"
+	lastframetrack="100"
 	minccarea="20"
+	normalize="0"
+	radius_open_body="0"
 	typebigval="F"
 	typefield="sex"
 	typesmallval="M"
-	usemediandt="1"/>
+	usemediandt="1"
+	vign_coef="1,0,0,0,0,0,0,0,0,0"/>
 
 <wingtrack
 	dosetwingtrack="0"
@@ -195,9 +201,9 @@
 	fps="30"
 	middleframes="-1,0.5,-1"
 	nframes="500,500,500"
-	nzoomc="3"
-	nzoomr="6"
-	scalefactor="3"
+	nzoomc="0"
+	nzoomr="0"
+	scalefactor="1"
 	taillength="25"
 	tempdatadir=""/>
 
@@ -210,6 +216,6 @@
 	min_nrois="1"
 	min_nrois_0flies="0"
 	min_nrois_1fly="0"
-	min_nrois_2flies="1"/>
+	min_nrois_2flies="0"/>
 
 </params>

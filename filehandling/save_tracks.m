@@ -22,9 +22,13 @@ try
     save(matname,varname,'timestamps');
   end
 catch ME
+  logfid=open_log('resultsmovie_log');
   s=sprintf('Error saving %s to %s. Error info:\n',varname,matname);
-  write_log(1,getappdata(0,'experiment',s)
+  write_log(logfid,getappdata(0,'experiment',s)
   disp(ME);
+  if logfid>1
+      fclose(logfid);
+  end
   return;
 end
 succeeded = true;

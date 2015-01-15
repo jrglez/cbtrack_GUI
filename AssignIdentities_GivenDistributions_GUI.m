@@ -60,6 +60,7 @@ for sc = 1:nstates,
 end
 
 for t = 3:T,
+  
   for sc = 1:nstates,
     
     idsc = state2ids(sc,:);
