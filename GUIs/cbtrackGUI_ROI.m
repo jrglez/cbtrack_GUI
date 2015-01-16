@@ -82,7 +82,6 @@ manual.add=0; % 1 whena dding point to a ROI after removing any of the exitent o
 manual.pos_h=cell(0);
 manual.on=0;
 manual.delete=0;
-handles.texth=text(255,415,'','FontSize',16,'Color',[0 1 0],'HorizontalAlignment','center','units','pixels');    
 set(handles.text_exp,'FontSize',24,'HorizontalAlignment','center','units','pixels','FontUnits','pixels','String',experiment);
 goodfs(handles.text_exp,experiment);
 

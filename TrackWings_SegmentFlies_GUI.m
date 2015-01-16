@@ -373,7 +373,7 @@ end
     debugdata.htext = [];
     debugdata.hwing = [];
     debugdata.htrough = [];
-    imtmp = repmat(debugdata.im(:),[1,3]);
+    imtmp = double(repmat(debugdata.im(:),[1,3]));
     for dfly = 1:nflies,
       idx1 = L == fly2cc(dfly);
       imtmp(idx1,:) = min(bsxfun(@plus,imtmp(idx1,:)*3,255*debugdata.colors(dfly,:))/4,255);
@@ -410,7 +410,7 @@ end
     debugdata.htext = [];
     debugdata.hwing = [];
     debugdata.htrough = [];    
-    imtmp = repmat(debugdata.im(:),[1,3]);
+    imtmp = double(repmat(debugdata.im(:),[1,3]));
     for dfly = 1:nflies,
       idx1 = idxfore_thresh(fore2fly==dfly);
       imtmp(idx1,:) = min(bsxfun(@plus,imtmp(idx1,:)*3,255*debugdata.colors(dfly,:))/4,255);

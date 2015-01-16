@@ -31,7 +31,7 @@ end
   function DebugPlot_FitWings()
     hvis=get(get(debugdata.haxes,'Parent'),'HandleVisibility');
     set(get(debugdata.haxes,'Parent'),'HandleVisibility','on')
-    imtmp = repmat(debugdata.im(:),[1,3]);
+    imtmp = double(repmat(debugdata.im(:),[1,3]));
     for dfly = 1:nflies,
       idx1 = idxfore_thresh(fore2flywing==dfly);
       imtmp(idx1,:) = min(bsxfun(@plus,imtmp(idx1,:)*3,255*debugdata.colors(dfly,:))/4,255);

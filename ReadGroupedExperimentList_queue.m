@@ -33,7 +33,7 @@ while true,
     else
       expdirs{end+1} = l; %#ok<AGROW>
       if multiple_params
-        paramsfile{end+1} = fullfile(l,'params.xml'); %#ok<AGROW>
+        paramsfile{end+1} = l; %#ok<AGROW>
       end
     end    
   end
