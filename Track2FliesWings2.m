@@ -368,9 +368,9 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
     setappdata(0,'allow_stop',false)
     for roii = 1:roidata.nrois
         % if there is some kind of flip
-        if trackdata.assignids.nflips(roii) == 0,
-          continue;
-        end
+%         if trackdata.assignids.nflips(roii) == 0,
+%           continue;
+%         end
 
         nfpr = roidata.nflies_per_roi(roii);
         isroi = [trackdata.trx.roi]==roii;
