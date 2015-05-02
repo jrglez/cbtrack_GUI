@@ -26,5 +26,4 @@ setappdata(0,'moviefile',moviefile);
 setappdata(0,'out',out);
 setappdata(0,'iscancel',false);
 setappdata(0,'isskip',false);
-CourtshipBowlMakeResultsMovie_GUI
-
+CourtshipBowlMakeResultsMovie_GUI;
