@@ -4,7 +4,7 @@ try
     experiment(experiment=='_')=' ';
     mysetappdata('expdir',expdir,'experiment',experiment,'moviefile',moviefile,...
         'out',out,'analysis_protocol',analysis_protocol,'cbparams',cbparams);
-    CourtshipBowlMakeResultsMovie_GUI
+    CourtshipBowlMakeResultsMovie_GUI;
     if getappdata(0,'iscancel') || getappdata(0,'isskip')
         success=false;
         error_msg='Canceled by the user';
