@@ -103,7 +103,7 @@ if isfield(trackdata,'perframedata')
       if exist(filename,'file'),
         delete(filename);
       end
-      data = trackdata.perframedata.(perframefn); %#ok<NASGU>
+      data = trackdata.perframedata.(perframefn)'; %#ok<NASGU>
       units = trackdata.perframeunits.(perframefn); %#ok<NASGU>
       save(filename,'data','units');
     end
