@@ -134,7 +134,7 @@ elseif ~any(pff_on)
 else
     all_on = 3; %some selected
 end
-root = uitreenode('v0', 'all', 'Perframe functions', icons{all_on}, false);
+root = uitreenode('v0', 'all', 'Perframe functions', fullfile(pwd,icons{all_on}), false);
 pff_all.all = struct('tree',root,'names',{pff_type_names},'field_names',{pff_field_names},'pff_names',{pff_names},'is_on',pff_on,'all_on',all_on);
 
 % other nodes
@@ -151,10 +151,10 @@ for t=1:numel(pff_type_names)
     else
         all_on = 3; %some selected
     end
-    tree = uitreenode('v0', pff_field_names{t}, pff_type_names{t}, icons{all_on}, false);
+    tree = uitreenode('v0', pff_field_names{t}, pff_type_names{t}, fullfile(pwd,icons{all_on}), false);
 
     for i=1:numel(idx)
-        tree.add(uitreenode('v0',names{i},names{i},icons{is_on(i)+1}, true));
+        tree.add(uitreenode('v0',names{i},names{i},fullfile(pwd,icons{is_on(i)+1}), true));
     end
     pff_all.(pff_field_names{t}) = struct('tree',tree,'names',{names},'description',{descr},'is_on',is_on,'idx',idx,'all_on',all_on);
     root.add(tree);
@@ -455,5 +455,5 @@ end
 
 
 function figure1_CloseRequestFcn(hObject, eventdata, handles)
-    uiresume(hObject);
+    pushbutton_cancel_Callback(hObject, eventdata);
 end

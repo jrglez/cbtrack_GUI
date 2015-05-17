@@ -9,7 +9,7 @@ out=getappdata(0,'out');
 
 scrSize=get(0,'screensize');
 boxpos=[(scrSize(3)-500)/2,(scrSize(4)-150)/2,500,150];
-hbox=figure('units','pixels','position',boxpos,'windowstyle','modal');
+hbox=figure('units','pixels','position',boxpos); %,'windowstyle','modal'
 htext=uicontrol('style','text','BackgroundColor',[0.8 0.8 0.8],'FontUnits','pixels',...
     'FontSize',14,'units','pixels','position',[50 35 400 80],...
     'HorizontalAlignment','center','Parent',hbox);

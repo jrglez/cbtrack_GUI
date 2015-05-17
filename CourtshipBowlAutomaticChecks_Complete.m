@@ -4,6 +4,7 @@ version = '0.1';
 timestamp = datestr(now,TimestampFormat);
 
 experiment = getappdata(0,'experiment');
+analysis_protocol = getappdata(0,'analysis_protocol');
 cbparams = getappdata(0,'cbparams');
 check_params = cbparams.auto_checks_complete;
 
@@ -214,7 +215,7 @@ try
     % version info
     fprintf(fid,'cbautocheckscomplete_version,%s\n',version);
     fprintf(fid,'cbautocheckscomplete_timestamp,%s\n',timestamp);
-    fprintf(fid,'analysis_protocol,%s\n',real_analysis_protocol);
+    fprintf(fid,'analysis_protocol,%s\n',analysis_protocol);
 
     if fid>1,
       fclose(fid);
@@ -227,15 +228,15 @@ end
 
 %% print results to log file
 
-s = sprintf('success = %d\n',success);
+s = {sprintf('success = %d\n',success)};
 
 if isempty(msgs),
-  s = {s;sprintf(logfid,'No error or warning messages.\n')};
+  s = [s;{sprintf('No error or warning messages.\n')}];
 else
-  s = {s;sprintf(logfid,'Warning/error messages:\n');...
-  fprintf(logfid,'%s\n',msgs{:})};
+  s = [s;{sprintf('Warning/error messages:\n');...
+  sprintf('%s\n',msgs{:})}];
 end
-s = {s;sprintf(logfid,'Finished running FlyBowlAutomaticChecks_Complete at %s.\n',datestr(now,'yyyymmddTHHMMSS'))};
+s = [s;{sprintf('Finished running FlyBowlAutomaticChecks_Complete at %s.\n',datestr(now,'yyyymmddTHHMMSS'))}];
 write_log(logfid,experiment,s)
 
 if logfid > 1,

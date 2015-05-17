@@ -447,7 +447,8 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
                 trackdata.trx(fly).ywingr = trackdata.trx(fly).y + 4*trackdata.trx(fly).a.*sin(trackdata.trx(fly).theta+ pi+trackdata.trx(fly).wing_angler);
                 trackdata.perframedata.wing_areal{fly} = trackdata.perframedata.wing_areal{fly}(s);
                 trackdata.perframedata.wing_arear{fly} = trackdata.perframedata.wing_arear{fly}(s);
-                trackdata.perframedata.wing_trough_angle{fly} = trackdata.perframedata.wing_trough_angle{fly}(s);            
+                trackdata.perframedata.wing_trough_angle{fly} = trackdata.perframedata.wing_trough_angle{fly}(s);
+                trackdata.perframedata.nwingsdetected{fly} = trackdata.perframedata.nwingsdetected{fly}(s);
             end
         end
         setappdata(0,'trackdata',trackdata)
