@@ -27,4 +27,3 @@ setappdata(0,'out',out);
 setappdata(0,'iscancel',false);
 setappdata(0,'isskip',false);
 CourtshipBowlMakeResultsMovie_GUI;
-

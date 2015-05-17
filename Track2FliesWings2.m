@@ -368,9 +368,9 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
     setappdata(0,'allow_stop',false)
     for roii = 1:roidata.nrois
         % if there is some kind of flip
-        if trackdata.assignids.nflips(roii) == 0,
-          continue;
-        end
+%         if trackdata.assignids.nflips(roii) == 0,
+%           continue;
+%         end
 
         nfpr = roidata.nflies_per_roi(roii);
         isroi = [trackdata.trx.roi]==roii;
@@ -447,7 +447,7 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
                 trackdata.trx(fly).ywingr = trackdata.trx(fly).y + 4*trackdata.trx(fly).a.*sin(trackdata.trx(fly).theta+ pi+trackdata.trx(fly).wing_angler);
                 trackdata.perframedata.wing_areal{fly} = trackdata.perframedata.wing_areal{fly}(s);
                 trackdata.perframedata.wing_arear{fly} = trackdata.perframedata.wing_arear{fly}(s);
-                trackdata.perframedata.wing_trough_angle{fly} = trackdata.perframedata.wing_trough_angle{fly}(s);
+                trackdata.perframedata.wing_trough_angle{fly} = trackdata.perframedata.wing_trough_angle{fly}(s);            
                 trackdata.perframedata.nwingsdetected{fly} = trackdata.perframedata.nwingsdetected{fly}(s);
             end
         end

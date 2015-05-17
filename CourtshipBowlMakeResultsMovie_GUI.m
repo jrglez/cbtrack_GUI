@@ -246,6 +246,8 @@ fclose(fid);
 
 %% compress
 
+if isunix && ~ismac,
+
 s=sprintf('Compressing to xvid avi file...\n');
 write_log(logfid,experiment,s)
 
@@ -294,6 +296,8 @@ else
     delete(avifile);
     delete(subtitlefile);
   end
+end
+
 end
 
 %% save info to mat file
