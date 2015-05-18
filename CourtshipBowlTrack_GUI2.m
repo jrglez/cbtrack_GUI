@@ -105,7 +105,6 @@ if isfield(trackdata,'perframedata')
       end
       data = trackdata.perframedata.(perframefn);
       data = cellfun(@transpose,data,'UniformOutput',false); %#ok<NASGU>
-      data = trackdata.perframedata.(perframefn)'; %#ok<NASGU>
       units = trackdata.perframeunits.(perframefn); %#ok<NASGU>
       save(filename,'data','units');
     end
