@@ -42,7 +42,7 @@ if dosave_d,
 end
 
 if logfid>1
-    flcose(logfid);
+    fclose(logfid);
 end
 data = closestfly;
 units = parseunits('unit');
