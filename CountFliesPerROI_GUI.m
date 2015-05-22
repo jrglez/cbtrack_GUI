@@ -7,7 +7,7 @@ experiment=getappdata(0,'experiment');
 logfid=open_log('roi_log');
 s=sprintf('Counting flies per ROI at %s\n',datestr(now,'yyyymmddTHHMMSS'));
 write_log(logfid,experiment,s)
-hwait=waitbar(0,{['Experiment ',experiment];['Counting flies: Analazing frame 0 of ', num2str(nframessample)]},'CreateCancelBtn','cancel_waitbar');
+hwait=waitbar(0,{['Experiment ',experiment];['Counting flies: Analyzing frame 0 of ', num2str(nframessample)]},'CreateCancelBtn','cancel_waitbar');
 % read frames if it's empty
 if isempty(frames)
     moviefile = getappdata(0,'moviefile');
@@ -47,7 +47,7 @@ for i = 1:nframessample,
     trx = [];
     return
   end
-  waitbar(i/nframessample,hwait,{['Experiment ',experiment];['Counting flies: Analazing frame ',num2str(i),' of ', num2str(nframessample)]});  
+  waitbar(i/nframessample,hwait,{['Experiment ',experiment];['Counting flies: Analyzing frame ',num2str(i),' of ', num2str(nframessample)]});  
   % read frames
   if isempty(frames{i})
       frames{i} = readframe(framessample(i));
@@ -103,13 +103,13 @@ end
 if dosetwingtrack
 trx=struct('x',[],'y',[],'a',[],'b',[],'theta',[]);
 trx=repmat(trx,[nansum(nflies_per_roi),nframessample]);
-    hwait=waitbar(0,{['Experiment ',experiment];['Computing positions: Analazing frame 0 of ', num2str(nframessample)]},'CreateCancelBtn','cancel_waitbar');
+    hwait=waitbar(0,{['Experiment ',experiment];['Computing positions: Analyzing frame 0 of ', num2str(nframessample)]},'CreateCancelBtn','cancel_waitbar');
     for i=1:nframessample,
         if getappdata(0,'iscancel') || getappdata(0,'isskip') || getappdata(0,'isstop')  
           trx = [];
           return
         end
-        waitbar(i/nframessample,hwait,{['Experiment ',experiment];['Computing positions: Analazing frame ',num2str(i),' of ', num2str(nframessample)]});
+        waitbar(i/nframessample,hwait,{['Experiment ',experiment];['Computing positions: Analyzing frame ',num2str(i),' of ', num2str(nframessample)]});
         trx(:,i)=fit_to_ellipse_GUI(roidata,nflies_per_roi, dbkgd{i}, isfore{i},tracking_params);
     end
     delete (hwait);

@@ -457,7 +457,7 @@ else
 end
 
 if isempty(omitedexp_all)
-    s='Trackign done.';
+    s='Tracking done.';
 else
     s=['Tracking Done. Failed experiments:',sprintf('\n\t- %s',omitedexp_all{:})];
 end

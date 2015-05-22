@@ -306,27 +306,29 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
     areas_female = mudatafit(2,1,idx);
     area_thresh = (mean(areas_male)+mean(areas_female))/2;
 
-    idx = find(roidata.nflies_per_roi == 1);
+    iRoiSingles = find(roidata.nflies_per_roi == 1);
     typeperroi = cell(1,nrois);
-    for ii = 1:numel(idx),
-      i = idx(ii);
-      fly = find([trackdata.trx.roi]==roii);
-      switch params.assignidsby,
+    for iRoi = iRoiSingles(:)'
+      fly = find([trackdata.trx.roi]==iRoi);
+      % AL: fly need not be scalar? case 'size' implies this, yet case
+      % 'wingsize' implies the opposite
+      switch params.assignidsby
         case 'size',
-          a = cat(1,trackdata.trx(fly).a);
+          a = cat(1,trackdata.trx(fly).a); 
           b = cat(1,trackdata.trx(fly).b);
           areacurr = a.*b.*pi*4;
         case 'wingsize',
+          assert(isscalar(fly));
           areacurr = wingarea{fly};
         otherwise,
           error('Unknown assignidsby value');
       end
       meanareacurr = nanmean(areacurr(:));
-      write_log(logfid,getappdata(0,'experiment'),sprintf('%d: %f\n',i,meanareacurr));
+      write_log(logfid,getappdata(0,'experiment'),sprintf('ROI %d (1 fly): meanarea=%f\n',iRoi,meanareacurr));
       if meanareacurr <= area_thresh, 
-        typeperroi{i} = params.typesmallval;
+        typeperroi{iRoi} = params.typesmallval;
       else
-        typeperroi{i} = params.typebigval;
+        typeperroi{iRoi} = params.typebigval;
       end
     end
 
@@ -341,14 +343,18 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
 
     for i = 1:nflies,
       roii = trackdata.trx(i).roi;
-      if roidata.nflies_per_roi(roii) == 2,
-        if trackdata.fly2roiid(i) == 1,
-          trackdata.trx(i).(params.typefield) = repmat({params.typesmallval},[1,nframes_track]);
-        else
-          trackdata.trx(i).(params.typefield) = repmat({params.typebigval},[1,nframes_track]);
-        end
-      elseif roidata.nflies_per_roi(i) == 1,
-        trackdata.trx(i).(params.typefield) = repmat(typeperroi(i),[1,nframes_track]);
+      switch roidata.nflies_per_roi(roii)
+        case 2
+          if trackdata.fly2roiid(i) == 1,
+            trackdata.trx(i).(params.typefield) = repmat({params.typesmallval},[1,nframes_track]);
+          else
+            trackdata.trx(i).(params.typefield) = repmat({params.typebigval},[1,nframes_track]);
+          end
+        case 1
+          assert(~isempty(typeperroi{roii}));
+          trackdata.trx(i).(params.typefield) = repmat(typeperroi(roii),[1,nframes_track]);
+        otherwise
+          assert(false,'Fly/trx assigned to roi with no flies');
       end
     end
     trackdata.stage=stages{find(strcmp(stage,stages))+1};
