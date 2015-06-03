@@ -730,7 +730,7 @@ elseif eventdata.NewValue==handles.radiobutton_manual %The user clicks points of
     end
     if manual.roi==1 && manual.proi==0
         set(handles.texth,'String','Selecting ROI 1, point 1');   
-        msg_manual=mymsgbox(50,190,14,'Helvetica',{'Please, select at least three points in the at the edge of the first ROI.'; '  - Press ''Next ROI'' to select the next set of points.';'  - Click any ROI or point to remove it from the list';'  - Press ''Detect'' to finish'},'Manua detection','help','modal'); %#ok<NASGU>
+        msg_manual=mymsgbox(50,190,14,'Helvetica',{'Please, select at least three points at the edge of the first ROI'; '  - Press ''Next ROI'' to select the next set of points';'  - Click any ROI or point to remove it from the list';'  - Press ''Detect'' to finish'},'Manual detection','help','modal'); %#ok<NASGU>
     end
     manual.on=1;
     manual.delete=0;
@@ -748,7 +748,7 @@ if manual.proi(manual.roi)<3 && manual.proi(manual.roi)~=0
     msg_manual=mymsgbox(50,190,14,'Helvetica',{'Please, select at least THREE points in the current ROI'},'Error','error','modal'); %#ok<NASGU>
     return
 end
-msg_add=mymsgbox(50,190,14,'Helvetica',{'Selec the ROI form the list to which you want to add new points'},'Manua detection','help','modal'); %#ok<NASGU>
+msg_add=mymsgbox(50,190,14,'Helvetica',{'Select the ROI from the list to which you want to add new points'},'Manual detection','help','modal'); %#ok<NASGU>
 manual.add=3;
 set(handles.radiobutton_manual,'UserData',manual);
 

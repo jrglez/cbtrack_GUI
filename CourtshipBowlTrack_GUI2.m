@@ -71,7 +71,7 @@ for i=1:numel(trx)
     end
 end
 outfilename = fullfile(out.folder,cbparams.dataloc.trx.filestr);
-s=sprintf('Saving final traking results to file %s...\n',outfilename);
+s=sprintf('Saving final tracking results to file %s...\n',outfilename);
 write_log(logfid,experiment,s)
 if exist(outfilename,'file'),
   delete(outfilename);

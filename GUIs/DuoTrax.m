@@ -302,7 +302,7 @@ for i=1:numel(expdirs)
         logfid2=open_log(log_type);
         s=sprintf('%s failed for experiment %s: %s\n',where,experiment,ME.message);
         write_log(logfid2,experiment,s)
-        waitfor(mymsgbox(50,190,14,'Helvetica',[where,' failed for ', experiment,' and will be ommited'],'Warning','warn','modal'))
+        waitfor(mymsgbox(50,190,14,'Helvetica',[where,' failed for ', experiment,' and will be omitted'],'Warning','warn','modal'))
 
         if logfid2>1
             fclose(logfid2);

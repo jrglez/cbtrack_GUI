@@ -14,7 +14,7 @@ htext=uicontrol('style','text','BackgroundColor',[0.8 0.8 0.8],'FontUnits','pixe
     'FontSize',14,'units','pixels','position',[50 35 400 80],...
     'HorizontalAlignment','center','Parent',hbox);
 s={['Experiment ', getappdata(0,'experiment')];'';'Saving temporary results'};
-s=textwrap(s,htext);
+s=textwrap(htext,s);
 set(htext,'String',s)
 drawnow
 
