@@ -335,7 +335,7 @@ return;
 
 % ------------------------------------------------------------------------
 function inputType = getInputType(frame)
-  if isscalar(frame) && ishandle(frame) && (frame > 0)
+  if isscalar(frame) && ishandle(frame) && (double(frame) > 0)
     inputType = get(frame,'type');
   elseif isstruct(frame) && isfield(frame,'cdata')
     inputType = 'movie';

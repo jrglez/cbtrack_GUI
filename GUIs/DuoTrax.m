@@ -395,7 +395,7 @@ if get(handles.checkbox_dotrack,'Value') && ~getappdata(0,'singleexp')
     end
 end
 
-% Reuslts movie
+% Results movie
 if get(handles.checkbox_domovie,'Value') && strcmp(getappdata(0,'P_stage'),'results_movie')      
     for i=1:numel(expdirs)
         [success(i)]=cbtrackNOGUI_resultsmovie(exps{i},expdirs{i},...

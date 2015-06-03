@@ -47,14 +47,3 @@ gfdata.hardcopy_args = {haxes,['-d',renderer],['-r',num2str(round(pixelsperinch)
 % TODO: put this in cleanup
 % noanimate('restore',get(haxes,'parent'));
 % warning(warnstate);
-
-function inputType = getInputType(frame)
-if isscalar(frame) && ishandle(frame) && (frame > 0)
-  inputType = get(frame,'type');
-elseif isstruct(frame) & isfield(frame,'cdata')
-  inputType = 'movie';
-elseif isa(frame,'numeric')
-  inputType = 'data';
-else
-  error('Invalid input argument.  Each frame must be a numeric matrix, a MATLAB movie structure, or a handle to a figure or axis.');
-end

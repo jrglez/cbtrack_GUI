@@ -72,7 +72,7 @@ bgdata.bgmed=bgmed;
 delete(hwait)
 bgdata.isnew=true;
 
-s=sprintf('Finished computting the Background at %s.\n***\n',datestr(now,'yyyymmddTHHMMSS'));
+s=sprintf('Finished computing the Background at %s.\n***\n',datestr(now,'yyyymmddTHHMMSS'));
 write_log(logfid,experiment,s)
 if logfid > 1,
   fclose(logfid);
