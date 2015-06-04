@@ -267,8 +267,8 @@ else
     tracking_params=get(handles.pushbutton_recalc,'UserData');
     BG=get(handles.cbtrackGUI_BG,'UserData');
     tracking_params.bg_nframes=bg_nframes;
-    tracking_params.bg_lastframes=bg_lastframe;
-    tracking_params.bg_firstframes=bg_firstframe;
+    tracking_params.bg_lastframe=bg_lastframe;
+    tracking_params.bg_firstframe=bg_firstframe;
     setappdata(0,'allow_stop',true)
     BG.data=cbtrackGUI_EstimateBG(BG.expdir,BG.moviefile,tracking_params,'analysis_protocol',BG.analysis_protocol);
     if getappdata(0,'iscancel') || getappdata(0,'isskip')
