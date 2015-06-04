@@ -16,11 +16,12 @@ elseif strcmpi(ext,'.mmf'),
     headerinfo = mmf_read_header(filename);
 else
     readerobj = VideoReader(filename);
+    numFrames = readerobj.NumberOfFrames; % AL 201506: prop being deprecated, as of R2014b only available on actual object
     headerinfo = get(readerobj);
     headerinfo.type = 'avi';
     headerinfo.nr = headerinfo.Height;
     headerinfo.nc = headerinfo.Width;
-    headerinfo.nframes = headerinfo.NumberOfFrames;
+    headerinfo.nframes = numFrames;
     headerinfo.fid = 0;
 end
 

@@ -23,6 +23,8 @@
 
 function [readframe,nframes,fid,headerinfo] = get_readframe_fcn_GUI(filename,varargin)
 
+assert(false,'Appears unused 20150604');
+
 % allow videoio library to be used if it is installed and on the path
 %CTRAX_ISVIDEOIO = exist('videoReader','file');
 CTRAX_ISVIDEOIO = false;
@@ -177,7 +179,7 @@ else
     headerinfo.type = 'avi';
     headerinfo.nr = headerinfo.Height;
     headerinfo.nc = headerinfo.Width;
-    headerinfo.nframes = headerinfo.NumberOfFrames;
+    headerinfo.nframes = nframes;
     readframe = @(f) avi_read_frame(readerobj,headerinfo,f);
   end
 end
