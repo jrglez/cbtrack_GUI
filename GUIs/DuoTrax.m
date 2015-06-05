@@ -140,37 +140,55 @@ else
         [expdirs,moviefile,exps,analysis_protocol,paramsfile,omitedexp_all]=getfiles(handles);
         if ~isempty(omitedexp_all)
             waitfor(mymsgbox(50,190,14,'Helvetica',['The following experiment directories contained no video or more than one videos and will be omited:',sprintf('\n\t- %s',omitedexp_all{:})],'Warning','warn','modal'))
-        elseif numel(expdirs)==0
+        end
+        if numel(expdirs)==0
             mymsgbox(50,190,14,'Helvetica','There are no valid videos in the selected directory','Error','error','modal')
             return
         end
 
         setappdata(0,'singleexp',numel(exps)==1);
         
+        % Check for existence of parameters file; use default params.xml if
+        % necessary        
+        tfExist = cellfun(@(x)exist(x,'file')==2,paramsfile);
+        if ~all(tfExist)
+          defaultParamFile = fullfile(cbtrackroot,'params.xml');
+          nMissing = nnz(~tfExist);
+          if nMissing==1
+            msgstr = sprintf('Parameters file %s cannot be found. Using default parameters %s.',...
+              paramsfile{~tfExist},defaultParamFile);
+          else
+            msgstr = sprintf('Multiple parameters files cannot be found. Using default parameters %s as necessary.',...
+              defaultParamFile);
+          end
+          waitfor(mymsgbox(50,190,14,'Helvetica',msgstr,'Warning','warn','modal'));
+          paramsfile(~tfExist) = {defaultParamFile};
+        end
+        
         % Read parameters
         if numel(paramsfile)==1
             paramsfile=repmat(paramsfile,size(expdirs));
         end
         expparams=cell(size(paramsfile));
-        success=true(1,numel(expdirs));
         for i=1:numel(paramsfile) 
-            [expparams{i},success(i)]=cbtrackNOGUI_readparams(paramsfile{i},handles);
+            expparams{i}=cbtrackNOGUI_readparams(paramsfile{i},handles);
         end
-        omitedexp=exps(~success);
-        omitedexp_all=[omitedexp_all,omitedexp];
-        exps(~success)=[];
-        expdirs(~success)=[];
-        moviefile(~success)=[];
-        success(~success)=[];
-        if ~isempty(omitedexp)
-            waitfor(mymsgbox(50,190,14,'Helvetica',['The parameters file could not be found for the following experiments and will be omited:',sprintf('\n\t- %s',omitedexp{:})],'Warning','warn','modal'))
-        elseif numel(expdirs)==0
-            mymsgbox(50,190,14,'Helvetica','There are no valid videos in the selected directory','Error','error','modal')
-            return
-        end
+%         omitedexp=exps(~success);
+%         omitedexp_all=[omitedexp_all,omitedexp];
+%         exps(~success)=[];
+%         expdirs(~success)=[];
+%         moviefile(~success)=[];
+%         success(~success)=[];
+%         if ~isempty(omitedexp)
+%             waitfor(mymsgbox(50,190,14,'Helvetica',['The parameters file could not be found for the following experiments and will be omited:',sprintf('\n\t- %s',omitedexp{:})],'Warning','warn','modal'))
+%         if numel(expdirs)==0
+%             mymsgbox(50,190,14,'Helvetica','There are no valid videos in the selected directory','Error','error','modal')
+%             return
+%         end
         
-        % Autmatic check incomings for all experiments
+        % Automatic check incomings for all experiments
         out=cell(numel(expdirs),1);
+        success=true(size(expdirs));
         hwait=waitbar(0,'Checking incomings');
         for i=1:numel(expdirs)
             out{i}.folder=expdirs{i};            

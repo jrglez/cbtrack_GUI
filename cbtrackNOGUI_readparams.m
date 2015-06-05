@@ -1,11 +1,12 @@
-function [cbparams,success]=cbtrackNOGUI_readparams(paramsfile,handles)
-if ~exist(paramsfile,'file')
-    mymsgbox(50,190,14,'Helvetica','Invalid or missing Parameters File','Error','error','modal')
-    success=false;
-    cbparams=[];
-    return
-end
-success=true;
+function cbparams=cbtrackNOGUI_readparams(paramsfile,handles)
+assert(exist(paramsfile,'file')==2);
+% if ~exist(paramsfile,'file')
+%     mymsgbox(50,190,14,'Helvetica','Invalid or missing Parameters File','Error','error','modal')
+%     success=false;
+%     cbparams=[];
+%     return
+% end
+% success=true;
 cbparams = ReadXMLParams(paramsfile);
 setappdata(0,'viewlog',get(handles.checkbox_log,'Value'))
 cbparams.auto_checks_incoming.doAcI=get(handles.checkbox_doAcI,'Value');

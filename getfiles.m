@@ -40,10 +40,14 @@ elseif VidDirOrTxt==handles.radiobutton_Dir
     exps(~success)=[];
     expdirs(~success)=[];
     movie_name(~success)=[];
+    if isempty(exps)
+      exps = exps(:)'; % to match empty size of movie_name 
+    end
     moviefile=fullfile(expdir,exps,movie_name);
     analysis_protocol = splitdir(expdir,'last');
     paramsfile=fullfile(expdir,'params.xml');
-    if exist(paramsfile,'file')
+    if exist(paramsfile,'file')==2
+        % Undocumented single-parameter-file option
         paramsfile={paramsfile};
     else
         paramsfile=fullfile(expdirs,'params.xml');
