@@ -392,7 +392,7 @@ end
 
 
 function pushbutton_load_Callback(hObject, eventdata, handles)
-[file_ROI, folder_ROI]=open_files2('mat');
+[file_ROI, folder_ROI]=open_files2('mat','lastfile_roi');
 if ~file_ROI{1}==0
     try
         set(handles.edit_load,'String',fullfile(folder_ROI,file_ROI{1}),'HorizontalAlignment','right')

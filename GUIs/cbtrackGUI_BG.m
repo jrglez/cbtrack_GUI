@@ -548,7 +548,7 @@ function pushbutton_ROIs_DeleteFcn(hObject, eventdata, handles)
 
 
 function pushbutton_load_Callback(hObject, eventdata, handles)
-[file_BG, folder_BG]=open_files2('mat');
+[file_BG, folder_BG]=open_files2('mat','lastfile_bg');
 if ~file_BG{1}==0
     try
         loadfile=fullfile(folder_BG,file_BG{1});

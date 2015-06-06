@@ -81,18 +81,24 @@ if VidDirOrTxt==handles.radiobutton_Vid
       '*.mov','MOV (*.mov)'
       '*.mmf','MMF (*.mmf)'
       '*.*','*.*'};
-    [file,folder]=open_files2(filetypes); %in.folder is a structure as is required by the main code. 
+    [file,folder]=open_files2(filetypes,'lastfile_movie'); %in.folder is a structure as is required by the main code. 
     if file{1}~=0
         set(handles.edit_in,'String',[folder,file{1}])
     end
 elseif VidDirOrTxt==handles.radiobutton_Dir
-    expdir=uigetdir;
+    lastmov = RC.getprop('lastfile_movie');
+    if isempty(lastmov)
+      startPath = [];
+    else
+      startPath = fileparts(lastmov);
+    end
+    expdir=uigetdir(startPath);
     if expdir~=0
         set(handles.edit_in,'String',expdir)
     end
 elseif VidDirOrTxt==handles.radiobutton_Txt
     filetypes={  '*.txt','Text file (*.txt)'};
-    [file,folder]=open_files2(filetypes);
+    [file,folder]=open_files2(filetypes,'lastfile_exps');
     if file{1}~=0
         set(handles.edit_in,'String',[folder,file{1}])
     end
@@ -145,6 +151,9 @@ else
             mymsgbox(50,190,14,'Helvetica','There are no valid videos in the selected directory','Error','error','modal')
             return
         end
+        
+        assert(iscellstr(moviefile) && ~isempty(moviefile));
+        RC.saveprop('lastfile_movie',moviefile{1});
 
         setappdata(0,'singleexp',numel(exps)==1);
         
@@ -521,7 +530,7 @@ end
 
 
 function pushbutton_restart_Callback(hObject, eventdata, handles)
-[restart_file,restart_folder]=open_files2('mat');  
+[restart_file,restart_folder]=open_files2('mat','lastfile_restart');  
 if restart_file{1}~=0
     restart=fullfile(restart_folder,restart_file{1});
     set(handles.edit_restart,'String',restart)
