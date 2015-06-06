@@ -278,7 +278,7 @@ handles.text_resc=uicontrol('Style','text','Units','Pixels',...
     'Position',[xmar1,guih-ymar2,axesw,ymar2/2],'FontUnits','Pixels',...
     'FontSize',18,'HorizontalAlignment','center');
 if resc<1
-    resc_s=textwrap({['The final video will be ',num2str(1/resc,'%.2f'),' times bigger']},handles.text_resc); 
+    resc_s=textwrap(handles.text_resc,{['The final video will be ',num2str(1/resc,'%.2f'),' times bigger']}); 
 else
     resc_s={''};
 end  
@@ -325,7 +325,7 @@ uiset_style={'checkbox';'text';'edit';'checkbox';'text';'text';'edit';'text';...
     'edit';'text';'slider';'edit';'text';'edit';'text';'text';'edit';'text';...
     'edit';'text';'edit';'text';'text';'edit';'text';'edit';...
     'text';'pushbutton';'pushbutton';'pushbutton'};
-uiset_string={'Make resutls video';'Frames per second';num2str(movie_params.fps);...
+uiset_string={'Make results video';'Frames per second';num2str(movie_params.fps);...
     'Zoom Flies';'Number of zoomed flies';'Rows';num2str(nzoomr);...
     'Columns';num2str(nzoomc);'Zoom';'';num2str(scalefactor,'%.2f');...
     'Tail lenght';num2str(movie_params.taillength);...
@@ -562,7 +562,7 @@ set(handles.axes_vid,'Position',[axesx,axesy,axesw,axesh]);
 axis(handles.axes_vid,'equal');
 set(hObject,'String',num2str(set_vidw,'%i'))
 if resc<1
-    resc_s=textwrap({['The final video will be ',num2str(1/resc,'%.2f'),' times bigger']},handles.text_resc); 
+    resc_s=textwrap(handles.text_resc,{['The final video will be ',num2str(1/resc,'%.2f'),' times bigger']}); 
 else
     resc_s={''};
 end  
@@ -599,7 +599,7 @@ set(handles.axes_vid,'Position',[axesx,axesy,axesw,axesh]);
 axis(handles.axes_vid,'equal');
 set(hObject,'String',num2str(set_vidh,'%i'))
 if resc<1
-    resc_s=textwrap({['The final video will be ',num2str(1/resc,'%.2f'),' times bigger']},handles.text_resc); 
+    resc_s=textwrap(handles.text_resc,{['The final video will be ',num2str(1/resc,'%.2f'),' times bigger']}); 
 else
     resc_s={''};
 end  
@@ -659,7 +659,7 @@ if isfield(handles,'axes_vid')
         rescw=position(3)/figpos(3);
         resch=position(4)/figpos(4);
         resc=min(rescw,resch);
-        resc_s=textwrap({['The final video will be ',num2str(1/resc,'%.2f'),' times bigger']},handles.text_resc);
+        resc_s=textwrap(handles.text_resc,{['The final video will be ',num2str(1/resc,'%.2f'),' times bigger']});
     else
         pos_panel=get(handles.panel_set,'Position');
         axesx=position(1);
