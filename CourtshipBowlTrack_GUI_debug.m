@@ -56,12 +56,12 @@ roidata_rs.inrois=inrois;
 roidata_rs.idxroi=idxroi;
 
 
-if ~isappdata(0,'roidata_rs')
-    setappdata(0,'roidata_rs',roidata_rs);
-    if params.dosave
-        savetemp({'roidata_rs'})
-    end
+%if ~isappdata(0,'roidata_rs')
+setappdata(0,'roidata_rs',roidata_rs);
+if params.dosave
+  savetemp({'roidata_rs'})
 end
+%end
 %% main function
 
 trackdata = Track2FliesWings(handles,moviefile,bgmed,roidata_rs,params,Wparams,'restart',restart);

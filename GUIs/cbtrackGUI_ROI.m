@@ -79,7 +79,7 @@ manual.roi=1; %number of ROIS detected
 manual.proi=0; %number of rois selected on esach ROI;
 manual.pos_h=cell(0); %point plots handles
 manual.add=0; % 1 whena dding point to a ROI after removing any of the exitent ones; 2 when adding points to a ROI after removing ALL the existent ones; 3 when adding points to a ROI after pressing Add
-manual.pos_h=cell(0);
+%manual.pos_h=cell(0);
 manual.on=0;
 manual.delete=0;
 set(handles.text_exp,'FontSize',24,'HorizontalAlignment','center','units','pixels','FontUnits','pixels','String',experiment);
@@ -122,6 +122,7 @@ if find(strcmp(P_stage,P_stages))>find(strcmp(P_curr_stage,P_stages))
         handles.hroisT(i,1)=text(roidata.centerx(i),roidata.centery(i),['ROI: ',num2str(i)],...
           'Color',colors(i,:),'HorizontalAlignment','center','VerticalAlignment','middle','Clipping','on');
         if ~isempty(manual.pos)
+            manual.pos_h = cell(0);
             for j=1:length(manual.pos{i})
                 manual.pos_h{i}(j)=plot(manual.pos{i}(j,1),manual.pos{i}(j,2),'rx');
             end
@@ -186,6 +187,7 @@ else
                 handles.hroisT(i,1)=text(roidata.centerx(i),roidata.centery(i),['ROI: ',num2str(i)],...
                   'Color',colors(i,:),'HorizontalAlignment','center','VerticalAlignment','middle','Clipping','on');
                 if ~isempty(manual.pos)
+                    manual.pos_h = cell(0);
                     for j=1:length(manual.pos{i})
                         manual.pos_h{i}(j)=plot(manual.pos{i}(j,1),manual.pos{i}(j,2),'rx');
                     end
@@ -414,6 +416,7 @@ if ~file_ROI{1}==0
             handles.hroisT(i,1)=text(roidata.centerx(i),roidata.centery(i),['ROI: ',num2str(i)],...
               'Color',colors(i,:),'HorizontalAlignment','center','VerticalAlignment','middle','Clipping','on');
             if ~isempty(manual.pos)
+                manual.pos_h = cell(0);
                 for j=1:length(manual.pos{i})
                     manual.pos_h{i}(j)=plot(manual.pos{i}(j,1),manual.pos{i}(j,2),'rx');
                 end
@@ -442,7 +445,7 @@ if ~file_ROI{1}==0
         set(handles.listbox_manual,'UserData',list);
         set(handles.pushbutton_detect,'UserData',roidata);
         set(handles.uipanel_settings,'Userdata',roidata.params)
-    catch
+    catch ME
         mymsgbox(50,190,14,'Helvetica','ROI data could not be loaded','error')
     end
 end
