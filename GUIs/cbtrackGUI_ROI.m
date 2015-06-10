@@ -114,6 +114,7 @@ if find(strcmp(P_stage,P_stages))>find(strcmp(P_curr_stage,P_stages))
     axes(handles.axes_ROI)
     hold on
     handles.hroisT=nan(roidata.nrois,1);
+    manual.pos_h = cell(0);
     for i = 1:roidata.nrois,
         ROIpos=[roidata.centerx(i)-roidata.radii(i),roidata.centery(i)-roidata.radii(i),2*roidata.radii(i),2*roidata.radii(i)];
         handles.hrois(i,1)=imellipse(handles.axes_ROI,ROIpos);
@@ -122,7 +123,6 @@ if find(strcmp(P_stage,P_stages))>find(strcmp(P_curr_stage,P_stages))
         handles.hroisT(i,1)=text(roidata.centerx(i),roidata.centery(i),['ROI: ',num2str(i)],...
           'Color',colors(i,:),'HorizontalAlignment','center','VerticalAlignment','middle','Clipping','on');
         if ~isempty(manual.pos)
-            manual.pos_h = cell(0);
             for j=1:length(manual.pos{i})
                 manual.pos_h{i}(j)=plot(manual.pos{i}(j,1),manual.pos{i}(j,2),'rx');
             end
@@ -179,6 +179,7 @@ else
             axes(handles.axes_ROI)
             hold on
             handles.hroisT=nan(roidata.nrois,1);
+            manual.pos_h = cell(0);
             for i = 1:roidata.nrois,
                 ROIpos=[roidata.centerx(i)-roidata.radii(i),roidata.centery(i)-roidata.radii(i),2*roidata.radii(i),2*roidata.radii(i)];
                 handles.hrois(i,1)=imellipse(handles.axes_ROI,ROIpos);
@@ -187,14 +188,13 @@ else
                 handles.hroisT(i,1)=text(roidata.centerx(i),roidata.centery(i),['ROI: ',num2str(i)],...
                   'Color',colors(i,:),'HorizontalAlignment','center','VerticalAlignment','middle','Clipping','on');
                 if ~isempty(manual.pos)
-                    manual.pos_h = cell(0);
                     for j=1:length(manual.pos{i})
                         manual.pos_h{i}(j)=plot(manual.pos{i}(j,1),manual.pos{i}(j,2),'rx');
                     end
                     set(handles.listbox_manual,'string',vertcat(list.text{:}),'Value',numel(vertcat(list.text{:})))
                 end
             end
-            maual.detected=true;
+            manual.detected=true;
             if ~roidata.isall
                 set(handles.pushbutton_delete,'Enable','on')
                 if ~isempty(manual.pos)
@@ -408,6 +408,7 @@ if ~file_ROI{1}==0
         axes(handles.axes_ROI)
         hold on
         handles.hroisT=nan(roidata.nrois,1);
+        manual.pos_h = cell(0);
         for i = 1:roidata.nrois,
             ROIpos=[roidata.centerx(i)-roidata.radii(i),roidata.centery(i)-roidata.radii(i),2*roidata.radii(i),2*roidata.radii(i)];
             handles.hrois(i,1)=imellipse(handles.axes_ROI,ROIpos);
@@ -416,7 +417,6 @@ if ~file_ROI{1}==0
             handles.hroisT(i,1)=text(roidata.centerx(i),roidata.centery(i),['ROI: ',num2str(i)],...
               'Color',colors(i,:),'HorizontalAlignment','center','VerticalAlignment','middle','Clipping','on');
             if ~isempty(manual.pos)
-                manual.pos_h = cell(0);
                 for j=1:length(manual.pos{i})
                     manual.pos_h{i}(j)=plot(manual.pos{i}(j,1),manual.pos{i}(j,2),'rx');
                 end
@@ -618,7 +618,7 @@ params.baserotateby=str2double(get(handles.edit_set_rot,'String'));
 params.cannythresh=[str2double(get(handles.edit_set_thres1,'String')),str2double(get(handles.edit_set_thres2,'String'))];
 params.cannysigma=str2double(get(handles.edit_set_std,'String'));
 
-if isnan(params.baserotateby) || any(isnan(params.cannythresh)) || isnan (params.cannysigma)
+if isnan(params.baserotateby) || any(isnan(params.cannythresh)) || isnan(params.cannysigma)
     mymsgbox(50,190,14,'Helvetica',{'Please, input numeric values for the setting parametes'},'Error','error','modal')
 else
     manual=get(handles.radiobutton_manual,'UserData');
