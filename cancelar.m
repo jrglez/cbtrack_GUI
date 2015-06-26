@@ -37,9 +37,7 @@ if ~isempty(all_files)
     end
 end
 
-funpath=fileparts(fileparts(which('DuoTrax')));
-DuoTrax_path=genpath(funpath);
-rmpath(DuoTrax_path);
+CBTrackPath.rmpath;
 
 clear
 clearvars -global

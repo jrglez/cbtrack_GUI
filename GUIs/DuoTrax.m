@@ -48,9 +48,7 @@ function DuoTrax_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for DuoTrax
 handles.output = hObject;
 
-funpath=fileparts(fileparts(which('DuoTrax')));
-DuoTrax_path=genpath(funpath);
-addpath(DuoTrax_path);
+CBTrackPath.setpath;
 
 % Update handles structure
 guidata(hObject, handles);
