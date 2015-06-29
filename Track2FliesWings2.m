@@ -146,6 +146,9 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
     hwait = waitbar(0,{['Experiment ',getappdata(0,'experiment')];'Computing fly orientations'},'CreateCancelBtn','cancel_waitbar');
     for roii = 1:roidata.nrois
         nfpr = roidata.nflies_per_roi(roii);
+        if isnan(nfpr)
+          continue;
+        end
         isroi = [trackdata.trx.roi]==roii;
         x = vertcat(trackdata.trx(isroi).x);
         y = vertcat(trackdata.trx(isroi).y);
@@ -366,6 +369,8 @@ end
 
 %% resolve head/tail ambiguity again, since it is pretty quick
 
+% ALXXX 20150626: big cut+paste (in this file)
+
 stage = 'chooseorientations2'; 
 if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
     write_log(logfid,getappdata(0,'experiment'),sprintf('Choosing orientations 2...\n'));
@@ -373,12 +378,10 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
     hwait = waitbar(0,{['Experiment ',getappdata(0,'experiment')];'Computing fly orientations'},'CreateCancelBtn','cancel_waitbar');
     setappdata(0,'allow_stop',false)
     for roii = 1:roidata.nrois
-        % if there is some kind of flip
-%         if trackdata.assignids.nflips(roii) == 0,
-%           continue;
-%         end
-
         nfpr = roidata.nflies_per_roi(roii);
+        if isnan(nfpr)
+          continue;
+        end
         isroi = [trackdata.trx.roi]==roii;
         x = vertcat(trackdata.trx(isroi).x);
         y = vertcat(trackdata.trx(isroi).y);

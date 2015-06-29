@@ -98,23 +98,36 @@ for j = 1:nrois,
   else
     nflies_per_roi(j) = round(prctile(nccs,95));
   end
+  
+  % AL20150626 Shelby reported fly crawling into ROI and resulting in
+  % nflies_per_roi==3 and subsequent breakage in downstream code
+  if nflies_per_roi(j)>2
+    warnstr = sprintf('ROI %d contains more than two flies. Ignoring...',j);
+    uiwait(warndlg(warnstr,'Ignoring ROI'));
+    
+    if isempty(roidata.ignore)
+      roidata.ignore = [];
+    end
+    roidata.ignore(end+1) = j; % XXX currently not reset on appdata; see iss#9
+    nflies_per_roi(j) = nan;    
+  end
 end
 
 if dosetwingtrack
-trx=struct('x',[],'y',[],'a',[],'b',[],'theta',[]);
-trx=repmat(trx,[nansum(nflies_per_roi),nframessample]);
-    hwait=waitbar(0,{['Experiment ',experiment];['Computing positions: Analyzing frame 0 of ', num2str(nframessample)]},'CreateCancelBtn','cancel_waitbar');
-    for i=1:nframessample,
-        if getappdata(0,'iscancel') || getappdata(0,'isskip') || getappdata(0,'isstop')  
-          trx = [];
-          return
-        end
-        waitbar(i/nframessample,hwait,{['Experiment ',experiment];['Computing positions: Analyzing frame ',num2str(i),' of ', num2str(nframessample)]});
-        trx(:,i)=fit_to_ellipse_GUI(roidata,nflies_per_roi, dbkgd{i}, isfore{i},tracking_params);
+  trx=struct('x',[],'y',[],'a',[],'b',[],'theta',[]);
+  trx=repmat(trx,[nansum(nflies_per_roi),nframessample]);
+  hwait=waitbar(0,{['Experiment ',experiment];['Computing positions: Analyzing frame 0 of ', num2str(nframessample)]},'CreateCancelBtn','cancel_waitbar');
+  for i=1:nframessample,
+    if getappdata(0,'iscancel') || getappdata(0,'isskip') || getappdata(0,'isstop')
+      trx = [];
+      return
     end
-    delete (hwait);
+    waitbar(i/nframessample,hwait,{['Experiment ',experiment];['Computing positions: Analyzing frame ',num2str(i),' of ', num2str(nframessample)]});
+    trx(:,i)=fit_to_ellipse_GUI(roidata,nflies_per_roi,dbkgd{i},isfore{i},tracking_params);
+  end
+  delete (hwait);
 else
-    trx=[];
+  trx=[];
 end
 
 s=sprintf('nflies\tnrois\n');
@@ -123,9 +136,9 @@ for i = 0:2,
   write_log(logfid,experiment,sprintf('%d\t%d\n',i,nnz(nflies_per_roi==i)));
 end
 s={sprintf('>2\t%d\n',nnz(nflies_per_roi>2));...
-sprintf('ignored\t%d\n',nnz(isnan(nflies_per_roi)));...
-sprintf('\n');...
-sprintf('Finished counting flies per ROI at %s.\n',datestr(now,'yyyymmddTHHMMSS'))};
+  sprintf('ignored\t%d\n',nnz(isnan(nflies_per_roi)));...
+  sprintf('\n');...
+  sprintf('Finished counting flies per ROI at %s.\n',datestr(now,'yyyymmddTHHMMSS'))};
 write_log(logfid,experiment,s)
 if logfid > 1,
   fclose(logfid);

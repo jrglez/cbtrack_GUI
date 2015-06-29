@@ -43,6 +43,27 @@ else
 end
 % End initialization code - DO NOT EDIT
 
+% AL20150610
+%
+% State 
+% The state for this UI breaks down into 
+% * points describing ROIs (eg manually clicked), managed in the left panel
+% * parameters for ROI detection (edge detection etc), see right panel
+% * detected ROIs.
+%
+% This state lives on UserData of various uicontrols:
+% * uipanel_settings.UserData: ROI detection parameters, including Advanced
+% Settings
+% * pushbutton_detect.UserData: Detected ROIs, plus parameters; .params
+% contains a duplicate of uipanel_settings.UserData.
+% * listbox_manual.UserData: list (text) of manually selected points
+% * radiobutton_manual: arrays (numeric) of manually selected points;
+% handles to plotted points for those points
+%
+% Operations
+% Detect:
+% Load: What is concept of Load wrt parameters?
+
 
 function cbtrackGUI_ROI_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for cbtrackGUI_ROI_temp
