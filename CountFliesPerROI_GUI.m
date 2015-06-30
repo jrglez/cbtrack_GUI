@@ -113,8 +113,8 @@ end
 % heuristic: if mode ~= 1, use mode
 % otherwise use 99th percentile
 nflies_per_roi = nan(1,nrois);
+warnstr = cell(0,1);
 for j = 1:nrois,
-  
   if any(roidata.ignore==j),
     nflies_per_roi(j) = nan;
     continue;
@@ -132,14 +132,15 @@ for j = 1:nrois,
   % nflies_per_roi==3 and subsequent breakage in downstream code
   %
   % See "Ignored ROIs" discussion above
-  if nflies_per_roi(j)>2
-    warnstr = sprintf('ROI %d contains more than two flies. Ignoring...',j);
-    uiwait(warndlg(warnstr,'Ignoring ROI'));
-    
+  if nflies_per_roi(j)==0 || nflies_per_roi(j)>2
+    warnstr{end+1,1} = sprintf('ROI %d contains %d flies. Ignoring...',j,nflies_per_roi(j)); %#ok<AGROW>    
     nflies_per_roi(j) = nan;
   end
 end
-
+if ~isempty(warnstr)
+  uiwait(warndlg(warnstr,'Ignoring ROIs'));
+end
+    
 if dosetwingtrack
   trx=struct('x',[],'y',[],'a',[],'b',[],'theta',[]);
   trx=repmat(trx,[nansum(nflies_per_roi),nframessample]);
