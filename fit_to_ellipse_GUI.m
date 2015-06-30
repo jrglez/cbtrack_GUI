@@ -21,10 +21,9 @@ trxcurr.gmm_isbadprior = nan;
 trxcurr = repmat(trxcurr,[1,nrois]);
 k=1;
 for j=1:nrois
-    if any(roidata.ignore==j)
+    if isnan(nflies_per_roi(j))
       continue;
     end
-    assert(~isnan(nflies_per_roi(j)));
     
     roibb = roidata.roibbs(j,:);
     roibb([1,3]) = floor(roibb([1,3])/tracking_params.down_factor);

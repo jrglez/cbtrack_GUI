@@ -791,7 +791,7 @@ H0=get(handles.edit_set_first,'UserData');
 
 use=get(handles.check,'Value');
 roidata.ignore=find(~cell2mat(use));
-tracking_params.ignorebowls=roidata.ignore;
+tracking_params.ignorebowls=roidata.ignore; % AL20150630 does not appear to be used for anything, see discussion in CountFliesPerROI_GUI
 
 update_frame(handles,tracking_params,visdata,vign,H0);
 

@@ -1,5 +1,34 @@
 function [nflies_per_roi,frames,im,dbkgd,trx] = CountFliesPerROI_GUI(frames,roidata,roiparams,tracking_params,dosetwingtrack,vign,H0)
 
+% *IGNORED ROIs*
+%
+% Current notions of ignored ROIs
+% 1. In params.xml/detect_rois, ignorebowls can be specified when ROIs are
+%    specified (ie when detect_rois/roimus is specified)
+% 2. In params.xml/track, ignorebowls can be specified. This currently has
+%    no effect.
+% 3. In body tracking UI, ROIs can be ignored by unchecking checkboxes
+% 4. If automatic fly counting is used, ROIs with > 2 flies are
+%    subsequently ignored
+%
+% Cases 1. and 3. appear functionally equivalent, eg if ROIs and 
+% ignorebowls are specified in params.xml/detect_rois, then the 
+% corresponding checkboxes in the body tracking UI will be unchecked.
+% 
+% Relevant state in implementation
+% A. roidata.nflies_per_roi. This will be NaN for ignored ROIs for cases 1,
+%    3, 4 above
+% B. roidata.ignore. This index vector will include ROIs ignored in cases 
+%    1 or 3.
+% C. roidata.params.ignorebowls. This mirrors params.xml for case 1.
+% D. trackingdata.ignorebowls. This mirrors params.xml for case 2, but this
+%    appears unused.
+%
+% Currently, A is the important/utilized state for downstream processing.
+% ROIs which are/should be ignored for any reason will have 
+% nflies_per_roi equal to NaN.
+
+
 nrois = roidata.nrois;
 nframessample = roiparams.nframessample;
 
@@ -101,15 +130,13 @@ for j = 1:nrois,
   
   % AL20150626 Shelby reported fly crawling into ROI and resulting in
   % nflies_per_roi==3 and subsequent breakage in downstream code
+  %
+  % See "Ignored ROIs" discussion above
   if nflies_per_roi(j)>2
     warnstr = sprintf('ROI %d contains more than two flies. Ignoring...',j);
     uiwait(warndlg(warnstr,'Ignoring ROI'));
     
-    if isempty(roidata.ignore)
-      roidata.ignore = [];
-    end
-    roidata.ignore(end+1) = j; % XXX currently not reset on appdata; see iss#9
-    nflies_per_roi(j) = nan;    
+    nflies_per_roi(j) = nan;
   end
 end
 
