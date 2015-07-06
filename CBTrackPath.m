@@ -23,7 +23,7 @@ classdef CBTrackPath
     
     function p = getpath
       root = cbtrackroot;      
-      p = [{root}; fullfile(root,CBTrackPath.SUBDIRS)];
+      p = [{root}; cellfun(@(x)fullfile(root,x),CBTrackPath.SUBDIRS,'uni',0)];
     end
     
   end
