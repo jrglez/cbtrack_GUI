@@ -363,6 +363,7 @@ updateframe(debugdata,visdata.trxW(:,f),wing_params,visdata.framesW{f},visdata.d
 set(handles.edit_set_Hbgthresh,'String',num2str(wing_params.mindwing_high,'%.2f'));
 set(handles.slider_set_Lbgthresh,'Value',min(get(handles.slider_set_Lbgthresh,'Value'),wing_params.mindwing_high),'Max',wing_params.mindwing_high);
 set(handles.edit_set_Lbgthresh,'String',num2str(min(str2double(get(handles.edit_set_Lbgthresh,'String')),wing_params.mindwing_high),'%.2f'));
+set(handles.uipanel_set,'UserData',wing_params);
 
 
 function slider_set_Hbgthresh_CreateFcn(hObject, eventdata, handles)
