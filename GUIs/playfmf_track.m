@@ -146,7 +146,7 @@ for f = handles.f:handles.nframes,
   trx=get(handles.axes_Video,'UserData');
   nflies=numel(trx);
   for i=1:nflies
-      updatefly(handles.htri(i),trx,f);
+      updatefly(handles.htri(i),trx(i),f);
       set(handles.htrx(i),'XData',trx(i).x(max(f-30,1):f),'YData',trx(i).y(max(f-30,1):f))
       if isfield(trx,'xwingl')
           xwing = [trx(i).xwingl(f),trx(i).x(f),trx(i).xwingr(f)];
@@ -216,7 +216,7 @@ handles = update_frame(handles);
 trx=get(handles.axes_Video,'UserData');
 nflies=numel(trx);
 for i=1:nflies
-    updatefly(handles.htri(i),trx,f);
+    updatefly(handles.htri(i),trx(i),f);
     set(handles.htrx(i),'XData',trx(i).x(max(f-30,1):f),'YData',trx(i).y(max(f-30,1):f))
     if isfield(trx,'xwingl')
         xwing = [trx(i).xwingl(f),trx(i).x(f),trx(i).xwingr(f)];
@@ -271,7 +271,7 @@ handles = update_frame(handles);
 trx=get(handles.axes_Video,'UserData');
 nflies=numel(trx);
 for i=1:nflies
-    updatefly(handles.htri(i),trx,f);
+    updatefly(handles.htri(i),trx(i),f);
     set(handles.htrx(i),'XData',trx(i).x(max(f-30,1):f),'YData',trx(i).y(max(f-30,1):f))
     if isfield(trx,'xwingl')
         xwing = [trx(i).xwingl(f),trx(i).x(f),trx(i).xwingr(f)];
