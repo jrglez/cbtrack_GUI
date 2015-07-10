@@ -305,6 +305,14 @@ end
 if nzoom > 0,
   nzoomc = ceil(nzoom/nzoomr);
 end
+
+% check firstframes/maxnframes
+firstframes0 = firstframes;
+firstframes(firstframes>nframes) = nframes;
+firstframes(firstframes<=0) = 1;
+if ~isequal(firstframes,firstframes0)
+  warning('make_ctrax_result_movie_GUI:firstframes','Adjusting firstframes to lie in interval [1,nframes].');
+end
 endframes = min(nframes,firstframes+maxnframes-1);
 im = readframe(firstframes(1));
 [nr,nc,ncolors] = size(im);
@@ -454,7 +462,8 @@ tic;
 
 hwait=waitbar(0,{['Experiment ',getappdata(0,'experiment')];'Creating results movie'},'CreateCancelBtn','cancel_waitbar');
 k = 0;
-setappdata(0,'allow_stop',false)
+setappdata(0,'allow_stop',false);
+tfNoFramesWritten = true;
 for segi = 1:numel(firstframes),
   firstframe = firstframes(segi);
   endframe = endframes(segi);
@@ -488,7 +497,7 @@ for segi = 1:numel(firstframes),
       im = repmat(im,[1,1,3]);
     end
     set(0,'CurrentFigure',1)
-    if frame == firstframes(1),
+    if tfNoFramesWritten 
       him = image([1,nc],[1,nr],im);
       axis image;
       axis([.5,x1(end)+.5,.5,y1(end)+.5]);
@@ -504,7 +513,7 @@ for segi = 1:numel(firstframes),
     end
     % text doesn't show up in no display mode
     if titletext && isdisplay,
-      if frame == firstframes(1),
+      if tfNoFramesWritten
         htext = text(.5,.5,framestr,'Parent',hax,'BackgroundColor','k','Color','g','VerticalAlignment','bottom','interpreter','none');
       else
         set(htext,'String',framestr);
@@ -521,7 +530,7 @@ for segi = 1:numel(firstframes),
         
         % fly not visible?
         if isnan(fly) || ~isalive(fly),
-          if frame == firstframes(1),
+          if tfNoFramesWritten
             himzoom(i,j) = image([x0(j),x1(j)],[y0(i),y1(i)],repmat(uint8(123),[boxradius*2+1,boxradius*2+1,3]));
           else
             set(himzoom(i,j),'cdata',repmat(uint8(123),[boxradius*2+1,boxradius*2+1,3]));
@@ -540,17 +549,16 @@ for segi = 1:numel(firstframes),
         box(boxradius+1-boxrady1:boxradius+1+boxrady2,...
           boxradius+1-boxradx1:boxradius+1+boxradx2) = ...
           im(y-boxrady1:y+boxrady2,x-boxradx1:x+boxradx2);
-        if frame == firstframes(1),
+        if tfNoFramesWritten
           himzoom(i,j) = image([x0(j),x1(j)],[y0(i),y1(i)],repmat(box,[1,1,3]));
         else
           set(himzoom(i,j),'cdata',repmat(box,[1,1,3]));
-        end
-        
+        end        
       end
-    end;
+    end
     
     % plot the zoomed out position
-    if frame == firstframes(1),
+    if tfNoFramesWritten
       for fly = 1:nids,
         if isalive(fly),
           i0 = max(1,idx(fly)-taillength);
@@ -653,7 +661,7 @@ for segi = 1:numel(firstframes),
             ywing = [ywingl,y,ywingr];
           end
 
-          if frame == firstframes(1),
+          if tfNoFramesWritten
             hzoom(i,j) = drawflyo(x,y,theta,a,b);
             if doplotwings && doplotwings_perfly(fly),
               hzoomwing(i,j) = plot(xwing,ywing,'.-','color',colors(fly,:));
@@ -695,7 +703,7 @@ for segi = 1:numel(firstframes),
           end
           set(hzoom(i,j),'color',colors(fly,:));
         else
-          if frame == firstframes(1),
+          if tfNoFramesWritten
             hzoom(i,j) = plot(nan,nan,'-');
             if doplotwings,
               hzoomwing(i,j) = plot(nan,nan,'.-');
@@ -726,7 +734,7 @@ for segi = 1:numel(firstframes),
       end
     end
     
-    if frame == firstframes(1),
+    if tfNoFramesWritten
       if ~isempty(figpos),
         set(1,'Position',figpos);
       else
@@ -758,7 +766,7 @@ for segi = 1:numel(firstframes),
       end
     end
     
-    if frame == firstframes(1),
+    if tfNoFramesWritten
       fr = getframe_invisible(hax);
       [height,width,~] = size(fr);
       write_log(logfid,getappdata(0,'experiment'),sprintf('Size of frame is %d x %d\n',height,width));
@@ -778,6 +786,7 @@ for segi = 1:numel(firstframes),
     end
     set(1,'Position',figpos);
     
+    tfNoFramesWritten = false;
   end
   
 end
