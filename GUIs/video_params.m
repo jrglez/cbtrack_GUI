@@ -155,25 +155,29 @@ colormap('gray')
 debugdata.vis=9; debugdata.DEBUG=0; debugdata.track=0; debugdata.vid=1; 
 [~,trx]=TrackWingsSingle_GUI(trx,BG.bgmed,cbparams.wingtrack,readframe(f),dbkgd,debugdata);
 % convert trx to the original size;
-for i=1:numel(trx)
-    trx(i).x = (trx(i).x-0.5)*cbparams.track.down_factor;
-    trx(i).y = (trx(i).y-0.5)*cbparams.track.down_factor;
-    trx(i).a = trx(i).a*cbparams.track.down_factor;
-    trx(i).b = trx(i).b*cbparams.track.down_factor;
-    if isfield(trx(i),'xwingl')
-        trx(i).xwingl = (trx(i).xwingl-0.5)*cbparams.track.down_factor;
-        trx(i).ywingl = (trx(i).ywingl-0.5)*cbparams.track.down_factor;
-        trx(i).xwingr = (trx(i).xwingr-0.5)*cbparams.track.down_factor;
-        trx(i).ywingr = (trx(i).ywingr-0.5)*cbparams.track.down_factor;
-    end
+if cbparams.track.down_factor~=1
+  for i=1:numel(trx)
+      trx(i).x = (trx(i).x-0.5)*cbparams.track.down_factor;
+      trx(i).y = (trx(i).y-0.5)*cbparams.track.down_factor;
+      trx(i).a = trx(i).a*cbparams.track.down_factor;
+      trx(i).b = trx(i).b*cbparams.track.down_factor;
+      if isfield(trx(i),'xwingl')
+          trx(i).xwingl = (trx(i).xwingl-0.5)*cbparams.track.down_factor;
+          trx(i).ywingl = (trx(i).ywingl-0.5)*cbparams.track.down_factor;
+          trx(i).xwingr = (trx(i).xwingr-0.5)*cbparams.track.down_factor;
+          trx(i).ywingr = (trx(i).ywingr-0.5)*cbparams.track.down_factor;
+      end
+  end
 end
-
 doplotwings = cbparams.track.dotrackwings && all(isfield(trx,{'xwingl','ywingl','xwingr','ywingr'}));
 scalefactor = movie_params.scalefactor;
 
 max_a=max([trx.a]);
 max_b=max([trx.b]);
 max_scalefactor = rowszoom/(4*sqrt(max_a^2+max_b^2)-1);
+if isnan(max_scalefactor)
+  max_scalefactor = scalefactor;
+end
 scalefactor=min(max_scalefactor,scalefactor);
 boxradius = round(0.5*(rowszoom/scalefactor)-1);
 zoomflies=1:nzoom;
@@ -387,10 +391,16 @@ for i=1:numel(uiset_style)
     'Enable',uiset_enable{i},'BackgroundColor',uiset_BG(i,:),...
     'Callback',uiset_callback{i},'TooltipString',uiset_tip{i});
 end
-if ~cbparams.track.dotrack
-    set(handles.checkbox_dovideo,'Value',false,'Enable','off')
-    movie_params.dovideo = 0;
+% if ~cbparams.track.dotrack
+% AL20150915: DuoTrax resultsmovie checkbox governs .dovideo; no mutability
+% here
+if cbparams.results_movie.dovideo
+  set(handles.checkbox_dovideo,'Value',true,'Enable','off');
+else
+  set(handles.checkbox_dovideo,'Value',false,'Enable','off');
 end
+%     movie_params.dovideo = 0;
+% end
 
 handles.output = hObject;
 % Update handles structure
@@ -617,7 +627,7 @@ function pushbutton_accept_Callback(hObject, eventdata)
 handles=guidata(hObject);
 movie_params=get(handles.panel_set,'UserData');
 
-movie_params.dovideo=get(handles.checkbox_dovideo,'Value');
+%movie_params.dovideo=get(handles.checkbox_dovideo,'Value');
 movie_params.nzoomr=str2double(get(handles.edit_nr,'String'));
 movie_params.nzoomc=str2double(get(handles.edit_nc,'String'));
 movie_params.scalefator=str2double(get(handles.edit_zoom,'String'));
