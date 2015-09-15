@@ -58,17 +58,19 @@ timestamps = trackdata.timestamps; %#ok<NASGU>
 
 % trx
 % convert trx to the original size;
-for i=1:numel(trx)
-    trx(i).x = (trx(i).x-0.5)*cbparams.track.down_factor;
-    trx(i).y = (trx(i).y-0.5)*cbparams.track.down_factor;
-    trx(i).a = trx(i).a*cbparams.track.down_factor;
-    trx(i).b = trx(i).b*cbparams.track.down_factor;
-    if isfield(trx(i),'xwingl')
-        trx(i).xwingl = (trx(i).xwingl-0.5)*cbparams.track.down_factor;
-        trx(i).ywingl = (trx(i).ywingl-0.5)*cbparams.track.down_factor;
-        trx(i).xwingr = (trx(i).xwingr-0.5)*cbparams.track.down_factor;
-        trx(i).ywingr = (trx(i).ywingr-0.5)*cbparams.track.down_factor;
-    end
+if cbparams.track.down_factor~=1
+  for i=1:numel(trx)
+      trx(i).x = (trx(i).x-0.5)*cbparams.track.down_factor;
+      trx(i).y = (trx(i).y-0.5)*cbparams.track.down_factor;
+      trx(i).a = trx(i).a*cbparams.track.down_factor;
+      trx(i).b = trx(i).b*cbparams.track.down_factor;
+      if isfield(trx(i),'xwingl')
+          trx(i).xwingl = (trx(i).xwingl-0.5)*cbparams.track.down_factor;
+          trx(i).ywingl = (trx(i).ywingl-0.5)*cbparams.track.down_factor;
+          trx(i).xwingr = (trx(i).xwingr-0.5)*cbparams.track.down_factor;
+          trx(i).ywingr = (trx(i).ywingr-0.5)*cbparams.track.down_factor;
+      end
+  end
 end
 outfilename = fullfile(out.folder,cbparams.dataloc.trx.filestr);
 s=sprintf('Saving final tracking results to file %s...\n',outfilename);
