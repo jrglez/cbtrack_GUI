@@ -469,8 +469,8 @@ else
 end
 
 % Autmatic check complete for all experiments
-hwait=waitbar(0,'Checking complete');
 if get(handles.checkbox_doAcC,'Value') && strcmp(getappdata(0,'P_stage'),'AcC');
+    hwait=waitbar(0,'Checking complete');
     for i=1:numel(expdirs)
         [success(i)]=cbtrackNOGUI_AcC(exps{i},out{i},expparams{i});
         waitbar(i/numel(expdirs),hwait,['Checking Complete for experiment ',experiment]);
