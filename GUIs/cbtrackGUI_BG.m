@@ -208,7 +208,7 @@ goodfs(handles.text_exp,experiment);
 % Update handles structure
 guidata(hObject, handles);
 set(hObject,'UserData',BG);
-set(handles.pushbutton_recalc,'UserData',tracking_params)
+set(handles.pushbutton_recalc,'UserData',tracking_params);
 
 uiwait(handles.cbtrackGUI_BG);
 
@@ -331,13 +331,13 @@ bgmode=bgmodes{get(handles.popupmenu_BGtype,'Value')};
 cbparams=getappdata(0,'cbparams');
 if ~strcmp(cbparams.track.bgmode,bgmode)
     BG.data.isnew=true;
-    cbparams.track.bgmode=bgmode;
+    %cbparams.track.bgmode=bgmode;
 end
 
 computeBG=get(handles.checkbox_BG,'Value');
 if computeBG~=cbparams.track.computeBG
     BG.data.isnew=true;
-    cbparams.track.computeBG=computeBG;
+    %cbparams.track.computeBG=computeBG;
 end
 isnew=BG.data.isnew;
 setappdata(0,'isnew',isnew)
@@ -365,6 +365,7 @@ if isnew
     BG.data.isnew=false;
     tracking_params=get(handles.pushbutton_recalc,'UserData');
     cbparams.track=tracking_params;
+    cbparams.track.bgmode=bgmode;
     if ~computeBG
         [readframe,~,fid,~] = get_readframe_fcn(getappdata(0,'moviefile')); %#ok<*NASGU>
         BG.data.cbestimatebg_version='Not computed';
@@ -417,8 +418,14 @@ if isnew
     
     bgimagefile = fullfile(out.folder,cbparams.dataloc.bgimage.filestr); 
     s=sprintf('Saving image of background model to file %s...\n\n***\n',bgimagefile);
+    switch class(bgmed)
+      case {'double' 'single'}
+        bgmedsave=bgmed/255;
+      otherwise
+        bgmedsave=bgmed;
+    end
     write_log(logfid,getappdata(0,'experiment'),s)
-    imwrite(bgmed,bgimagefile,'png');
+    imwrite(bgmedsave,bgimagefile,'png');
     if logfid > 1,
         fclose(logfid);
     end

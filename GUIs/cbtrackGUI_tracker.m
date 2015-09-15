@@ -131,7 +131,11 @@ end
 
 % Estimate maximum minccarea as the area of the biggest cc
 Mmccarea=max_minccarea(handles,visdata.frames{1},tracking_params,bgmed);
-
+if Mmccarea==0
+  MINCCAREA_MAXFAC = 4.0;
+  Mmccarea = MINCCAREA_MAXFAC*tracking_params.minccarea;
+end
+  
 set(handles.edit_set_nframessample,'String',num2str(roi_params.nframessample));
 set(handles.edit_set_first,'String',num2str(tracking_params.count_firstframe));
 set(handles.edit_set_last,'String',num2str(tracking_params.count_lastframe));
@@ -889,7 +893,13 @@ tracking_params.down_factor=1;
 isfore = dbkgd >= tracking_params.bgthresh;
 cc=bwconncomp(isfore);
 cc.Area = cellfun(@numel,cc.PixelIdxList);
-Mccarea=max(cc.Area);
+if isempty(cc.Area)
+  Mccarea=0;
+  warningNoTrace('cbTrackGUI_tracker:maxarea',...
+    'No connected components found for max cc area detection.');
+else
+  Mccarea=max(cc.Area);
+end
 Mmccarea=2*Mccarea;
 
 
