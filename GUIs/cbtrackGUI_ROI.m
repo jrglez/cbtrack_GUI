@@ -465,7 +465,7 @@ if ~file_ROI{1}==0
         set(handles.radiobutton_manual,'UserData',manual)
         set(handles.listbox_manual,'UserData',list);
         set(handles.pushbutton_detect,'UserData',roidata);
-        set(handles.uipanel_settings,'Userdata',roidata.params)
+        detectSettingsToUI(handles,roidata.params);        
     catch ME
         mymsgbox(50,190,14,'Helvetica','ROI data could not be loaded','error')
     end
@@ -628,19 +628,32 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-function pushbutton_detect_Callback(hObject, eventdata, handles)
-cbparams=getappdata(0,'cbparams');
+function detectSettingsToUI(handles,params)
+% set params on Settings panel editboxes and userdata
+set(handles.edit_set_ROId,'String',num2str(params.roidiameter_mm));
+set(handles.edit_set_rot,'String',num2str(params.baserotateby));
+assert(numel(params.cannythresh)==2);
+set(handles.edit_set_thres1,'String',num2str(params.cannythresh(1)));
+set(handles.edit_set_thres2,'String',num2str(params.cannythresh(2)));
+set(handles.edit_set_std,'String',num2str(params.cannysigma));
+set(handles.uipanel_settings,'UserData',params);
+
+function params = detectSettingsReadEditBoxes(handles)
+% read params from Settings panel editboxes
 params=get(handles.uipanel_settings,'UserData');
 params.roidiameter_mm=str2double(get(handles.edit_set_ROId,'String'));
-if isnan(params.roidiameter_mm)
-    params.roidiameter_mm=1;
-end
 params.baserotateby=str2double(get(handles.edit_set_rot,'String'));
-params.cannythresh=[str2double(get(handles.edit_set_thres1,'String')),str2double(get(handles.edit_set_thres2,'String'))];
+params.cannythresh=[str2double(get(handles.edit_set_thres1,'String')),...
+                    str2double(get(handles.edit_set_thres2,'String'))];
 params.cannysigma=str2double(get(handles.edit_set_std,'String'));
 
-if isnan(params.baserotateby) || any(isnan(params.cannythresh)) || isnan(params.cannysigma)
-    mymsgbox(50,190,14,'Helvetica',{'Please, input numeric values for the setting parametes'},'Error','error','modal')
+function pushbutton_detect_Callback(hObject, eventdata, handles)
+cbparams=getappdata(0,'cbparams');
+
+params = detectSettingsReadEditBoxes(handles);
+if isnan(params.roidiameter_mm) || isnan(params.baserotateby) || ... 
+   any(isnan(params.cannythresh)) || isnan(params.cannysigma)
+    mymsgbox(50,190,14,'Helvetica',{'Please input numeric values for Settings'},'Error','error','modal')
 else
     manual=get(handles.radiobutton_manual,'UserData');
     if manual.proi(manual.roi)<3 && manual.proi(manual.roi)~=0
@@ -1154,4 +1167,4 @@ end
 % set(handles.edit_set_thres2,'String', num2str(params.cannythresh(2)))
 % set(handles.edit_set_std,'String', num2str(params.cannysigma))
 % 
-% set(handles.uipanel_settings,'Userdata',params)
+% set(handles.,'Userdata',params)
