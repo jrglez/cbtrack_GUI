@@ -1,4 +1,4 @@
-% theta = choose_orientations3(theta,phi,sqrtWarea,weight_theta,weight_phi,weight_Warea)
+% [theta,s,combs] = choose_orientations3(theta,phi,sqrtWarea,weight_theta,weight_phi,weight_Warea)
 %
 % we will set the orientation to theta_t = phi_t + s_t * pi
 % we want to choose s_t to minimize
@@ -13,17 +13,22 @@
 % Inputs:
 % theta: nflies x N matrix where thtea(fly,t) is the orientation of the fly at time t
 % phi: nflies x N matrix where phi(fly,t) is the velocity direction   of the fly at time t
-% sqrtWare: nflies x N x ncombs matrix where sqrtWare(fly,t,:) is the sqrt
-% sum of the area of the wings of the fly at time t for the diferent
-% orientation combinations.
+% sqrtWare: N x ncombs matrix where sqrtWare(t,:) is the sqrt sum of the 
+% area of the wings at time t for the different orientation combinations.
 % weight_theta: nflies x N matrix where weight_theta(fly,t) is the weight of the
 % change in orientation term at time t
 % weight_phi: nflies x N matrix where weight_phi(fly,t) is the weight of the
 % velocity direction term at time t
-% weight_Warea: nflies x N x ncombs matrix where weight_Warea(fly,t,:) is the weight
-% of the wing area at time t for the diferent orientation combinations. 
+% weight_Warea: N x ncombs matrix where weight_Warea(t,:) is the weight
+% of the wing area at time t for the different orientation combinations.
 %
-function [theta,s] = choose_orientations3(theta,phi,sqrtWarea,weight_theta,weight_phi,weight_Warea)
+% Outputs:
+% theta: nflies X N
+% s: N x 1 col index into combs
+% combs: nflies X ncombs, array of 1/2s where 1 indicates theta unchanged
+% and 2 indicates theta flipped
+%
+function [theta,s,combs] = choose_orientations3(theta,phi,sqrtWarea,weight_theta,weight_phi,weight_Warea)
 % Aqui: No esta bien porque arrastro el coste de las alas de un frame a
 % otro y se va sumando. 
 [nflies,N] = size(theta);

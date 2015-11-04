@@ -275,24 +275,38 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
       assignids_nflips(roii) = nnz(idsfit_curr(1,1:end-1)~=idsfit_curr(1,2:end));
       write_log(logfid,getappdata(0,'experiment'),sprintf('Roi %d, flipped ids %d times\n',roii,assignids_nflips(roii)));
 
+      tf12 = idsfit_curr==1 | idsfit_curr==2;
+      assert(all(tf12(:)),'Expect two targets.');
       for i = 1:2,
         for j = 1:2,
           idx = idsfit_curr(i,:)==j;
+          if i==j
+            idxWingCombs = 1:4;
+          else
+            idxWingCombs = [1 3 2 4];
+          end
+          
           for k = 1:numel(trxfns),
             trackdata.trx(flies(i)).(trxfns{k})(idx) = oldtrx(flies(j)).(trxfns{k})(idx);
           end
           for k = 1:numel(trxfnsW),
-            trackdata.trx(flies(i)).(trxfnsW{k})(1,idx,:) = oldtrx(flies(j)).(trxfnsW{k})(1,idx,:);
+            assert(size(trackdata.trx(flies(i)).(trxfnsW{k}),3)==4,...
+              'Expected 4 combinations.');
+            trackdata.trx(flies(i)).(trxfnsW{k})(1,idx,:) = ...
+              oldtrx(flies(j)).(trxfnsW{k})(1,idx,idxWingCombs);
           end
           if isfield(trackdata,'perframedata'),
             for k = 1:numel(perframefns),
-              trackdata.perframedata.(perframefns{k}){flies(i)}(idx) = ...
-                oldperframedata.(perframefns{k}){flies(j)}(idx);
+              tmp = trackdata.perframedata.(perframefns{k}){flies(i)};
+              assert(isequal(size(tmp),[1 numel(idx) 4]),...
+                'Expected 4 combinations.');
+              trackdata.perframedata.(perframefns{k}){flies(i)}(1,idx,:) = ...
+                oldperframedata.(perframefns{k}){flies(j)}(1,idx,idxWingCombs);
             end
           end
         end
       end
-
+      
       mudatafit(:,:,roii) = mudatafit_curr;
       sigmadatafit(:,:,roii) = sigmadatafit_curr;
       niters_assignids_em(roii) = niters_curr;
