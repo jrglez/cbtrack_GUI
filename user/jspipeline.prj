@@ -1,0 +1,200 @@
+<deployment-project plugin="plugin.ezdeploy" plugin-version="1.0">
+  <configuration build-checksum="281315367" file="f:\repo\duotrax\user\jspipeline.prj" location="f:\repo\duotrax\user" name="jspipeline" preferred-package-location="f:\repo\duotrax\user\jspipeline\for_redistribution" preferred-package-type="package.type.exe" target="target.ezdeploy.standalone" target-name="Application Compiler">
+    <param.appname>jspipeline</param.appname>
+    <param.icon />
+    <param.icons />
+    <param.version>1.0</param.version>
+    <param.authnamewatermark />
+    <param.email />
+    <param.company />
+    <param.summary />
+    <param.description />
+    <param.screenshot />
+    <param.guid />
+    <param.installpath.string>\jspipeline\</param.installpath.string>
+    <param.installpath.combo>option.installpath.programfiles</param.installpath.combo>
+    <param.logo />
+    <param.install.notes />
+    <param.target.install.notes />
+    <param.intermediate>${PROJECT_ROOT}\jspipeline\for_testing</param.intermediate>
+    <param.files.only>${PROJECT_ROOT}\jspipeline\for_redistribution_files_only</param.files.only>
+    <param.output>${PROJECT_ROOT}\jspipeline\for_redistribution</param.output>
+    <param.enable.clean.build>false</param.enable.clean.build>
+    <param.user.defined.mcr.options>-R -singleCompThread</param.user.defined.mcr.options>
+    <param.embed.ctf>false</param.embed.ctf>
+    <param.target.type>subtarget.standalone</param.target.type>
+    <param.support.packages />
+    <param.required.mcr.products>
+      <item>35000</item>
+      <item>35010</item>
+      <item>35001</item>
+    </param.required.mcr.products>
+    <param.web.mcr>false</param.web.mcr>
+    <param.package.mcr>true</param.package.mcr>
+    <param.no.mcr>false</param.no.mcr>
+    <param.web.mcr.name>MyAppInstaller_web</param.web.mcr.name>
+    <param.package.mcr.name>MyAppInstaller_mcr</param.package.mcr.name>
+    <param.no.mcr.name>MyAppInstaller_app</param.no.mcr.name>
+    <param.windows.command.prompt>true</param.windows.command.prompt>
+    <param.create.log>false</param.create.log>
+    <param.log.file />
+    <unset>
+      <param.icon />
+      <param.icons />
+      <param.version />
+      <param.authnamewatermark />
+      <param.email />
+      <param.company />
+      <param.summary />
+      <param.description />
+      <param.screenshot />
+      <param.guid />
+      <param.installpath.string />
+      <param.installpath.combo />
+      <param.logo />
+      <param.target.install.notes />
+      <param.intermediate />
+      <param.files.only />
+      <param.output />
+      <param.enable.clean.build />
+      <param.target.type />
+      <param.support.packages />
+      <param.no.mcr />
+      <param.web.mcr.name />
+      <param.package.mcr.name />
+      <param.no.mcr.name />
+      <param.windows.command.prompt />
+      <param.create.log />
+      <param.log.file />
+    </unset>
+    <fileset.main>
+      <file>${PROJECT_ROOT}\jspipeline.m</file>
+    </fileset.main>
+    <fileset.resources />
+    <fileset.package />
+    <fileset.depfun>
+      <file>f:\repo\duotrax\AllROI.m</file>
+      <file>f:\repo\duotrax\angledist.m</file>
+      <file>f:\repo\duotrax\any_class.m</file>
+      <file>f:\repo\duotrax\argmax.m</file>
+      <file>f:\repo\duotrax\argmin.m</file>
+      <file>f:\repo\duotrax\AssignIdentities_GivenDistributions_GUI.m</file>
+      <file>f:\repo\duotrax\AssignIdentities_GUI.m</file>
+      <file>f:\repo\duotrax\axes2cov.m</file>
+      <file>f:\repo\duotrax\cbtrackGUI_EstimateBG.m</file>
+      <file>f:\repo\duotrax\cbtrackGUI_tracker_NOvideo.m</file>
+      <file>f:\repo\duotrax\cbtrackNOGUI_BG.m</file>
+      <file>f:\repo\duotrax\cbtrackNOGUI_ROI.m</file>
+      <file>f:\repo\duotrax\choose_orientations3.m</file>
+      <file>f:\repo\duotrax\clear_partial_wing.m</file>
+      <file>f:\repo\duotrax\CourtshipBowlTrack_GUI2.m</file>
+      <file>f:\repo\duotrax\CourtshipBowlTrack_GUI_debug.m</file>
+      <file>f:\repo\duotrax\cov2ell.m</file>
+      <file>f:\repo\duotrax\detectcircles.m</file>
+      <file>f:\repo\duotrax\DetectCourtshipBowlROIs.m</file>
+      <file>f:\repo\duotrax\DetectROIsGUI.m</file>
+      <file>f:\repo\duotrax\dist2.m</file>
+      <file>f:\repo\duotrax\drawellipse.m</file>
+      <file>f:\repo\duotrax\drawflyo.m</file>
+      <file>f:\repo\duotrax\dtypechar2matlabclass.m</file>
+      <file>f:\repo\duotrax\eigs_2x2.m</file>
+      <file>f:\repo\duotrax\eq_image.m</file>
+      <file>f:\repo\duotrax\filehandling\fmf_get_datatype.m</file>
+      <file>f:\repo\duotrax\filehandling\fmf_read_frame.m</file>
+      <file>f:\repo\duotrax\filehandling\fmf_read_header.m</file>
+      <file>f:\repo\duotrax\filehandling\fmfreadframe.m</file>
+      <file>f:\repo\duotrax\filehandling\get_readframe_fcn.m</file>
+      <file>f:\repo\duotrax\filehandling\GetPCShortcutFileActualPath.m</file>
+      <file>f:\repo\duotrax\filehandling\mmf_get_readframe_fcn.m</file>
+      <file>f:\repo\duotrax\filehandling\mmf_read_frame.m</file>
+      <file>f:\repo\duotrax\filehandling\mmf_read_header.m</file>
+      <file>f:\repo\duotrax\filehandling\mmf_read_mean.m</file>
+      <file>f:\repo\duotrax\filehandling\parsejpg8.mexw64</file>
+      <file>f:\repo\duotrax\filehandling\r_readseqinfo.m</file>
+      <file>f:\repo\duotrax\filehandling\read_seq_frame.m</file>
+      <file>f:\repo\duotrax\filehandling\sbfmf_read_frame.m</file>
+      <file>f:\repo\duotrax\filehandling\sbfmf_read_header.m</file>
+      <file>f:\repo\duotrax\filehandling\sbfmfreadframe.m</file>
+      <file>f:\repo\duotrax\filehandling\ufmf_get_readframe_fcn.m</file>
+      <file>f:\repo\duotrax\filehandling\ufmf_read_frame.m</file>
+      <file>f:\repo\duotrax\filehandling\ufmf_read_header.m</file>
+      <file>f:\repo\duotrax\filehandling\ufmf_read_mean.m</file>
+      <file>f:\repo\duotrax\filehandling\videoioreadframe.m</file>
+      <file>f:\repo\duotrax\furthestfirst.m</file>
+      <file>f:\repo\duotrax\gmmpost.m</file>
+      <file>f:\repo\duotrax\goodfs.m</file>
+      <file>f:\repo\duotrax\GUIresize.m</file>
+      <file>f:\repo\duotrax\GUIs\cbtrackGUI_WingTracker_video.fig</file>
+      <file>f:\repo\duotrax\GUIs\cbtrackGUI_WingTracker_video.m</file>
+      <file>f:\repo\duotrax\GUIs\log_GUI.fig</file>
+      <file>f:\repo\duotrax\GUIs\log_GUI.m</file>
+      <file>f:\repo\duotrax\GUIsize.m</file>
+      <file>f:\repo\duotrax\houghcirclepeaks.m</file>
+      <file>f:\repo\duotrax\houghcircles.mexw64</file>
+      <file>f:\repo\duotrax\misc\mydialogCellstrHelper.m</file>
+      <file>f:\repo\duotrax\misc\mygetnicedialoglocation.m</file>
+      <file>f:\repo\duotrax\misc\mymsgbox.m</file>
+      <file>f:\repo\duotrax\misc\myquestdlg.m</file>
+      <file>f:\repo\duotrax\misc\mysetdefaultbutton.m</file>
+      <file>f:\repo\duotrax\modrange.m</file>
+      <file>f:\repo\duotrax\mygmm.m</file>
+      <file>f:\repo\duotrax\mygmminit.m</file>
+      <file>f:\repo\duotrax\mykmeans.m</file>
+      <file>f:\repo\duotrax\myparse.m</file>
+      <file>f:\repo\duotrax\myparse_nocheck.m</file>
+      <file>f:\repo\duotrax\netlab\consist.m</file>
+      <file>f:\repo\duotrax\netlab\gmm.m</file>
+      <file>f:\repo\duotrax\netlab\gmmactiv.m</file>
+      <file>f:\repo\duotrax\netlab\gmmem.m</file>
+      <file>f:\repo\duotrax\netlab\gmmem_weighted.m</file>
+      <file>f:\repo\duotrax\netlab\gmmprob.m</file>
+      <file>f:\repo\duotrax\open_log.m</file>
+      <file>f:\repo\duotrax\ParseCourtshipBowlParams_GUI.m</file>
+      <file>f:\repo\duotrax\parseunits.m</file>
+      <file>f:\repo\duotrax\plot_wings.m</file>
+      <file>f:\repo\duotrax\ReadMetadataFile.m</file>
+      <file>f:\repo\duotrax\readunixlinks.m</file>
+      <file>f:\repo\duotrax\ReadXMLParams.m</file>
+      <file>f:\repo\duotrax\rows.m</file>
+      <file>f:\repo\duotrax\savetemp.m</file>
+      <file>f:\repo\duotrax\SetBackgroundTypes.m</file>
+      <file>f:\repo\duotrax\splitext.m</file>
+      <file>f:\repo\duotrax\TimestampFormat.m</file>
+      <file>f:\repo\duotrax\Track2FliesWings.m</file>
+      <file>f:\repo\duotrax\Track2FliesWings1Frame.m</file>
+      <file>f:\repo\duotrax\Track2FliesWings1Frame1ROI.m</file>
+      <file>f:\repo\duotrax\Track2FliesWings2.m</file>
+      <file>f:\repo\duotrax\TrackFlyWings_BackSub.m</file>
+      <file>f:\repo\duotrax\TrackWings_FitWings_Peak.m</file>
+      <file>f:\repo\duotrax\updateellipse.m</file>
+      <file>f:\repo\duotrax\weighted_mean_cov.m</file>
+      <file>f:\repo\duotrax\write_log.m</file>
+    </fileset.depfun>
+    <build-deliverables>
+      <file location="${PROJECT_ROOT}\jspipeline\for_testing" name="readme.txt" optional="true">f:\repo\duotrax\user\jspipeline\for_testing\readme.txt</file>
+      <file location="${PROJECT_ROOT}\jspipeline\for_testing" name="splash.png" optional="false">f:\repo\duotrax\user\jspipeline\for_testing\splash.png</file>
+      <file location="${PROJECT_ROOT}\jspipeline\for_testing" name="jspipeline.ctf" optional="false">f:\repo\duotrax\user\jspipeline\for_testing\jspipeline.ctf</file>
+      <file location="${PROJECT_ROOT}\jspipeline\for_testing" name="jspipeline.exe" optional="false">f:\repo\duotrax\user\jspipeline\for_testing\jspipeline.exe</file>
+    </build-deliverables>
+    <workflow />
+    <matlab>
+      <root>C:\Program Files\MATLAB\R2015b-KB</root>
+      <toolboxes />
+    </matlab>
+    <platform>
+      <unix>false</unix>
+      <mac>false</mac>
+      <windows>true</windows>
+      <win2k>false</win2k>
+      <winxp>false</winxp>
+      <vista>false</vista>
+      <linux>false</linux>
+      <solaris>false</solaris>
+      <osver>6.1</osver>
+      <os32>false</os32>
+      <os64>true</os64>
+      <arch>win64</arch>
+      <matlab>true</matlab>
+    </platform>
+  </configuration>
+</deployment-project>

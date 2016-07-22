@@ -6,7 +6,8 @@ classdef CBTrackPath
       'filehandling'
       'GUIs'
       'misc'
-      'netlab'};
+      'netlab' 
+      'user'};
   end
   
   methods (Static)

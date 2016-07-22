@@ -1,16 +1,19 @@
-function cbtrackNOGUI_ROI
-out=getappdata(0,'out');
-cbparams=getappdata(0,'cbparams');
-loadfile=fullfile(out.folder,cbparams.dataloc.roidatamat.filestr);
-if getappdata(0,'usefiles') && exist(loadfile,'file')
+function cbtrackNOGUI_ROI(varargin)
+
+out = getappdata(0,'out');
+cbparams = getappdata(0,'cbparams');
+roifile = myparse(varargin,...
+  'roifile',fullfile(out.folder,cbparams.dataloc.roidatamat.filestr));
+
+if getappdata(0,'usefiles') && exist(roifile,'file')
     try
-        roidata=load(loadfile);
+        roidata=load(roifile);
         if isfield(roidata,'nframes_per_roi')
             roidata=rmfield(roidata,'nflies_per_roi');
         end
         
         logfid=open_log('roi_log');
-        s=sprintf('Loading ROI data data from %s at %s\n',loadfile,datestr(now,'yyyymmddTHHMMSS'));
+        s=sprintf('Loading ROI data data from %s at %s\n',roifile,datestr(now,'yyyymmddTHHMMSS'));
         write_log(logfid,getappdata(0,'experiment'),s)
         if logfid > 1,
           fclose(logfid);
@@ -22,12 +25,12 @@ if getappdata(0,'usefiles') && exist(loadfile,'file')
         setappdata(0,'cbparams',cbparams);
     catch
         logfid=open_log('roi_log');
-        s=sprintf('File %s could not be loaded.',loadfile);
+        s=sprintf('File %s could not be loaded.',roifile);
         write_log(logfid,getappdata(0,'experiment'),s)
         if logfid > 1,
           fclose(logfid);
         end
-        waitfor(mymsgbox(50,190,14,'Helvetica',{['File ', loadfile,' could not be loaded.'];'Trying to detect ROIs automatically'},'Warning','warn','modal'))
+        waitfor(mymsgbox(50,190,14,'Helvetica',{['File ', roifile,' could not be loaded.'];'Trying to detect ROIs automatically'},'Warning','warn','modal'))
         BG=getappdata(0,'BG');
         params=cbparams.detect_rois;
         if isempty(params.roimus.x) || isempty(params.roimus.y) || ~cbparams.track.computeBG
