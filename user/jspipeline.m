@@ -1,9 +1,11 @@
 function jspipeline(varargin)
 
-[movFile,appDataFile,roiFile] = myparse(varargin,...
+[movFile,appDataFile,roiFile,trackXMLfile] = myparse(varargin,...
   'movFile',[],...
   'appDataFile','f:\jspr\settings\appdata.mat',...
-  'roiFile','f:\jspr\settings\roidata.mat');
+  'roiFile','f:\jspr\settings\roidata.mat',...
+  'trackXMLfile',''... % If supplied, xmlContents.track is overlaid on top of appData.cbparams.track
+  );
 
 if exist(movFile,'file')==0
   error('Cannot find movie: %s.',movFile);
@@ -15,7 +17,7 @@ fprintf('Movie is %s.\n',movFile);
 fprintf('Expdir is %s.\n',expdir);
 fprintf('Expname is %s.\n',expname);
 
-% Set the app data
+% Load app data
 fprintf('Loading appdata file: %s\n',appDataFile);
 ad = load(appDataFile);
 ad = ad.ad;
@@ -26,6 +28,15 @@ ad.moviefile = movFile;
 ad.out.folder = expdir;
 ad.out.temp = '';
 ad.out.temp_full = '';
+
+if ~isempty(trackXMLfile)
+  prmsTrack = ReadXMLParams(trackXMLfile);
+  fprintf(1,'Overlaying tracking parameters from: %s\n',trackXMLfile);
+  ad.cbparams.track = structoverlay(ad.cbparams.track,prmsTrack.track,...
+    'fldsIgnore',{'DEBUG' 'dosave' 'dosetBG' 'dosettrack'});
+end
+
+% Set appdata
 flds = fieldnames(ad);
 for f=flds(:)',f=f{1}; %#ok<FXSET>
   fprintf(' setting appdata fld: %s\n',f);  
@@ -70,3 +81,5 @@ setappdata(0,'usefiles',0);
 % Tracking
 setappdata(0,'button','track');
 cbtrackGUI_tracker_NOvideo;
+
+WriteParams;
