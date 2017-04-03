@@ -1,15 +1,28 @@
 function jspipeline(varargin)
 
-[movFile,appDataFile,roiFile,trackXMLfile] = myparse(varargin,...
+[movFile,settingsDir,appDataFile,roiFile,trackXMLfile] = myparse(varargin,...
   'movFile',[],...
-  'appDataFile','f:\jspr\settings\appdata.mat',...
-  'roiFile','f:\jspr\settings\roidata.mat',...
+  'settingsDir','/groups/branson/home/leea30/jsp/settings',...
+  'appDataFile','appdata.mat',...
+  'roiFile','roidata.mat',...
   'trackXMLfile',''... % If supplied, xmlContents.track is overlaid on top of appData.cbparams.track
-  );
+);
 
 if exist(movFile,'file')==0
   error('Cannot find movie: %s.',movFile);
 end
+if exist(settingsDir,'dir')==0
+  error('Cannot find settings dir: %s.',settingsDir);
+end
+appDataFile = fullfile(settingsDir,appDataFile);
+roiFile = fullfile(settingsDir,roiFile);
+if exist(appDataFile,'file')==0
+  error('Cannot find appData file: %s.',appDataFile);
+end
+if exist(roiFile,'file')==0
+  error('Cannot find ROI file: %s.',roiFile);
+end
+
 expdir = fileparts(movFile);
 [~,expname] = fileparts(expdir);
 
@@ -20,7 +33,6 @@ fprintf('Expname is %s.\n',expname);
 % Load app data
 fprintf('Loading appdata file: %s\n',appDataFile);
 ad = load(appDataFile);
-ad = ad.ad;
 ad.expdirs = {expdir};
 ad.expdir = expdir;
 ad.experiment = expname;
@@ -39,7 +51,7 @@ end
 % Set appdata
 flds = fieldnames(ad);
 for f=flds(:)',f=f{1}; %#ok<FXSET>
-  fprintf(' setting appdata fld: %s\n',f);  
+  %fprintf(' setting appdata fld: %s\n',f);  
   setappdata(0,f,ad.(f));
 end
 
