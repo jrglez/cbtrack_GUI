@@ -42,6 +42,7 @@ for sc = 1:nstates,
     if any(isnan(mudata))
       nll_appearance_p = 0;
     else       
+      % AL LOOKS LIKE (MINOR?) BUG
       nll_appearance_p = sum(sum( ((data(idsc,t-1,:)-mudata)./sigmadata).^2/2 + constdata, 1 ), 3);
     end
     if isappearanceweight,

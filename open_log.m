@@ -1,6 +1,14 @@
 function logfid=open_log(log_type)
 cbparams=getappdata(0,'cbparams');
 out=getappdata(0,'out');
+
+
+if isempty(out)
+  logfid=1;
+  return;
+end
+
+  
 folder=out.folder;
 if isfield(cbparams.dataloc,log_type) && ~isempty(cbparams.dataloc.(log_type).filestr)
   logfile = fullfile(folder,cbparams.dataloc.(log_type).filestr);

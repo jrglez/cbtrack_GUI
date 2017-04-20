@@ -23,6 +23,9 @@ if exist(roiFile,'file')==0
   error('Cannot find ROI file: %s.',roiFile);
 end
 
+% 20170420 hack: to match current desktop results, use up 4 RNs.
+rand(4,1);
+
 expdir = fileparts(movFile);
 [~,expname] = fileparts(expdir);
 
