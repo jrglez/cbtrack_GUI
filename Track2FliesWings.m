@@ -5,6 +5,11 @@ trackdata=getappdata(0,'trackdata');
 version = '0.1';
 timestamp = datestr(now,TimestampFormat);
 
+% XXX 
+%fprintf(1,'RNG DEFAULT');
+%pause(5);
+%rng('default');
+
 experiment=getappdata(0,'experiment');
 out=getappdata(0,'out');
 cbparams=getappdata(0,'cbparams');
@@ -102,7 +107,8 @@ Wparams.se_open_wing = strel('disk',Wparams.radius_open_wing);
 
 % for sub-bin accuracy in fitting the wings
 Wparams.subbin_x = (-Wparams.wing_radius_quadfit_bins:Wparams.wing_radius_quadfit_bins)';    
-%% loop over frames
+assert(numel(Wparams.subbin_x)==3,'subbin must have 3 coeffs for quadratic fit');
+ %% loop over frames
 
 stage = 'maintracking'; 
 
