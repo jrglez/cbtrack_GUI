@@ -137,8 +137,17 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
   end
 end
 
-%% resolve head/tail ambiguity
+%%
+trxExternal = getappdata(0,'trxExternal');
+tfTrxExternal = ~isempty(trxExternal);
+if tfTrxExternal
+  write_log(logfid,getappdata(0,'experiment'),...
+    sprintf('TrxExternal is on. Skipping ''chooseorientations'', ''assignids'', ''chooseorientations2''.\n'));
+end
 
+%% resolve head/tail ambiguity
+if ~tfTrxExternal
+  
 stage = 'chooseorientations';
 if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
   write_log(logfid,getappdata(0,'experiment'),sprintf('Choosing orientations 1...\n'));
@@ -209,7 +218,8 @@ end
 stage = 'assignids';
 
 if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
-  write_log(logfid,getappdata(0,'experiment'),sprintf('Assigning identities based on %s...\n',params.assignidsby));
+  write_log(logfid,getappdata(0,'experiment'),...
+    sprintf('Assigning identities based on %s...\n',params.assignidsby));
   
   assignids_nflips = nan(1,nrois);
   switch params.assignidsby,
@@ -430,7 +440,7 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
     sqrtWarea = squeeze(sqrt(nansum(Warea,1)));
     weight_Warea = params.choose_orientations_weight_Warea*ones(size(sqrtWarea));
     
-    [theta,s] = choose_orientations3(theta,phi,sqrtWarea,weight_theta,weight_phi,weight_Warea);
+    [theta,s,combsTmp] = choose_orientations3(theta,phi,sqrtWarea,weight_theta,weight_phi,weight_Warea);
     
     flies = find(isroi);
     for j = 1:nfpr
@@ -454,6 +464,8 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
   end
 end
 
+end % if ~tfTrxExternal 
+
 %% track wings
 stage = 'trackwings';
 
@@ -461,17 +473,57 @@ if find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages)),
   if params.dotrackwings
     if ~isfield(trackdata,'twing')
       for fly = 1:nflies
-        s = sub2ind(size(trackdata.trx(fly).wing_anglel),ones(nframes_track,1),(1:nframes_track)',trackdata.s(:,fly));
+        if tfTrxExternal
+          s = sub2ind(size(trackdata.trx(fly).wing_anglel),...
+            ones(nframes_track,1),(1:nframes_track)',ones(nframes_track,1));
+          trxflyOrig = trackdata.trx(fly);
+          tdPFDOrig = trackdata.perframedata;
+        else
+          s = sub2ind(size(trackdata.trx(fly).wing_anglel),...
+            ones(nframes_track,1),(1:nframes_track)',trackdata.s(:,fly));
+        end
         trackdata.trx(fly).wing_anglel = trackdata.trx(fly).wing_anglel(s)';
         trackdata.trx(fly).wing_angler = trackdata.trx(fly).wing_angler(s)';
-        trackdata.trx(fly).xwingl = trackdata.trx(fly).x + 4*trackdata.trx(fly).a.*cos(trackdata.trx(fly).theta+ pi+trackdata.trx(fly).wing_anglel);
-        trackdata.trx(fly).ywingl = trackdata.trx(fly).y + 4*trackdata.trx(fly).a.*sin(trackdata.trx(fly).theta+ pi+trackdata.trx(fly).wing_anglel);
-        trackdata.trx(fly).xwingr = trackdata.trx(fly).x + 4*trackdata.trx(fly).a.*cos(trackdata.trx(fly).theta+ pi+trackdata.trx(fly).wing_angler);
-        trackdata.trx(fly).ywingr = trackdata.trx(fly).y + 4*trackdata.trx(fly).a.*sin(trackdata.trx(fly).theta+ pi+trackdata.trx(fly).wing_angler);
+        trackdata.trx(fly).xwingl = trackdata.trx(fly).x + ...
+          4*trackdata.trx(fly).a.*cos(trackdata.trx(fly).theta+pi+trackdata.trx(fly).wing_anglel);
+        trackdata.trx(fly).ywingl = trackdata.trx(fly).y + ...
+          4*trackdata.trx(fly).a.*sin(trackdata.trx(fly).theta+pi+trackdata.trx(fly).wing_anglel);
+        trackdata.trx(fly).xwingr = trackdata.trx(fly).x + ...
+          4*trackdata.trx(fly).a.*cos(trackdata.trx(fly).theta+pi+trackdata.trx(fly).wing_angler);
+        trackdata.trx(fly).ywingr = trackdata.trx(fly).y + ...
+          4*trackdata.trx(fly).a.*sin(trackdata.trx(fly).theta+pi+trackdata.trx(fly).wing_angler);
         trackdata.perframedata.wing_areal{fly} = trackdata.perframedata.wing_areal{fly}(s);
         trackdata.perframedata.wing_arear{fly} = trackdata.perframedata.wing_arear{fly}(s);
         trackdata.perframedata.wing_trough_angle{fly} = trackdata.perframedata.wing_trough_angle{fly}(s);
         trackdata.perframedata.nwingsdetected{fly} = trackdata.perframedata.nwingsdetected{fly}(s);
+        
+        if tfTrxExternal
+          for wtDebugSval = 2:4
+            trxFly = trxflyOrig;
+            sTMP = sub2ind(size(trxFly.wing_anglel),...
+              ones(nframes_track,1),(1:nframes_track)',...
+              repmat(wtDebugSval,nframes_track,1));
+            trxFly.wing_anglel = trxFly.wing_anglel(sTMP)';
+            trxFly.wing_angler = trxFly.wing_angler(sTMP)';
+            wAngleL = trxFly.theta+pi+trxFly.wing_anglel;
+            wAngleR = trxFly.theta+pi+trxFly.wing_angler;
+            trxFly.xwingl = trxFly.x + 4*trxFly.a.*cos(wAngleL);
+            trxFly.ywingl = trxFly.y + 4*trxFly.a.*sin(wAngleL);
+            trxFly.xwingr = trxFly.x + 4*trxFly.a.*cos(wAngleR);
+            trxFly.ywingr = trxFly.y + 4*trxFly.a.*sin(wAngleR);
+            
+            trackdata.WTDEBUG{wtDebugSval}.trx(fly) = trxFly;
+            
+            trackdata.WTDEBUG{wtDebugSval}.perframedata.wing_areal{fly} = ...
+              tdPFDOrig.wing_areal{fly}(sTMP);
+            trackdata.WTDEBUG{wtDebugSval}.perframedata.wing_arear{fly} = ...
+              tdPFDOrig.wing_arear{fly}(sTMP);
+            trackdata.WTDEBUG{wtDebugSval}.perframedata.wing_trough_angle{fly} = ...
+              tdPFDOrig.wing_trough_angle{fly}(sTMP);
+            trackdata.WTDEBUG{wtDebugSval}.perframedata.nwingsdetected{fly} = ...
+              tdPFDOrig.nwingsdetected{fly}(sTMP);
+          end
+        end
       end
     end
     setappdata(0,'trackdata',trackdata)

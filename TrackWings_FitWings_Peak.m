@@ -112,13 +112,16 @@ if ~isempty(dthetawing)
           area = sum(H);
           wing_trough_angle = wing_angles_curr;
       else
+        % AL: assert(numel(locs)==2)?
+        
         % can't have two wings on the same side of the body (It will never
         % happen since I have split the wings in two
         if sign(wing_angles_curr(1)) == sign(wing_angles_curr(2)) && ...
             min(abs(wing_angles_curr)) >= params.min_nonzero_wing_angle,
-          wing_angles_curr(end) = [];
+          wing_angles_curr(end) = []; % AL: why arbitrary rm?
           npeaks = 1;
           area = nwingpx;
+          assert(false,'Should harderr on prev line; nwingpx undefined var.');
         else
 
           % find the trough between the two peaks
@@ -169,11 +172,14 @@ if ~isempty(dthetawing)
     end
     wing_angles_curr = sort(wing_angles_curr);
     if numel(wing_angles_curr) == 1,
+      % AL: overrides if numel(locs)==1 branch above
       if abs(wing_angles_curr) > params.min_nonzero_wing_angle,
         wing_trough_angle = 0;
         [wing_angles_curr] = sort([0,wing_angles_curr]);
-        area = [sum(H1),sum(H2)];        
+        area = [sum(H1),sum(H2)];  
       else
+        % AL ??? 
+        % area is sum(H) above
         wing_angles_curr = repmat(wing_angles_curr,[1,2]);
         area = repmat(area,[1,2]); 
       end

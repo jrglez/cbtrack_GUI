@@ -1,5 +1,17 @@
-function [trxcurr,pred,perframedata] = Track2FliesWings1Frame1ROI(im,dbkgdbb,isfore_bodybb,iswingbb,isfore_wingbb,npxfore_wing,fore2bodybb,pred,trxprev,perframedataprev,nflies_per_roi,params,Wparams)
+function [trxcurr,pred,perframedata] = Track2FliesWings1Frame1ROI(...
+  im,dbkgdbb,isfore_bodybb,iswingbb,isfore_wingbb,npxfore_wing,...
+  fore2bodybb,pred,trxprev,perframedataprev,nflies_per_roi,params,Wparams,...
+  varargin)
 
+  trxcurrExt = myparse(varargin,...
+    'trxcurrExt',[]);
+  
+  tfTrxSupplied = ~isempty(trxcurrExt);
+  
+  if tfTrxSupplied
+    % trxprev ignored
+    trxcurr = trxcurrExt;
+  else
     % initialize
     trxcurr = trxprev;
     trxcurr.gmm_isbadprior = 0;
@@ -30,7 +42,8 @@ function [trxcurr,pred,perframedata] = Track2FliesWings1Frame1ROI(im,dbkgdbb,isf
 
     pred.isfirstframe = false;
     trxcurr.priors=trxpriors(order);    
-    
+  end
+  
     %% fit wings
     combs = dec2bin(0:2^numel(1:nflies_per_roi)-1,numel(1:nflies_per_roi))-'0'+1; combs=combs';
     ncombs = size(combs,2);
@@ -332,6 +345,8 @@ function [trxcurr,pred,perframedata] = Track2FliesWings1Frame1ROI(im,dbkgdbb,isf
                 dthetawing(flies,ors2(flies,:)) = dthetawing1(flies,2);
                 continue;
               end
+              
+              %fprintf(2,'AL: Unexpected SegmentWings codepath.\n');
               % assign body pixels based on mahdist
 
               % indices of foreground pixels in the current cc

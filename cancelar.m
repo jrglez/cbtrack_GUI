@@ -37,7 +37,7 @@ if ~isempty(all_files)
     end
 end
 
-CBTrackPath.rmpath;
+DTrax.rmpath;
 
 clear
 clearvars -global

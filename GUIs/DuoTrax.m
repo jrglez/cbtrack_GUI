@@ -49,7 +49,7 @@ function DuoTrax_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 
 addpath(fileparts(fileparts(mfilename('fullpath'))));
-CBTrackPath.setpath;
+DTrax.setpath;
 
 % Update handles structure
 guidata(hObject, handles);
@@ -237,6 +237,7 @@ for i=1:numel(expdirs)
     try
         while ~getappdata(0,'next')
             button = getappdata(0,'button');
+            %fprintf('Button: %s\n',button);
             switch button
                 case 'BG'
                     if expparams{i}.track.dosetBG
@@ -275,6 +276,7 @@ for i=1:numel(expdirs)
                     cbparams_temp=getappdata(0,'cbparams');
                     if cbparams_temp.track.DEBUG
                         P_stage=getappdata(0,'P_stage');
+                        %fprintf('Track, P-stage=%s\n',P_stage);
                         if strcmp(P_stage,'track1');
                             cbtrackGUI_tracker_video
                         elseif strcmp(P_stage,'track2');

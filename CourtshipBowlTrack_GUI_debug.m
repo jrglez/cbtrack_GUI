@@ -64,7 +64,8 @@ end
 %end
 %% main function
 
-trackdata = Track2FliesWings(handles,moviefile,bgmed,roidata_rs,params,Wparams,'restart',restart);
+trackdata = Track2FliesWings(handles,moviefile,bgmed,roidata_rs,params,...
+  Wparams,'restart',restart);
 if getappdata(0,'iscancel') || getappdata(0,'isskip')
   return
 end

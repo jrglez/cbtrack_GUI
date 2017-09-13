@@ -1,11 +1,13 @@
 function jspipeline(varargin)
 
-[movFile,settingsDir,appDataFile,roiFile,trackXMLfile] = myparse(varargin,...
+[movFile,settingsDir,appDataFile,roiFile,trackXMLfile,trxFileFixed] = ...
+  myparse(varargin,...
   'movFile',[],...
   'settingsDir','/groups/branson/home/leea30/jsp/settings',...
   'appDataFile','appdata.mat',...
   'roiFile','roidata.mat',...
-  'trackXMLfile',''... % If supplied, xmlContents.track is overlaid on top of appData.cbparams.track
+  'trackXMLfile','',... % If supplied, xmlContents.track is overlaid on top of appData.cbparams.track
+  'trxFileFixed','' ... % eg trxfile for movFile with manually-fixed IDs, orientations. 
 );
 
 if exist(movFile,'file')==0
@@ -22,6 +24,18 @@ end
 if exist(roiFile,'file')==0
   error('Cannot find ROI file: %s.',roiFile);
 end
+tfTrxFileFixed = ~isempty(trxFileFixed);
+if tfTrxFileFixed
+  if exist(trxFileFixed,'file')==0
+    error('Cannot find fixed trxfile: %s.',trxFileFixed);
+  end
+  trxFixed = load(trxFileFixed,'-mat','trx');
+  trxFixed = trxFixed.trx;
+  if ~strcmpi(trxFixed(1).moviefile,movFile)
+    warningNoTrace('trxFixed.moviefile (%s) differs from movFile (%s)',...
+      trxFixed(1).moviefile,movFile);
+  end
+end
 
 % 20170420 hack: to match current desktop results, use up 4 RNs.
 rand(4,1);
@@ -34,6 +48,8 @@ fprintf('Expdir is %s.\n',expdir);
 fprintf('Expname is %s.\n',expname);
 
 % Load app data
+fprintf('Clearing appdata...\n');
+DTrax.clearAppData;
 fprintf('Loading appdata file: %s\n',appDataFile);
 ad = load(appDataFile);
 ad.expdirs = {expdir};
@@ -50,6 +66,13 @@ if ~isempty(trackXMLfile)
   ad.cbparams.track = structoverlay(ad.cbparams.track,prmsTrack.track,...
     'fldsIgnore',{'DEBUG' 'dosave' 'dosetBG' 'dosettrack'});
 end
+
+if tfTrxFileFixed
+  ad.trxExternal = trxFixed;
+else
+  ad.trxExternal = [];
+end
+  
 
 % Set appdata
 flds = fieldnames(ad);

@@ -115,12 +115,22 @@ else
 end
 
 % set callback for slider motion
-fcn = get(handles.slider_Frame,'Callback');
-handles.hslider_listener = handle.listener(handles.slider_Frame,...
-  'ActionEvent',fcn);
+% fcn = get(handles.slider_Frame,'Callback');
+% handles.hslider_listener = handle.listener(handles.slider_Frame,...
+%   'ActionEvent',fcn);
 
 % open video
 handles = open_fmf(handles);
+handles.COLORS = {[1 0 0];[0 0 1]};
+ax = handles.axes_Video;
+hold(ax,'on');
+for dfly=1:2
+  handles.htext(dfly) = text(nan,nan,'',...
+    'HorizontalAlignment','center','VerticalAlignment','middle','Clipping','on','Color','w','Parent',ax);
+  handles.hfly(dfly) = drawflyo(nan,nan,nan,nan,nan,'color',handles.COLORS{dfly},'Parent',ax);
+  handles.hwing(dfly) = plot(ax,nan,nan,'.-','color',handles.COLORS{dfly});
+  handles.htrough(dfly) = plot(ax,nan,nan,'x','color',handles.COLORS{dfly});
+end
 
 % Update handles structure
 guidata(hObject, handles);
@@ -176,7 +186,11 @@ function varargout = playfmf_OutputFcn(hObject, eventdata, handles)
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 
-function handles = update_frame(handles)
+function handles = update_frame(handles,tfSld)
+
+if exist('tfSld','var')==0
+  tfSld = false;
+end
 
 try
   [handles.im,handles.timestamp] = handles.readframe(handles.f);
@@ -186,7 +200,13 @@ catch ME
 end
 set(handles.himage,'CData',handles.im);
 set(handles.edit_Frame,'String',num2str(handles.f));
-set(handles.slider_Frame,'Value',(handles.f-1)/(handles.nframes-1));
+if ~tfSld
+  set(handles.slider_Frame,'Value',(handles.f-1)/(handles.nframes-1));
+end
+if isfield(handles,'trackdata')
+  handles = lclPlotWings(handles,handles.f);
+end
+ 
 
 % --- Executes on slider movement.
 function slider_Frame_Callback(hObject, eventdata, handles)
@@ -198,7 +218,7 @@ function slider_Frame_Callback(hObject, eventdata, handles)
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 v = get(hObject,'Value');
 handles.f = round(1 + v * (handles.nframes - 1));
-handles = update_frame(handles);
+handles = update_frame(handles,true);
 guidata(hObject,handles);
 
 % --- Executes during object creation, after setting all properties.
@@ -240,7 +260,7 @@ if isnan(f),
   return;
 end
 handles.f = max(1,min(f,handles.nframes));
-handles = update_frame(handles);
+handles = update_frame(handles,true);
 guidata(hObject,handles);
 
 % --- Executes during object creation, after setting all properties.
@@ -339,6 +359,16 @@ axis(handles.axes_Video,'image','off');
 handles = update_frame(handles);
 
 ISPLAYING = false;
+
+[filename, pathname] = uigetfile('*.mat', 'Choose trackdata',handles.filename);
+if ischar(filename)
+  tdname = fullfile(pathname,filename);
+  fprintf(1,'Loading trackdata: %s\n',tdname);
+  handles.trackdata = load(tdname);
+end
+
+guidata(handles.figure1,handles);
+
 
 % --------------------------------------------------------------------
 function menu_File_Quit_Callback(hObject, eventdata, handles)
@@ -556,3 +586,49 @@ function menu_Help_Callback(hObject, eventdata, handles)
 % hObject    handle to menu_Help (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+function handles = lclPlotWings(handles,iframe)
+
+trackdata = handles.trackdata;
+trx = trackdata.trx;
+nflies=numel(trx);
+ax = handles.axes_Video;
+hold(ax,'on');
+
+COLORS = {[1 0 0];[0 0 1]};
+
+for dfly = 1:nflies,
+  if isempty(trx(dfly).x),
+    continue;
+  end
+
+  x=trx(dfly).x(iframe);
+  y=trx(dfly).y(iframe);
+  a=trx(dfly).a(iframe);
+  b=trx(dfly).b(iframe);
+  theta=trx(dfly).theta(iframe);
+  wing_anglel=trx(dfly).wing_anglel(iframe);
+  wing_angler=trx(dfly).wing_angler(iframe);
+  if isfield(trackdata,'perframedata')
+    wing_trough_angle=trackdata.perframedata.wing_trough_angle{dfly}(iframe);
+  else
+    wing_trough_angle=nan;
+  end
+  
+  xwing = [nan,x,nan];
+  ywing = [nan,y,nan];
+  wing_angles = [wing_anglel,wing_angler];
+  xwing([1,3]) = x + 4*a*cos(theta+pi+wing_angles);
+  ywing([1,3]) = y + 4*a*sin(theta+pi+wing_angles);
+  xtrough = x+2*a*cos(theta+pi+wing_trough_angle);
+  ytrough = y+2*a*sin(theta+pi+wing_trough_angle);
+  
+  if ishandle(handles.hfly(dfly))
+    delete(handles.hfly(dfly));
+  end
+  handles.hfly(dfly) = drawflyo(x,y,theta,a,b,'color',handles.COLORS{dfly},'Parent',ax);
+  set(handles.hwing(dfly),'XData',xwing,'YData',ywing);
+  set(handles.htrough(dfly),'XData',xtrough,'YData',ytrough);
+  s = sprintf('%d',dfly);
+  set(handles.htext(dfly),'Position',[x y 1],'String',s);
+end

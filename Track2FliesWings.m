@@ -1,19 +1,21 @@
-function trackdata = Track2FliesWings(handles,moviefile,bgmed,roidata,params,Wparams,varargin)
+function trackdata = Track2FliesWings(handles,moviefile,bgmed,roidata,...
+  params,Wparams,varargin)
+
 global ISPAUSE
 trackdata=getappdata(0,'trackdata');
 
 version = '0.1';
 timestamp = datestr(now,TimestampFormat);
 
-% XXX
-%fprintf(1,'RNG DEFAULT');
-%pause(5);
-%rng('default');
-
 experiment=getappdata(0,'experiment');
 out=getappdata(0,'out');
 cbparams=getappdata(0,'cbparams');
-[restart] = myparse(varargin,'restart','');
+
+[restart] = myparse(varargin,...
+  'restart','');
+
+trxExternal = getappdata(0,'trxExternal');
+tfTrxExternal = ~isempty(trxExternal);
 
 dorestart = false;
 if ~isempty(restart) && ~isempty(trackdata)
@@ -33,6 +35,10 @@ stages = {'maintracking','reformat','chooseorientations','trackwings1','assignid
 
 write_log(logfid,getappdata(0,'experiment'),sprintf('Opening movie...\n'));
 [readframe,nframes,fid,headerinfo] = get_readframe_fcn(moviefile);
+
+if tfTrxExternal
+  write_log(logfid,getappdata(0,'experiment'),sprintf('Using external trx.\n'));
+end
 
 %% initialize
 
@@ -65,8 +71,15 @@ if ~dorestart && any([~ISPAUSE,~isfield(trackdata,'trxx')]),
   
   trxcurr = struct('x',nan(2,1),'y',nan(2,1),'a',nan(2,1),'b',nan(2,1),...
     'theta',nan(2,1),'area',nan(2,1),'wing_anglel',nan(2,1,2^2),...
-    'wing_angler',nan(2,1,2^2),'istouching',nan,'gmm_isbadprior',nan,'priors',nan(1,2));
+    'wing_angler',nan(2,1,2^2),'istouching',nan,'gmm_isbadprior',nan,...
+    'priors',nan(1,2));
   trxcurr = repmat(trxcurr,[1,roidata.nrois]);
+  if tfTrxExternal
+    FLDSKEEP = {'x' 'y' 'a' 'b' 'theta' 'off'};
+    fldsRm = setdiff(fieldnames(trxExternal),FLDSKEEP);
+    trxExternal = rmfield(trxExternal,fldsRm);
+    assert(roidata.nrois==1,'Only 1 ROI supported.');
+  end
   
   pfdatacurr = struct('nwingsdetected',nan(2,1,2^2),'wing_areal',nan(2,1,2^2),...
     'wing_arear',nan(2,1,2^2),'wing_trough_angle',nan(2,1,2^2));
@@ -89,6 +102,7 @@ elseif dorestart || ISPAUSE
   gmm_isbadprior = trackdata.gmm_isbadprior;
   pred = trackdata.pred;
   trxcurr = trackdata.trxcurr;
+  assert(~tfTrxExternal);
   perframedata = trackdata.perframedata;
 end
 trackdata.trac2flieswings_version = version;
@@ -165,13 +179,38 @@ if ~dorestart || find(strcmp(stage,stages)) >= find(strcmp(restartstage,stages))
     im=double(im)./vign;
     im_rs = imresize(im,1/params.down_factor);
     
-    [dbkgd,isfore_body,iswing,isfore_wing] = TrackFlyWings_BackSub(im,bgmed,params,Wparams,normalize);
+    [dbkgd,isfore_body,iswing,isfore_wing] = TrackFlyWings_BackSub(im,...
+      bgmed,params,Wparams,normalize);
     
     % track this frame
-    trxprev = trxcurr;
     pffdataprev = pfdatacurr;
+    if tfTrxExternal
+      assert(trxExternal(1).off==trxExternal(2).off);
+      iTrxExt = t+trxExternal(1).off;
+      trxcurrExt = struct(...
+        'x',[trxExternal(1).x(iTrxExt); trxExternal(2).x(iTrxExt)],...
+        'y',[trxExternal(1).y(iTrxExt); trxExternal(2).y(iTrxExt)],...
+        'a',2*[trxExternal(1).a(iTrxExt); trxExternal(2).a(iTrxExt)],...
+        'b',2*[trxExternal(1).b(iTrxExt); trxExternal(2).b(iTrxExt)],...
+        'theta',[trxExternal(1).theta(iTrxExt); trxExternal(2).theta(iTrxExt)],...
+        'area',nan(2,1),...
+        'wing_anglel',nan(2,1,4),...
+        'wing_angler',nan(2,1,4),...
+        'istouching',nan,...
+        'gmm_isbadprior',nan,...
+        'priors',nan(1,2));
+      trxprev = trxcurr; % In this branch, trxcurr is guaranteed to be 
+                           % "empty"/init trxcurr. We still need to pass
+                           % this in as this is used for initializtion
+                           % within
+    else
+      trxcurrExt = [];
+      trxprev = trxcurr;
+    end
     % waitbar(t/min(params.lastframetrack,nframes),hwait, ['Tracking frame ',num2str(t),' of ', num2str(min(params.lastframetrack,nframes))]);
-    [trxcurr,pred,pfdatacurr] = Track2FliesWings1Frame(im_rs,dbkgd,isfore_body,iswing,isfore_wing,pred,trxprev,pffdataprev,roidata,params,Wparams);
+    [trxcurr,pred,pfdatacurr] = Track2FliesWings1Frame(im_rs,dbkgd,...
+      isfore_body,iswing,isfore_wing,pred,trxprev,pffdataprev,roidata,...
+      params,Wparams,'trxcurrExt',trxcurrExt);
     
     trxx(:,:,iframe) = cat(2,trxcurr.x);
     trxy(:,:,iframe) = cat(2,trxcurr.y);
